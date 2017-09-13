@@ -3,8 +3,9 @@
 import json
 from conu.utils import *
 
+
 class Image(object):
-    def __init__(self, container, tag=None, random_name_size=10):
+    def __init__(self, container, tag=None):
         self.tag = tag or random_str()
         self.original = container
         self.__import_container()
@@ -66,10 +67,10 @@ class Container(object):
             return self.json
 
     def check_running(self):
-        json = self.inspect(force=True)["State"]
-        if (json["Status"] == "running" and
-                not json["Paused"] and
-                not json["Dead"]):
+        inspect_out = self.inspect(force=True)["State"]
+        if (inspect_out["Status"] == "running" and
+                not inspect_out["Paused"] and
+                not inspect_out["Dead"]):
             return True
         else:
             return False
@@ -91,7 +92,7 @@ class Container(object):
     def run(self, command="", docker_params="", **kwargs):
         command = command.split(" ") if command else []
         additional_params = docker_params.split(" ") if docker_params else []
-        cmdline=["docker", "container", "run","--name", self.tag] + additional_params + [self.image.tag] + command
+        cmdline = ["docker", "container", "run", "--name", self.tag] + additional_params + [self.image.tag] + command
         output = run_cmd(cmdline, **kwargs)
         if not self.__occupied:
             self.clean()
@@ -121,5 +122,3 @@ class Container(object):
     def copy_from(self, src, dest):
         self.start()
         run_cmd("docker cp %s:%s %s" % (self.tag, src, dest))
-
-
