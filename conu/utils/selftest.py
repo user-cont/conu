@@ -1,5 +1,6 @@
 from core import *
 
+
 def test_volume():
     vol1 = Volume()
     vol1.clean()
@@ -15,23 +16,24 @@ def test_volume():
     assert "-v /tmp/superdir:/tmp:Z" == vol3.docker()
     vol3.clean()
 
+
 def test_probes_port():
     p1 = Probe()
-    port=1234
-    host="127.0.0.1"
+    port = 1234
+    host = "127.0.0.1"
 
-    assert False == p1.check_port(host=host, port=port)
+    assert not p1.check_port(host=host, port=port)
 
     bckgrnd = run_cmd(["nc", "-l", str(port)], raw=True, stdout=subprocess.PIPE)
     assert p1.wait_inet_port(host, port, count=10)
-    assert False == p1.check_port(host=host, port=port)
+    assert not p1.check_port(host=host, port=port)
     bckgrnd.kill()
-    assert False == p1.check_port(host=host, port=port)
+    assert not p1.check_port(host=host, port=port)
 
     bckgrnd = run_cmd(["nc", "-l", str(port)], raw=True, stdout=subprocess.PIPE)
     assert p1.wait_inet_port(host, port, count=10)
     print bckgrnd.communicate()[0]
-    assert False == p1.check_port(host=host, port=port)
+    assert not p1.check_port(host=host, port=port)
 
 
 if __name__ == "__main__":

@@ -5,27 +5,28 @@ from conu.utils import *
 from avocado import Test
 import os
 
+
 class PostgresqlContainerFactory(Container):
     postgres_image = Image("docker.io/postgres")
     database = "postgres"
     password = "mysecretpassword"
     user = "postgres"
-    default_env = ["-it", "-d", "-e POSTGRES_PASSWORD=%s" % (password)]
+    default_env = ["-it", "-d", "-e POSTGRES_PASSWORD=%s" % password]
     docker_add_params = []
 
-    def __init__(self, docker_additional_params=[], docker_default_params=default_env, start=False):
-        super(PostgresqlContainerFactory,self).__init__(self.postgres_image)
+    def __init__(self, docker_additional_params=None, docker_default_params=default_env, start=False):
+        super(PostgresqlContainerFactory, self).__init__(self.postgres_image)
         self.default_env = docker_default_params
         self.docker_add_params = docker_additional_params
         if start:
             self.postgre_start()
 
-    def postgre_start(self, docker_additional_params=[], docker_default_params=[]):
+    def postgre_start(self, docker_additional_params=None, docker_default_params=None):
         params_dir = docker_default_params or self.default_env
         params_dir += docker_additional_params or self.docker_add_params
         params = " ".join(params_dir)
         self.start(docker_params=params)
-        Probe().wait_inet_port(self.get_ip(),5432, count=20)
+        Probe().wait_inet_port(self.get_ip(), 5432, count=20)
 
     def life_check(self):
         my_env = os.environ.copy()
