@@ -1,23 +1,31 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+"""
+TODO: create dir tests/integration and move this file over there as docker_test.py
+      create unit tests, mock interaction with docker
+"""
 
+import subprocess
+import time
 
-from core import *
+from conu.docker.core import Image, Container
+from conu.utils.core import run_cmd
 from nose.tools import assert_raises
 
 
 def test_image():
     """
-    Image tests. Pull image. check it is able to inspect it
-
-    :return:
+    Basic tests of interacting with image: pull, inspect, tag, remove
     """
-    image1 = Image("fedora", tag="ahoj")
+    image1 = Image("fedora")
+    # FIXME: use busybox in integration tests, pull it before testing
+    image1.pull()
     assert "Config" in image1.inspect()
-    assert "fedora" in image1.get_image_name()
-    assert "ahoj" in image1.get_tag_name()
-    assert "ahoj" == str(image1)
-    image1.clean()
+    assert "fedora:latest" in image1.full_name()
+    assert "fedora:latest" == str(image1)
+    assert "Image(repository=fedora, tag=latest)" == repr(image1)
+    image1.tag_image(tag="test")
+    Image.rmi("fedora:test")
 
 
 def test_docker():
@@ -34,8 +42,8 @@ def test_docker():
 
     :return:
     """
-    image1 = Image("fedora", tag="ahoj")
-    image2 = Image("fedora", tag="hallo")
+    image1 = Image("fedora")
+    image1.pull()
     # complex case
     cont1 = Container(image1)
     cont1.start("/bin/bash")
@@ -52,7 +60,7 @@ def test_docker():
     cont1.stop()
     cont1.clean()
     # simplier case
-    cont2 = Container(image2)
+    cont2 = Container(image1)
     assert "sbin" in cont2.run("ls /")
     # test if raise is raised in case nonexisting command
     assert_raises(subprocess.CalledProcessError, cont2.run, "nonexisting command")
