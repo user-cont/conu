@@ -13,6 +13,8 @@ BuildArch:      noarch
 BuildRequires:  python2-devel
 BuildRequires:  python2-setuptools
 Requires:       docker
+Requires:       coreutils
+Requires:       acl
 Provides:       conu = %{version}-%{release}
 
 %description
@@ -28,16 +30,14 @@ rm -rf %{name}.egg-info
 
 %install
 %py2_install
-install -d -p -m 755 %{buildroot}%{_datadir}/%{framework_name}
 
 %files
 %license LICENSE
 %{python2_sitelib}/conu/
 %{python2_sitelib}/conu-*.egg-info/
-%{_datadir}/conu/
 
 
 %changelog
-* Tue Sep 12 2017 Jan Scotka <jscotka@redhat.com> - 0.1.0-1
+* Tue Sep 12 2017 Jan Scotka <jscotka@redhat.com> - 0.0.1-1
 - Initial version
 
