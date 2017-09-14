@@ -13,3 +13,6 @@ before_install:
 install: sudo make install
 
 script: sudo make check
+
+notifications:
+  email: false
