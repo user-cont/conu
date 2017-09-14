@@ -52,6 +52,9 @@ def test_docker():
     assert "172" in cont1.get_ip()
     assert "sbin" in cont1.execute("ls /")
     cont1.install_packages("nc")
+    # Check if files are present in container
+    assert cont1.check_files_exist(["/usr/bin/ncat"])
+    assert_raises(subprocess.CalledProcessError, cont1.check_files_exist, "/bin/bin")
     bckgrnd = cont1.execute("nc -l 1234", raw=True, stdout=subprocess.PIPE)
     time.sleep(1)
     bckgrnd2 = run_cmd(["nc", cont1.get_ip(), "1234"], raw=True, stdin=subprocess.PIPE)

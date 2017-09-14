@@ -168,3 +168,22 @@ class Container(object):
         # since run_cmd does split, we need to wrap like this because the command
         # is actually being wrapped in bash -c -- time for a drink
         return self.execute(["cat", file_path], shell=False)
+
+    def check_files_exist(self, files):
+        """
+        Function returns
+        :param files:
+        :return: True if all files exists
+                 False if at least one does not exist
+        """
+        found = True
+        if isinstance(files, str):
+            files = [files]
+        if files:
+            for f in files:
+                logger.debug("Check if %s file is present in container." % f)
+                ret_val = self.execute('ls %s' % f)
+                if f != ret_val.strip():
+                    found = False
+                    logger.debug("File is not present in container")
+        return found
