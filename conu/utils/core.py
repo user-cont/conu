@@ -112,17 +112,17 @@ class Probe(object):
     def check_file(self, path):
         return os.path.exists(path)
 
-    def wait_cnt(self, count=1, sleep=1, fnc=bool, *args, **kwargs):
+    def wait_cnt(self, count=1, sleep=1, fnc=bool, **kwargs):
         for cnt in xrange(count):
             logger.debug("\tCounter: %s/%s" % (cnt, count))
-            output = fnc(*args, **kwargs)
+            output = fnc(**kwargs)
             if output:
                 return True
             time.sleep(sleep)
         raise BaseException("\tCounter exceeded")
 
     def wait_inet_port(self, host, port, count=1, sleep=1):
-        return self.wait_cnt(count=count, sleep=sleep, function=self.check_port, host=host, port=port)
+        return self.wait_cnt(count=count, sleep=sleep, fnc=self.check_port, host=host, port=port)
 
     def wait_file_exist(self, path, count=1, sleep=1):
-        return self.wait_cnt(count=count, sleep=sleep, function=self.check_file, path=path)
+        return self.wait_cnt(count=count, sleep=sleep, fnc=self.check_file, path=path)

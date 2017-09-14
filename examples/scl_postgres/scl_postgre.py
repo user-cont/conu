@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from conu.docker import *
+from conu.docker.core import Image, Container
 from conu.utils import *
 from avocado import Test
 import os

@@ -32,7 +32,6 @@ def test_probes_port():
 
     bckgrnd = run_cmd(["nc", "-l", str(port)], raw=True, stdout=subprocess.PIPE)
     assert p1.wait_inet_port(host, port, count=10)
-    print bckgrnd.communicate()[0]
     assert not p1.check_port(host=host, port=port)
 
 
