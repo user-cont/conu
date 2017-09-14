@@ -2,7 +2,7 @@
 
 import json
 
-from conu.utils.core import run_cmd, random_str
+from conu.utils.core import run_cmd, random_str, logger
 
 
 class Image(object):
