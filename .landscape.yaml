@@ -1,0 +1,19 @@
+# Include warnings about missing documentation?
+doc-warnings: False
+
+# Include warnings about tests?
+test-warnings: True
+
+# tests stricktness
+strictness: medium
+
+pylint:
+    options:
+        max-line-length: 120
+
+# autodetect dependencies?
+autodetect: True
+
+# paths to be ignored
+ignore-paths:
+    - setup.py
