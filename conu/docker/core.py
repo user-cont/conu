@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import json
-import subprocess
 
-from conu.utils.core import run_cmd, random_str, logger
+from conu.utils.core import run_cmd
 
 
 class Image(object):
@@ -23,6 +22,16 @@ class Image(object):
 
     def full_name(self):
         return "%s:%s" % (self.name, self.tag)
+
+    @classmethod
+    def load_from_file(cls, file_path):
+        """
+        load Image from provided tarball
+
+        :param file_path: str, path to tar file
+        :return: Image instance
+        """
+        raise NotImplementedError()
 
     def pull(self):
         run_cmd("docker image pull %s" % self.full_name())
@@ -50,6 +59,12 @@ class Image(object):
         return self.full_name()
 
     def inspect(self, force=False):
+        """
+        inspect this image and save the output
+
+        :param force: bool, update the metadata with up to date content
+        :return: dict
+        """
         if force or not self.inspect_data:
             self.inspect_data = json.loads(run_cmd("docker image inspect %s" % self.full_name()))[0]
         return self.inspect_data
@@ -60,9 +75,10 @@ class Image(object):
         remove selected image
 
         :param image: str, image name, example: "fedora:latest"
+        :param force: bool, use '-f'
         :return: None
         """
-        run_cmd("docker image remove %s%s" % ("-f " if force else "",  image))
+        run_cmd("docker image remove %s%s" % ("-f " if force else "", image))
 
     def clean(self, force=False):
         images_to_remove = self.additional_names + [self.full_name()]
@@ -72,50 +88,79 @@ class Image(object):
 
 
 class Container(object):
-    def __init__(self, image, tag=None):
-        self.tag = tag or random_str()
-        if not isinstance(image, Image):
-            raise BaseException("Image is not instance of Image class")
-        self.json = None
-        self.image = image
-        self.docker_id = None
-        self.__occupied = False
+    def __init__(self, image, container_id):
+        """
 
-    def get_tag_name(self):
-        return self.tag
+        :param image: Image instance
+        """
+        if not isinstance(image, Image):
+            raise RuntimeError("image argument is not an instance of Image class")
+        self.image = image
+        self.container_id = container_id
+        self._inspect_data = None
 
     def inspect(self, force=False):
-        if force or not self.json:
-            output = json.loads(run_cmd("docker container inspect %s" % self.tag))[0]
-            self.json = output
-            return output
-        else:
-            return self.json
+        if force or not self._inspect_data:
+            self._inspect_data = json.loads(
+                run_cmd("docker container inspect %s" % self.container_id))[0]
+        return self._inspect_data
 
-    def check_running(self):
-        inspect_out = self.inspect(force=True)["State"]
-        if (inspect_out["Status"] == "running" and
-                not inspect_out["Paused"] and
-                not inspect_out["Dead"]):
-            return True
-        else:
-            return False
+    def is_running(self):
+        return self.inspect(force=True)["State"]["Running"]
 
     def get_ip(self):
         return self.inspect()["NetworkSettings"]["IPAddress"]
 
-    # TODO: add create menthod
+    @classmethod
+    def run_using_docker_client(cls, image, docker_run_params=None, command=None):
+        """
+        create container using provided image and run it in the background
 
-    def start(self, command="", docker_params="-it -d", **kwargs):
-        if not self.docker_id:
-            self.__occupied = True
-            output = self.run(command, docker_params=docker_params, **kwargs)
-            self.docker_id = output.split("\n")[-2].strip()
-        else:
-            raise BaseException("Container already running on background")
+        :param image: instance of Image
+        :param docker_run_params: str, parameters to pass to `docker create` command,
+                you should not supply binary name, command name, image name, detach option
+        :param command: str, command to run (optional)
+        :return: instance of Container
+        """
+        c = "docker container run -d"
+        if docker_run_params:
+            c += " %s" % docker_run_params
+        c += " %s" % image.full_name()
+        if command:
+            c += " %s" % command
+        container_id = run_cmd(c)
+        return Container(image, container_id)
+
+    @classmethod
+    def create_using_docker_client(cls, image, docker_create_params=None, command=None):
+        """
+        create container using provided image
+
+        :param image: instance of Image
+        :param docker_create_params: str, parameters to pass to `docker create` command,
+                you should not supply binary name, command name, image name
+        :param command: str, command to run (optional)
+        :return: instance of Container
+        """
+        c = "docker container create"
+        if docker_create_params:
+            c += " %s" % docker_create_params
+        c += " %s" % image.full_name()
+        if command:
+            c += " %s" % command
+        container_id = run_cmd(c)
+        return Container(image, container_id)
+
+    def start_using_docker_client(self):
+        """
+        start current container using docker binary
+        :return: None
+        """
+        c = ["docker", "container", "start", self.container_id]
+        run_cmd(c)
 
     def execute(self, command, shell=True, **kwargs):
-        c = ["docker", "container", "exec", self.tag]
+        c = ["docker", "container", "exec", self.container_id]
         if shell:
             c += ["/bin/bash", "-c"]
         if isinstance(command, list):
@@ -124,39 +169,52 @@ class Container(object):
             c.append(command)
         return run_cmd(c, **kwargs)
 
-    def run(self, command="", docker_params="", **kwargs):
-        command = command.split(" ") if command else []
-        additional_params = docker_params.split(" ") if docker_params else []
-        cmdline = ["docker", "container", "run", "--name", self.tag] + additional_params + [self.image.full_name()] + command
-        output = run_cmd(cmdline, **kwargs)
-        if not self.__occupied:
-            self.clean()
+    def logs(self):
+        """
+        get logs from this container
+
+        :return: str, stdout & stderr from the container
+        """
+        c = ["docker", "container", "logs", self.container_id]
+        output = run_cmd(c)
         return output
 
-    def install_packages(self, packages, command="dnf -y install"):
-        if packages:
-            logger.debug("installing packages: %s " % packages)
-            return self.execute("%s %s" % (command, packages))
-
     def stop(self):
-        if self.docker_id and self.check_running():
-            run_cmd("docker stop %s" % self.docker_id)
-            self.docker_id = None
+        """
+        stop this container
 
-    def clean(self):
-        self.stop()
-        self.__occupied = False
-        try:
-            run_cmd("docker container rm %s" % self.tag)
-        except subprocess.CalledProcessError:
-            logger.warning("Container already removed")
+        :return: None
+        """
+        run_cmd("docker container stop %s" % self.container_id)
+
+    def rm(self, force=False):
+        """
+        remove this container
+
+        :param force: bool, use -f
+        :return: None
+        """
+        run_cmd("docker container rm %s%s" % ("-f " if force else "", self.container_id))
 
     def copy_to(self, src, dest):
-        run_cmd("docker cp %s %s:%s" % (src, self.tag, dest))
+        """
+        copy a file or a directory from host system to a container
+
+        :param src: str, path to a file or a directory on host system
+        :param dest: str, path to a file or a directory within container
+        :return: None
+        """
+        run_cmd("docker cp %s %s:%s" % (src, self.container_id, dest))
 
     def copy_from(self, src, dest):
-        self.start()
-        run_cmd("docker cp %s:%s %s" % (self.tag, src, dest))
+        """
+        copy a file or a directory from container to host system
+
+        :param src: str, path to a file or a directory within container
+        :param dest: str, path to a file or a directory on host system
+        :return: None
+        """
+        run_cmd("docker cp %s:%s %s" % (self.container_id, src, dest))
 
     def read_file(self, file_path):
         """
