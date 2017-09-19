@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+import subprocess
 
 from conu.utils.core import run_cmd, random_str, logger
 
@@ -103,6 +104,8 @@ class Container(object):
     def get_ip(self):
         return self.inspect()["NetworkSettings"]["IPAddress"]
 
+    # TODO: add create menthod
+
     def start(self, command="", docker_params="-it -d", **kwargs):
         if not self.docker_id:
             self.__occupied = True
@@ -111,8 +114,15 @@ class Container(object):
         else:
             raise BaseException("Container already running on background")
 
-    def execute(self, command, **kwargs):
-        return run_cmd(["docker", "container", "exec", self.tag, "/bin/bash", "-c", command], **kwargs)
+    def execute(self, command, shell=True, **kwargs):
+        c = ["docker", "container", "exec", self.tag]
+        if shell:
+            c += ["/bin/bash", "-c"]
+        if isinstance(command, list):
+            c += command
+        elif isinstance(command, str):
+            c.append(command)
+        return run_cmd(c, **kwargs)
 
     def run(self, command="", docker_params="", **kwargs):
         command = command.split(" ") if command else []
@@ -147,3 +157,14 @@ class Container(object):
     def copy_from(self, src, dest):
         self.start()
         run_cmd("docker cp %s:%s %s" % (self.tag, src, dest))
+
+    def read_file(self, file_path):
+        """
+        read file specified via 'file_path' and return its content
+
+        :param file_path: str, path to the file to read
+        :return: str (not bytes), content of the file
+        """
+        # since run_cmd does split, we need to wrap like this because the command
+        # is actually being wrapped in bash -c -- time for a drink
+        return self.execute(["cat", file_path], shell=False)

@@ -68,6 +68,21 @@ def test_docker():
     # test if raise is raised in case bad volume mapping
     assert_raises(subprocess.CalledProcessError, cont2.run, "ls /", docker_params="-v abc:cba")
 
+
+def test_read_file():
+    i = Image("fedora", tag="26")
+    # i.pull()
+    c = Container(i)
+    c.start("sleep infinity")
+    # we need to wait
+    time.sleep(1)
+    assert c.check_running()
+    content = c.read_file("/etc/system-release")
+    assert content == "Fedora release 26 (Twenty Six)\n"
+    assert isinstance(content, str)
+    assert_raises(subprocess.CalledProcessError, c.read_file, "/i/lost/my/banana")
+
+
 if __name__ == "__main__":
     test_image()
     test_docker()
