@@ -17,72 +17,64 @@ def test_image():
     """
     Basic tests of interacting with image: pull, inspect, tag, remove
     """
-    image1 = Image("fedora")
+    i = Image("fedora", tag="26")
     # FIXME: use busybox in integration tests, pull it before testing
-    image1.pull()
-    assert "Config" in image1.inspect()
-    assert "fedora:latest" in image1.full_name()
-    assert "fedora:latest" == str(image1)
-    assert "Image(repository=fedora, tag=latest)" == repr(image1)
-    image1.tag_image(tag="test")
+    i.pull()
+    assert "Config" in i.inspect()
+    assert "fedora:26" == i.full_name()
+    assert "fedora:26" == str(i)
+    assert "Image(repository=fedora, tag=26)" == repr(i)
+    i.tag_image(tag="test")
     Image.rmi("fedora:test")
 
 
-def test_docker():
+def test_container():
     """
-    Use two images, use them as base for two different containers.
-    cont1 is container what does start, will not finish immeadiately
+    Test case:
        install package nc inside
        run nc server inside on port 1234
-       from host send the message to ip address and port of cont1
+       from host send the message to ip address and port of cont1  # FIXME: requires nc on host
        check if message in host arrived
-
-    cont2 run just simple "ls /" command and finish immediatelly
-         via assert there is check that sbin is output of command
 
     :return:
     """
-    image1 = Image("fedora")
-    image1.pull()
+    i = Image("fedora", tag="26")
+    i.pull()
     # complex case
-    cont1 = Container(image1)
-    cont1.start("/bin/bash")
+    cont1 = Container.run_using_docker_client(i, docker_run_params="-i", command="cat")
     assert "Config" in cont1.inspect()
-    assert cont1.check_running()
-    assert "172" in cont1.get_ip()
-    assert "sbin" in cont1.execute("ls /")
-    cont1.install_packages("nc")
-    bckgrnd = cont1.execute("nc -l 1234", raw=True, stdout=subprocess.PIPE)
+    assert cont1.is_running()
+    assert cont1.get_ip()
+    assert "usr" in cont1.execute("ls /", shell=False)
+    # FIXME: this is really expensive
+    cont1.execute("dnf install -y nc", shell=False)
+    bckgrnd = cont1.execute("nc -l 1234", raw=True, stdout=subprocess.PIPE, shell=False)
     time.sleep(1)
     bckgrnd2 = run_cmd(["nc", cont1.get_ip(), "1234"], raw=True, stdin=subprocess.PIPE)
     bckgrnd2.communicate(input="ahoj")
     assert "ahoj" in bckgrnd.communicate()[0]
-    cont1.stop()
-    cont1.clean()
-    # simplier case
-    cont2 = Container(image1)
-    assert "sbin" in cont2.run("ls /")
     # test if raise is raised in case nonexisting command
-    assert_raises(subprocess.CalledProcessError, cont2.run, "nonexisting command")
-
-    # test if raise is raised in case bad volume mapping
-    assert_raises(subprocess.CalledProcessError, cont2.run, "ls /", docker_params="-v abc:cba")
+    assert_raises(subprocess.CalledProcessError, cont1.execute, "nonexisting command")
+    cont1.stop()
+    cont1.rm()
 
 
 def test_read_file():
     i = Image("fedora", tag="26")
-    # i.pull()
-    c = Container(i)
-    c.start("sleep infinity")
+    i.pull()
+    c = Container.run_using_docker_client(i, command="sleep infinity")
     # we need to wait
     time.sleep(1)
-    assert c.check_running()
+    assert c.is_running()
     content = c.read_file("/etc/system-release")
     assert content == "Fedora release 26 (Twenty Six)\n"
     assert isinstance(content, str)
     assert_raises(subprocess.CalledProcessError, c.read_file, "/i/lost/my/banana")
+    c.stop()
+    c.rm()
 
 
 if __name__ == "__main__":
     test_image()
-    test_docker()
+    test_container()
+    test_read_file()
