@@ -1,4 +1,6 @@
-from core import *
+import subprocess
+
+from conu.utils.core import Volume, Probe, run_cmd
 
 
 def test_volume():

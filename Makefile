@@ -1,12 +1,12 @@
+.PHONY: all check clean install source help
+
 NAME=conu
 PYTHONSITE=/usr/lib/python2.7/site-packages
 
 all: install check
 
 check:
-	nosetests conu/*/selftest.py
-
-.PHONY: clean
+	PYTHONPATH=${PWD} pytest
 
 clean:
 	@python setup.py clean
