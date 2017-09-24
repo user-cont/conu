@@ -2,7 +2,6 @@
 Abstract class definitions for containers.
 """
 
-# FIXME: TBD
 from .image import Image
 
 import requests
@@ -201,7 +200,8 @@ class Container(object):
         """
         raise NotImplementedError("start method is not implemented")
 
-    def exec(self, command, **kwargs):
+    # exec is keyword in python
+    def exec_command(self, command, **kwargs):
         """
         TODO: what about parameters?
 

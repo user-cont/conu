@@ -1,14 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-TODO: create dir tests/integration and move this file over there as docker_test.py
-      create unit tests, mock interaction with docker
+TODO: create unit tests, mock interaction with docker
 """
 
 import subprocess
 import time
 
-from conu.docker.core import Image, Container
+from conu.backend.docker import DockerContainer, DockerImage
 from conu.utils.core import run_cmd
 from nose.tools import assert_raises
 
@@ -17,7 +16,7 @@ def test_image():
     """
     Basic tests of interacting with image: pull, inspect, tag, remove
     """
-    image1 = Image("fedora")
+    image1 = DockerImage("fedora")
     # FIXME: use busybox in integration tests, pull it before testing
     image1.pull()
     assert "Config" in image1.inspect()
@@ -25,7 +24,7 @@ def test_image():
     assert "fedora:latest" == str(image1)
     assert "Image(repository=fedora, tag=latest)" == repr(image1)
     image1.tag_image(tag="test")
-    Image.rmi("fedora:test")
+    DockerImage.rmi("fedora:test")
 
 
 def test_docker():
@@ -42,10 +41,10 @@ def test_docker():
 
     :return:
     """
-    image1 = Image("fedora")
+    image1 = DockerImage("fedora")
     image1.pull()
     # complex case
-    cont1 = Container(image1)
+    cont1 = DockerContainer(image1)
     cont1.start("/bin/bash")
     assert "Config" in cont1.inspect()
     assert cont1.check_running()
@@ -60,7 +59,7 @@ def test_docker():
     cont1.stop()
     cont1.clean()
     # simplier case
-    cont2 = Container(image1)
+    cont2 = DockerContainer(image1)
     assert "sbin" in cont2.run("ls /")
     # test if raise is raised in case nonexisting command
     assert_raises(subprocess.CalledProcessError, cont2.run, "nonexisting command")
@@ -70,9 +69,9 @@ def test_docker():
 
 
 def test_read_file():
-    i = Image("fedora", tag="26")
+    i = DockerImage("fedora", tag="26")
     # i.pull()
-    c = Container(i)
+    c = DockerContainer(i)
     c.start("sleep infinity")
     time.sleep(1)  # FIXME: replace by wait once available
     assert c.check_running()
