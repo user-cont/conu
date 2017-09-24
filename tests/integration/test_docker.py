@@ -49,12 +49,12 @@ def test_docker():
     cont1.start("/bin/bash")
     assert "Config" in cont1.inspect()
     assert cont1.check_running()
-    assert "172" in cont1.get_ip()
+    assert "172" in cont1.get_IPv4s()[0]
     assert "sbin" in cont1.execute("ls /")
     cont1.install_packages("nc")
     bckgrnd = cont1.execute("nc -l 1234", raw=True, stdout=subprocess.PIPE)
     time.sleep(1)
-    bckgrnd2 = run_cmd(["nc", cont1.get_ip(), "1234"], raw=True, stdin=subprocess.PIPE)
+    bckgrnd2 = run_cmd(["nc", cont1.get_IPv4s()[0], "1234"], raw=True, stdin=subprocess.PIPE)
     bckgrnd2.communicate(input="ahoj")
     assert "ahoj" in bckgrnd.communicate()[0]
     cont1.stop()
@@ -74,13 +74,28 @@ def test_read_file():
     # i.pull()
     c = Container(i)
     c.start("sleep infinity")
-    # we need to wait
-    time.sleep(1)
+    time.sleep(1)  # FIXME: replace by wait once available
     assert c.check_running()
     content = c.read_file("/etc/system-release")
     assert content == "Fedora release 26 (Twenty Six)\n"
     assert isinstance(content, str)
     assert_raises(subprocess.CalledProcessError, c.read_file, "/i/lost/my/banana")
+
+
+def test_http_client():
+    i = DockerImage("fedora", tag="26")
+    # i.pull()
+    c = DockerContainer(i)
+    c.start("python3 -m http.server --bind 0.0.0.0 8000")
+    time.sleep(1)  # FIXME: replace by wait once available
+    assert c.check_running()
+    r = c.http_request(port="8000")
+    assert "<!DOCTYPE HTML PUBLIC" in r.content
+    assert r.ok
+    r2 = c.http_request(path="/etc", port="8000")
+    assert "<!DOCTYPE HTML PUBLIC" in r2.content
+    assert "passwd" in r2.content
+    assert r2.ok
 
 
 if __name__ == "__main__":

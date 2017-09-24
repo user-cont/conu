@@ -1,1 +1,3 @@
 pytest
+# TODO: port nose into pytest
+nose

@@ -93,7 +93,16 @@ class Container(object):
             return self.json
 
     def check_running(self):
-        inspect_out = self.inspect(force=True)["State"]
+        i = self.inspect(force=True)
+
+        # # TODO: kick-off of https://github.com/fedora-modularity/conu/issues/24
+        # import pprint
+        # pprint.pprint(i)
+        # cmdline = ["docker", "container", "logs", self.tag]
+        # output = run_cmd(cmdline)
+        # print(output)
+
+        inspect_out = i["State"]
         if (inspect_out["Status"] == "running" and
                 not inspect_out["Paused"] and
                 not inspect_out["Dead"]):
@@ -101,10 +110,29 @@ class Container(object):
         else:
             return False
 
-    def get_ip(self):
-        return self.inspect()["NetworkSettings"]["IPAddress"]
+    def get_IPv4s(self):
+        """
+        Return all knwon IPv4 addresses of this container. It may be possible
+        that the container has disabled networking: in that case, the list is
+        empty
 
-    # TODO: add create menthod
+        :return: list of str
+        """
+        # FIXME: be graceful in obtaining values from dict: the keys might not be set
+        return [x["IPAddress"]
+                for x in self.inspect(force=False)["NetworkSettings"]["Networks"].values()]
+
+    def get_ports(self):
+        """
+        get ports specified in container metadata
+
+        :return: list of str
+        """
+        ports = []
+        for p in self.inspect(force=False)["NetworkSettings"]["Ports"]:
+            # TODO: gracefullness, error handling
+            ports.append(p.split("/")[0])
+        return ports
 
     def start(self, command="", docker_params="-it -d", **kwargs):
         if not self.docker_id:
