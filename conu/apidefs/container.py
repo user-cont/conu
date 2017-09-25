@@ -253,3 +253,11 @@ class Container(object):
         """
         raise NotImplementedError("get_file method is not implemented")
 
+    def check_file_exists(self, filename):
+        """
+        checks if file exists in container
+        :param filename: filename to check in container
+        :return: True for case if file exists
+                 False for case if file does not exist
+        """
+        raise NotImplementedError("check_file_exists is not implemented")
