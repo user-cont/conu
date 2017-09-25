@@ -1,3 +1,4 @@
 pytest
+pytest-catchlog
 # TODO: port nose into pytest
 nose
