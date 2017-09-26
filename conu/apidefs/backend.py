@@ -4,8 +4,8 @@ Definition for a backend class and logging initialization
 
 import logging
 
-from .container import Container
-from .image import Image
+from conu.apidefs.container import Container
+from conu.apidefs.image import Image
 
 
 __version__ = "0.0.1-alpha"

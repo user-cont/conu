@@ -6,7 +6,7 @@ import json
 import logging
 import subprocess
 
-from .image import DockerImage
+from conu.backend.docker.image import DockerImage
 from conu.apidefs.container import Container
 from conu.utils.core import run_cmd, random_str
 

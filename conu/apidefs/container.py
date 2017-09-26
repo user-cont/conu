@@ -2,7 +2,7 @@
 Abstract class definitions for containers.
 """
 
-from .image import Image
+from conu.apidefs.image import Image
 
 import requests
 from six.moves.urllib.parse import urlunsplit
