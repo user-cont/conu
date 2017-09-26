@@ -2,8 +2,10 @@
 Abstract class definitions for containers.
 """
 
-# FIXME: TBD
 from .image import Image
+
+import requests
+from six.moves.urllib.parse import urlunsplit
 
 
 class BinaryArgsBuilder(object):
@@ -53,6 +55,27 @@ class Container(object):
         self.image = image
         self.container_id = container_id
         self._metadata = None
+        # provides HTTP client (requests.Session)
+        self.http_session = requests.Session()
+
+    def http_request(self, path="/", method="GET", host=None, port=None, json=False, data=None):
+        """
+        perform a HTTP request
+
+        :param path: str, path within the reqest, e.g. "/api/version"
+        :param method: str, HTTP method
+        :param host: str, if None, set self.get_IPv4s()[0]
+        :param port: str, if None, set to self.get_ports()[0]
+        :param json: bool, should we expect json?
+        :param data: data to send (can be dict, list, str)
+        :return: dict
+        """
+        host = host or self.get_IPv4s()[0]
+        port = port or self.get_ports()[0]
+        url = urlunsplit(
+            ("http", host + ":" + port, path, "", "")
+        )
+        return self.http_session.request(method, url, json=json, data=data)
 
     def get_metadata(self, refresh=False):
         """
@@ -122,7 +145,7 @@ class Container(object):
         """
         get ports specified in container metadata
 
-        :return: list of int
+        :return: list of str
         """
         raise NotImplementedError("get_ports method is not implemented")
 
@@ -177,16 +200,19 @@ class Container(object):
         """
         raise NotImplementedError("start method is not implemented")
 
-    def exec(self, command, **kwargs):
+    # exec is a keyword in python
+    def execute(self, command, **kwargs):
         """
+        execute a command in this container -- usually the container needs to be running
+
         TODO: what about parameters?
 
-        :param command: command to execute in the container
+        :param command: str, command to execute in the container
         :param kwargs:
-        :return: ? we need to provide output, exit code and there needs to be a possiblity for
+        :return: ? we need to provide output, exit code and there needs to be a possibility for
                   this thing to be async and blocking
         """
-        raise NotImplementedError("exec method is not implemented")
+        raise NotImplementedError("execute method is not implemented")
 
     def logs(self, follow=False):
         """
