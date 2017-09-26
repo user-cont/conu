@@ -83,6 +83,13 @@ class DockerContainer(Container):
             raise BaseException("Container already running on background")
 
     def execute(self, command, shell=True, **kwargs):
+        """
+        execute a command in this container -- the container needs to be running
+
+        :param command: str, command to execute in the container
+        :param shell: bool, invoke the command in shell via '/bin/bash -c'
+        :return: str (output) or Popen instance
+        """
         c = ["docker", "container", "exec", self.tag]
         if shell:
             c += ["/bin/bash", "-c"]

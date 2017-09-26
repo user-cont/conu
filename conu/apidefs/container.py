@@ -200,17 +200,19 @@ class Container(object):
         """
         raise NotImplementedError("start method is not implemented")
 
-    # exec is keyword in python
-    def exec_command(self, command, **kwargs):
+    # exec is a keyword in python
+    def execute(self, command, **kwargs):
         """
+        execute a command in this container -- usually the container needs to be running
+
         TODO: what about parameters?
 
-        :param command: command to execute in the container
+        :param command: str, command to execute in the container
         :param kwargs:
-        :return: ? we need to provide output, exit code and there needs to be a possiblity for
+        :return: ? we need to provide output, exit code and there needs to be a possibility for
                   this thing to be async and blocking
         """
-        raise NotImplementedError("exec method is not implemented")
+        raise NotImplementedError("execute method is not implemented")
 
     def logs(self, follow=False):
         """
