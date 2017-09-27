@@ -10,19 +10,18 @@ import shutil
 import socket
 import time
 
-logger = logging
-logger.basicConfig(format='%(levelname)s: Docker : %(message)s', level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 def run_cmd(cmd, raw=False, **kwargs):
     if not raw:
-        logger.debug("Command: %s" % cmd)
+        logger.debug("command: %s" % cmd)
         if isinstance(cmd, str):
             output = subprocess.check_output(cmd.split(" "), **kwargs)
         else:
             output = subprocess.check_output(cmd, **kwargs)
     else:
-        logger.debug("Command (raw): %s" % cmd)
+        logger.debug("command (raw): %s" % cmd)
         output = subprocess.Popen(cmd, **kwargs)
     return output
 
@@ -52,7 +51,7 @@ class Volume(object):
             self.set_facl(facl)
         if selinux_type:
             self.set_selinux(selinux_type)
-        logger.debug("Volume directory: %s" % self.directory)
+        logger.debug("volume directory: %s" % self.directory)
 
     def set_target(self, target):
         self.target = target
@@ -114,12 +113,12 @@ class Probe(object):
 
     def wait_cnt(self, count=1, sleep=1, fnc=bool, **kwargs):
         for cnt in xrange(count):
-            logger.debug("\tCounter: %s/%s" % (cnt, count))
+            logger.debug("counter: %s/%s" % (cnt, count))
             output = fnc(**kwargs)
             if output:
                 return True
             time.sleep(sleep)
-        raise BaseException("\tCounter exceeded")
+        raise BaseException("counter exceeded")
 
     def wait_inet_port(self, host, port, count=1, sleep=1):
         return self.wait_cnt(count=count, sleep=sleep, fnc=self.check_port, host=host, port=port)

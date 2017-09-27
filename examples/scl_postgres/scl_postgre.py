@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
 
-from conu.docker.core import Image, Container
-from conu.utils import *
-from avocado import Test
 import os
+import subprocess
+import time
+
+from conu.backend.docker import DockerImage, DockerContainer
+from conu.utils.core import Volume, Probe, run_cmd
+from avocado import Test
 
 
-class PostgresqlContainerFactory(Container):
-    postgres_image = Image("docker.io/postgres")
+class PostgresqlContainerFactory(DockerContainer):
+    postgres_image = DockerImage("docker.io/postgres")
     database = "postgres"
     password = "mysecretpassword"
     user = "postgres"
@@ -26,13 +29,13 @@ class PostgresqlContainerFactory(Container):
         params_dir += docker_additional_params or self.docker_add_params
         params = " ".join(params_dir)
         self.start(docker_params=params)
-        Probe().wait_inet_port(self.get_ip(), 5432, count=20)
+        Probe().wait_inet_port(self.get_IPv4s()[0], 5432, count=20)
 
     def life_check(self):
         my_env = os.environ.copy()
         my_env["PGPASSWORD"] = self.password
         try:
-            run_cmd(["psql", "-h", self.get_ip(), "-c", "SELECT 1", self.database, self.user], env=my_env)
+            run_cmd(["psql", "-h", self.get_IPv4s()[0], "-c", "SELECT 1", self.database, self.user], env=my_env)
         except subprocess.CalledProcessError:
             return False
         return True
@@ -80,7 +83,7 @@ class MoreComplexExample(Test):
         self.assertTrue(slave.life_check())
 
         output = slave.execute("PGPASSWORD=%s psql -h %s -c 'SELECT 1' %s %s" %
-                      (master.password, master.get_ip(), master.database, master.user))
+                      (master.password, master.get_IPv4s()[0], master.database, master.user))
 
         self.assertIn("1", output)
         master.clean()

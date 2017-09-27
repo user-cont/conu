@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from .backend import DockerBackend
-from .container import DockerContainer
-from .image import DockerImage
+from conu.backend.docker.backend import DockerBackend
+from conu.backend.docker.container import DockerContainer
+from conu.backend.docker.image import DockerImage

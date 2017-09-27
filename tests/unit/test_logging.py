@@ -1,0 +1,31 @@
+"""
+Unit tests for logging system in conu
+
+TODO:
+* seems like {cap,catch}log is going to be part of pytest core:
+    https://github.com/pytest-dev/pytest/pull/2794
+"""
+
+import logging
+
+from conu.apidefs.backend import Backend
+
+
+def test_capturing(caplog):
+    Backend()
+    # backend.py                  52 INFO     conu has initiated, welcome to the party!
+    for r in caplog.records:
+        assert r.name == "conu"
+        assert r.module == "backend"
+        assert r.msg == "conu has initiated, welcome to the party!"
+        assert r.levelno == 20
+
+
+def test_level_setting(caplog):
+    Backend(logging_level=logging.DEBUG)
+    r = caplog.records[1]
+    # backend.py                  53 DEBUG    conu version: 0.0.1-alpha
+    assert r.name == "conu"
+    assert r.module == "backend"
+    assert r.msg == "conu version: %s"
+    assert r.levelno == 10

@@ -3,11 +3,14 @@ Implementation of a docker container
 """
 
 import json
+import logging
 import subprocess
 
-from .image import DockerImage
+from conu.backend.docker.image import DockerImage
 from conu.apidefs.container import Container
-from conu.utils.core import run_cmd, random_str, logger
+from conu.utils.core import run_cmd, random_str
+
+logger = logging.getLogger(__name__)
 
 
 class DockerContainer(Container):
@@ -125,7 +128,7 @@ class DockerContainer(Container):
         try:
             run_cmd("docker container rm %s" % self.tag)
         except subprocess.CalledProcessError:
-            logger.warning("Container already removed")
+            logger.warning("container already removed")
 
     def copy_to(self, src, dest):
         run_cmd("docker cp %s %s:%s" % (src, self.tag, dest))
