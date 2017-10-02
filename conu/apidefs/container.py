@@ -8,53 +8,23 @@ import requests
 from six.moves.urllib.parse import urlunsplit
 
 
-class BinaryArgsBuilder(object):
-    """
-    class which helps you build a command so it can be executed via subprocess
-
-    TBD: I think I
-    """
-    template = "{binary} {global_opts} {cmd} {opts} {args}"
-    binary = ""
-    global_options = ""
-    command = ""
-    arguments = ""
-    options = ""
-
-    def build(self):
-        command = self.template.format(
-            binary=self.binary,
-            global_opts=self.global_options,
-            cmd=self.command,
-            opts=self.options,
-            args=self.arguments
-        )
-        return command
-
-
-class ContainerParameters(object):
-    """
-    key value store of container parameters
-
-    TBD
-    """
-
-
 class Container(object):
     """
     Container class definition which contains abstract methods. The instances should call the
     constructor
     """
-    def __init__(self, image, container_id):
+    def __init__(self, image, container_id, name):
         """
         :param image: Image instance
         :param container_id: str, unique identifier of this container
+        :param container_id: str, pretty container name
         """
         if not isinstance(image, Image):
             raise RuntimeError("image argument is not an instance of Image class")
         self.image = image
-        self.container_id = container_id
+        self._id = container_id
         self._metadata = None
+        self.name = name
         # provides HTTP client (requests.Session)
         self.http_session = requests.Session()
 
@@ -76,6 +46,14 @@ class Container(object):
             ("http", host + ":" + port, path, "", "")
         )
         return self.http_session.request(method, url, json=json, data=data)
+
+    def get_id(self):
+        """
+        get unique identifier of this container
+
+        :return: str
+        """
+        raise NotImplementedError("get_id method is not implemented")
 
     def get_metadata(self, refresh=False):
         """
@@ -160,13 +138,12 @@ class Container(object):
         raise NotImplementedError("open_connection method is not implemented")
 
     @classmethod
-    def run_via_binary(cls, image, args_builder):
+    def run_via_binary(cls, image, *args, **kwargs):
         """
         create container using provided image and run it in the background; this method is useful
         to test real user scenarios when users invoke containers using binary and not an API
 
         :param image: instance of Image
-        :param args_builder: instance of BinaryArgsBuilder
         :return: instance of Container
         """
         raise NotImplementedError("run_via_binary method is not implemented")
@@ -196,6 +173,7 @@ class Container(object):
     def start(self):
         """
         start current container
+
         :return: None
         """
         raise NotImplementedError("start method is not implemented")
