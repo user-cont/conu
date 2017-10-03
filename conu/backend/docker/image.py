@@ -4,10 +4,14 @@
 Utilities related to manipulate docker images.
 """
 
-import json
+import logging
 
+from conu.apidefs.exceptions import ConuException
 from conu.apidefs.image import Image
-from conu.utils.core import run_cmd
+from conu.backend.docker.client import get_client
+
+
+logger = logging.getLogger(__name__)
 
 
 class DockerImage(Image):
@@ -22,6 +26,7 @@ class DockerImage(Image):
         """
         super(DockerImage, self).__init__(repository, tag=tag)
         self.tag = self.tag
+        self.d = get_client()
 
     def __repr__(self):
         return "DockerImage(repository=%s, tag=%s)" % (self.name, self.tag)
@@ -67,8 +72,7 @@ class DockerImage(Image):
             raise ValueError("You need to specify either repository or tag.")
         r = repository or self.name
         t = "latest" if not tag else tag
-        image_name = "%s:%s" % (r, t)
-        run_cmd("docker image tag %s %s" % (self.get_full_name(), image_name))
+        self.d.tag(image=self.get_full_name(), repository=r, tag=t)
         return DockerImage(r, tag=t)
 
     def inspect(self, refresh=True):
@@ -88,7 +92,10 @@ class DockerImage(Image):
         :return: dict
         """
         if refresh or not self._metadata:
-            self._metadata = json.loads(run_cmd("docker image inspect %s" % self.get_full_name()))[0]
+            ident = self._id or self.get_full_name()
+            if not ident:
+                raise ConuException("This image does not have a valid identifier.")
+            self._metadata = self.d.inspect_image(ident)
         return self._metadata
 
     def rmi(self, force=False, via_name=False):
@@ -99,7 +106,4 @@ class DockerImage(Image):
         :param via_name: bool, refer to the image via name, if false, refer via ID
         :return: None
         """
-        run_cmd("docker image remove %s%s" % (
-            "-f " if force else "",
-            self.get_full_name() if via_name else self.get_id())
-        )
+        self.d.remove_image(self.get_full_name() if via_name else self.get_id(), force=force)
