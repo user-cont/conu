@@ -105,8 +105,16 @@ class Image(object):
         :param file_path: str, path to the file
         :return: str
         """
-
         raise NotImplementedError("get_selinux_context is not implemented")
+
+    def mount(self, mount_point=None):
+        """
+        mount image filesystem
+
+        :param mount_point: str, directory where the filesystem will be mounted
+        :return: instance of Filesystem
+        """
+        raise NotImplementedError("mount is not implemented")
 
 
 class S2Image(Image):

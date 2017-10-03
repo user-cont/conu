@@ -1,7 +1,12 @@
 .PHONY: check clean install source help
 
 check:
-	PYTHONPATH=${PWD} pytest
+	PYTHONPATH=${PWD} pytest-2 -vv
+	PYTHONPATH=${PWD} pytest-3 -vv
+
+# run in travis
+ci-check:
+	PYTHONPATH=${PWD} pytest -m "not requires_atomic_cli" -vv
 
 clean:
 	@python setup.py clean

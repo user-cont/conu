@@ -10,11 +10,11 @@ services:
   - docker
 
 before_install:
-  - sudo apt-get -y install acl netcat
+  - sudo apt-get -y install acl netcat python-pyxattr
 
 install: pip install -r ./test-requirements.txt && pip install -r ./requirements.txt
 
-script: make check
+script: make ci-check
 
 notifications:
   email: false

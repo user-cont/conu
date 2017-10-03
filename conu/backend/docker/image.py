@@ -5,13 +5,34 @@ Utilities related to manipulate docker images.
 from __future__ import print_function, unicode_literals
 
 import logging
+import subprocess
 
 from conu.apidefs.exceptions import ConuException
+from conu.apidefs.filesystem import Filesystem
 from conu.apidefs.image import Image
 from conu.backend.docker.client import get_client
 
 
 logger = logging.getLogger(__name__)
+
+
+class DockerImageFS(Filesystem):
+    def __init__(self, image, mount_point=None):
+        """
+        :param image: instance of DockerImage
+        :param mount_point: str, directory where the filesystem will be mounted
+        """
+        super(DockerImageFS, self).__init__(image, mount_point=mount_point)
+        self.image = image
+
+    def __enter__(self):
+        # FIXME: I'm not sure about this, is doing docker save/export better?
+        subprocess.check_call(["atomic", "mount", self.image.get_full_name(), self.mount_point])
+        return super(DockerImageFS, self).__enter__()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        subprocess.check_call(["atomic", "umount", self.mount_point])
+        return super(DockerImageFS, self).__exit__(exc_type, exc_val, exc_tb)
 
 
 class DockerImage(Image):
@@ -58,7 +79,8 @@ class DockerImage(Image):
 
         :return: None
         """
-        run_cmd("docker image pull %s" % self.get_full_name())
+        for o in self.d.pull(repository=self.name, tag=self.tag, stream=True):
+            logger.debug(o)
 
     def tag_image(self, repository=None, tag=None):
         """
@@ -107,3 +129,12 @@ class DockerImage(Image):
         :return: None
         """
         self.d.remove_image(self.get_full_name() if via_name else self.get_id(), force=force)
+
+    def mount(self, mount_point=None):
+        """
+        mount image filesystem
+
+        :param mount_point: str, directory where the filesystem will be mounted
+        :return: instance of DockerImageFS
+        """
+        return DockerImageFS(self, mount_point=mount_point)
