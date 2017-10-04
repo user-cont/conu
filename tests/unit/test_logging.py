@@ -5,6 +5,7 @@ TODO:
 * seems like {cap,catch}log is going to be part of pytest core:
     https://github.com/pytest-dev/pytest/pull/2794
 """
+from __future__ import print_function, unicode_literals
 
 import logging
 

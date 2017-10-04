@@ -1,6 +1,7 @@
 """
 Definition for a backend class and logging initialization
 """
+from __future__ import print_function, unicode_literals
 
 import logging
 

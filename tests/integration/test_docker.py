@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function, unicode_literals
 
 import subprocess
 import time
 
-from constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, THE_HELPER_IMAGE, \
+from .constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, THE_HELPER_IMAGE, \
     FEDORA_REPOSITORY
 
 from conu.apidefs.exceptions import ConuException
@@ -60,7 +61,7 @@ def test_networking_scenario():
     assert cont.is_running()
     assert cont.get_IPv4s()
 
-    secret_text = "gardener-did-it"
+    secret_text = b"gardener-did-it"
 
     r2 = DockerRunCommand(command=["nc", cont.get_IPv4s()[0], "1234"])
     r2.options = ["-i", "--rm"]
@@ -68,9 +69,10 @@ def test_networking_scenario():
         image, r2, popen_params={"stdin": subprocess.PIPE}, container_name="test-container")
     # FIXME: wait
     time.sleep(1)
+    assert "" == cont.logs().decode("utf-8").strip()
     assert cont2.is_running()
-    assert "" == cont.logs().strip()
-    cont2.popen_instance.communicate(input=secret_text + "\n\n")
+    assert cont.is_running()
+    cont2.popen_instance.communicate(input=secret_text + b"\n")
     # give container time to process
     time.sleep(1)
     assert not cont2.is_running()
@@ -88,9 +90,8 @@ def test_read_file():
     c.start()
     time.sleep(1)  # FIXME: replace by wait once available
     assert c.is_running()
-    content = c.read_file("/etc/system-release")
+    content = c.read_file("/etc/system-release").decode("utf-8")
     assert content == "Fedora release 26 (Twenty Six)\n"
-    assert isinstance(content, str)
     with raises(ConuException):
         c.read_file("/i/lost/my/banana")
     c.stop()
@@ -107,11 +108,11 @@ def test_http_client():
     time.sleep(1)  # FIXME: replace by wait once available
     assert c.is_running()
     r = c.http_request(port="8000")
-    assert "<!DOCTYPE HTML PUBLIC" in r.content
+    assert "<!DOCTYPE HTML PUBLIC" in r.content.decode("utf-8")
     assert r.ok
     r2 = c.http_request(path="/etc", port="8000")
-    assert "<!DOCTYPE HTML PUBLIC" in r2.content
-    assert "passwd" in r2.content
+    assert "<!DOCTYPE HTML PUBLIC" in r2.content.decode("utf-8")
+    assert "passwd" in r2.content.decode("utf-8")
     assert r2.ok
     c.stop()
     c.rm()

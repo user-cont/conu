@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-
 """
 Utilities related to manipulate docker images.
 """
+from __future__ import print_function, unicode_literals
 
 import logging
 

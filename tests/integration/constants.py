@@ -1,3 +1,5 @@
+from __future__ import print_function, unicode_literals
+
 FEDORA_REPOSITORY = "registry.fedoraproject.org/fedora"
 FEDORA_MINIMAL_REPOSITORY = "registry.fedoraproject.org/fedora-minimal"
 FEDORA_MINIMAL_REPOSITORY_TAG = "26"

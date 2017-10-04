@@ -1,6 +1,7 @@
 """
 Abstract definition for an Image
 """
+from __future__ import print_function, unicode_literals
 
 
 class Image(object):

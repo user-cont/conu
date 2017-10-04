@@ -1,6 +1,7 @@
 """
 Implementation of a docker container
 """
+from __future__ import print_function, unicode_literals
 
 import logging
 import subprocess
@@ -120,7 +121,7 @@ class DockerContainer(Container):
 
     def get_IPv4s(self):
         """
-        Return all knwon IPv4 addresses of this container. It may be possible
+        Return all known IPv4 addresses of this container. It may be possible
         that the container has disabled networking: in that case, the list is
         empty
 
@@ -158,7 +159,7 @@ class DockerContainer(Container):
         run_command_instance.image_name = image.get_id()
         run_command_instance.options += ["-d"]
         popen_instance = subprocess.Popen(run_command_instance.build(), stdout=subprocess.PIPE)
-        container_id = popen_instance.communicate()[0].strip()
+        container_id = popen_instance.communicate()[0].strip().decode("utf-8")
         return cls(image, container_id)
 
     @classmethod
