@@ -2,14 +2,15 @@
 Implementation of a docker container
 """
 
-import json
 import logging
 import subprocess
 
+from conu.backend.docker.client import get_client
 from conu.backend.docker.image import DockerImage
 from conu.apidefs.container import Container
 from conu.apidefs.exceptions import ConuException
-from conu.utils.core import run_cmd
+
+from docker.errors import NotFound
 
 
 logger = logging.getLogger(__name__)
@@ -57,6 +58,7 @@ class DockerContainer(Container):
         self.popen_instance = popen_instance
         if not isinstance(image, DockerImage):
             raise RuntimeError("image argument is not an instance of the DockerImage class")
+        self.d = get_client()
 
     def __repr__(self):
         return "DockerContainer(image=%s, id=%s)" % (self.image, self.get_id())
@@ -95,7 +97,7 @@ class DockerContainer(Container):
             ident = self._id or self.name
             if not ident:
                 raise ConuException("This container does not have a valid identifier.")
-            self._metadata = json.loads(run_cmd("docker container inspect %s" % ident))[0]
+            self._metadata = self.d.inspect_container(ident)
         return self._metadata
 
     def is_running(self):
@@ -113,7 +115,7 @@ class DockerContainer(Container):
         # print(output)
         try:
             return self.get_metadata(refresh=True)["State"]["Running"]
-        except subprocess.CalledProcessError:
+        except NotFound:
             return False
 
     def get_IPv4s(self):
@@ -191,36 +193,39 @@ class DockerContainer(Container):
 
         :return: None
         """
-        c = ["docker", "container", "start", self._id]
-        run_cmd(c)
+        self.d.start(self.get_id())
 
-    def execute(self, command, shell=True, **kwargs):
+    def execute(self, command, exec_create_kwargs=None, exec_start_kwargs=None):
         """
         execute a command in this container -- the container needs to be running
 
-        :param command: str, command to execute in the container
-        :param shell: bool, invoke the command in shell via '/bin/bash -c'
-        :return: str (output) or Popen instance
+        :param command: list of str, command to execute in the container
+        :param exec_create_kwargs: dict, params to pass to exec_create()
+        :param exec_start_kwargs: dict, params to pass to exec_start()
+        :return: str (output) or iterator
         """
-        c = ["docker", "container", "exec", self._id]
-        if shell:
-            c += ["/bin/bash", "-c"]
-        if isinstance(command, list):
-            c += command
-        elif isinstance(command, str):
-            c.append(command)
-        return run_cmd(c, **kwargs)
+        exec_create_kwargs = exec_create_kwargs or {}
+        exec_start_kwargs = exec_start_kwargs or {}
+        exec_i = self.d.exec_create(self.get_id(), command, **exec_create_kwargs)
+        response = self.d.exec_start(exec_i, **exec_start_kwargs)
+        e_inspect = self.d.exec_inspect(exec_i)
+        # FIXME: if not stream
+        if e_inspect["ExitCode"]:
+            logger.error("command failed: %s", command)
+            logger.info("exec metadata: %s", e_inspect)
+            logger.debug("output = %s", response)
+            raise ConuException("failed to execute command %s", command)
+        # maybe return e_inspect too?
+        return response
 
-    # FIXME: implement follow with docker-py
     def logs(self, follow=False):
         """
         get logs from this container
 
-        :param follow: bool, provide iterator if True
+        :param follow: bool, provide iterator if True and follow logs
         :return: str or iterator
         """
-        c = ["docker", "container", "logs", self._id]
-        return run_cmd(c)
+        return self.d.logs(self.get_id(), stream=follow, follow=follow)
 
     def stop(self):
         """
@@ -228,17 +233,18 @@ class DockerContainer(Container):
 
         :return: None
         """
-        run_cmd("docker container stop %s" % self._id)
+        self.d.stop(self.get_id())
 
-    def rm(self, force=False, **kwargs):
+    def rm(self, force=False, volumes=False, **kwargs):
         """
         remove this container; kwargs indicate that some container runtimes
         might accept more parameters
 
         :param force: bool, if container engine supports this, force the functionality
+        :param volumes: bool, remove also associated volumes
         :return: None
         """
-        run_cmd("docker container rm %s%s" % ("-f " if force else "", self._id))
+        self.d.remove_container(self.get_id(), v=volumes, force=force)
 
     def copy_to(self, src, dest):
         """
@@ -272,6 +278,6 @@ class DockerContainer(Container):
         # since run_cmd does split, we need to wrap like this because the command
         # is actually being wrapped in bash -c -- time for a drink
         try:
-            return self.execute(["cat", file_path], shell=False)
+            return self.execute(["cat", file_path])
         except subprocess.CalledProcessError:
             raise ConuException("There was in issue while accessing file %s" % file_path)
