@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function, unicode_literals
 
 import string
 import random
@@ -112,7 +113,7 @@ class Probe(object):
         return os.path.exists(path)
 
     def wait_cnt(self, count=1, sleep=1, fnc=bool, **kwargs):
-        for cnt in xrange(count):
+        for cnt in range(count):
             logger.debug("counter: %s/%s" % (cnt, count))
             output = fnc(**kwargs)
             if output:

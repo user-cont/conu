@@ -1,9 +1,4 @@
-.PHONY: all check clean install source help
-
-NAME=conu
-PYTHONSITE=/usr/lib/python2.7/site-packages
-
-all: install check
+.PHONY: check clean install source help
 
 check:
 	PYTHONPATH=${PWD} pytest
@@ -27,5 +22,5 @@ help:
 	@echo " clean                   remove python bytecode and temp files"
 	@echo " install                 install program on current system"
 	@echo " source                  create source tarball"
-	@echo " check                   run examples/testing_module check target in Makefile"
+	@echo " check                   run test suite using python 2 and 3"
 

@@ -1,6 +1,7 @@
 """
 Abstract class definitions for containers.
 """
+from __future__ import print_function, unicode_literals
 
 from conu.apidefs.image import Image
 
