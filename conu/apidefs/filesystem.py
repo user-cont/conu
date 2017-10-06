@@ -6,6 +6,8 @@ from tempfile import mkdtemp
 
 import xattr
 
+from conu.apidefs.exceptions import ConuException
+
 
 logger = logging.getLogger(__name__)
 
@@ -82,13 +84,17 @@ class Filesystem(object):
     def read_file(self, file_path):
         """
         read file specified via 'file_path' and return its content - raises an ConuException if
-        there is an issue with read the file
+        there is an issue accessing the file
 
         :param file_path: str, path to the file to read
         :return: str (not bytes), content of the file
         """
-        with open(self.p(file_path)) as fd:
-            return fd.read()
+        try:
+            with open(self.p(file_path)) as fd:
+                return fd.read()
+        except IOError as ex:
+            logger.error("error while accessing file %s: %r", file_path, ex)
+            raise ConuException("There was an error while accessing file %s: %r", file_path, ex)
 
     def get_file(self, file_path, mode="r"):
         """

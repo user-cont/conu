@@ -1,5 +1,8 @@
 import os
 
+from pytest import raises
+
+from conu.apidefs.exceptions import ConuException
 from .constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
 from conu.backend.docker.container import DockerContainer, DockerRunCommand
 from conu.backend.docker.image import DockerImage
@@ -34,6 +37,8 @@ class TestDockerContainerFilesystem(object):
 
     def test_read_file(self):
         with self.container.mount() as fs:
+            with raises(ConuException):
+                fs.read_file("/i/lost/my/banana")
             content = fs.read_file("/etc/system-release")
         assert content == "Fedora release 26 (Twenty Six)\n"
 
@@ -86,6 +91,8 @@ class TestDockerImageFilesystem(object):
 
     def test_read_file(self):
         with self.image.mount() as fs:
+            with raises(ConuException):
+                fs.read_file("/i/lost/my/banana")
             content = fs.read_file("/etc/system-release")
         assert content == "Fedora release 26 (Twenty Six)\n"
 
