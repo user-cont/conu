@@ -1,6 +1,6 @@
 import os
 
-from pytest import raises
+import six
 
 from conu.apidefs.exceptions import ConuException
 from .constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
@@ -37,7 +37,7 @@ class TestDockerContainerFilesystem(object):
 
     def test_read_file(self):
         with self.container.mount() as fs:
-            with raises(ConuException):
+            with pytest.raises(ConuException):
                 fs.read_file("/i/lost/my/banana")
             content = fs.read_file("/etc/system-release")
         assert content == "Fedora release 26 (Twenty Six)\n"
@@ -54,9 +54,23 @@ class TestDockerContainerFilesystem(object):
     def test_copy_from(self, tmpdir):
         with self.container.mount() as fs:
             fs.copy_from("/etc/system-release", str(tmpdir))
-        with open(os.path.join(str(tmpdir), "system-release")) as fd:
-            content = fd.read()
-        assert content == "Fedora release 26 (Twenty Six)\n"
+            with open(os.path.join(str(tmpdir), "system-release")) as fd:
+                assert fd.read() == "Fedora release 26 (Twenty Six)\n"
+
+            test_file_name = "test-file"
+            with open(os.path.join(fs.mount_point, test_file_name), "w") as test_fd:
+                test_fd.write("test-content")
+            fs.copy_from("/" + test_file_name, str(tmpdir))
+            with open(os.path.join(str(tmpdir), test_file_name)) as fd:
+                assert fd.read() == "test-content"
+
+            tmpdir.mkdir("etc")
+            if six.PY2:
+                with pytest.raises(OSError):
+                    fs.copy_from("/etc", str(tmpdir))
+            else:
+                with pytest.raises(FileExistsError):
+                    fs.copy_from("/etc", str(tmpdir))
 
     def test_get_file(self):
         with self.container.mount() as fs:
@@ -99,9 +113,16 @@ class TestDockerImageFilesystem(object):
     def test_copy_from(self, tmpdir):
         with self.image.mount() as fs:
             fs.copy_from("/etc/system-release", str(tmpdir))
-        with open(os.path.join(str(tmpdir), "system-release")) as fd:
-            content = fd.read()
-        assert content == "Fedora release 26 (Twenty Six)\n"
+            with open(os.path.join(str(tmpdir), "system-release")) as fd:
+                assert fd.read() == "Fedora release 26 (Twenty Six)\n"
+
+            tmpdir.mkdir("etc")
+            if six.PY2:
+                with pytest.raises(OSError):
+                    fs.copy_from("/etc", str(tmpdir))
+            else:
+                with pytest.raises(FileExistsError):
+                    fs.copy_from("/etc", str(tmpdir))
 
     def test_get_file(self):
         with self.image.mount() as fs:

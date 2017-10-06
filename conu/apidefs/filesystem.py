@@ -67,7 +67,10 @@ class Filesystem(object):
 
     def copy_from(self, src, dest):
         """
-        copy a file or a directory from container or image to host system
+        copy a file or a directory from container or image to host system. If you are copying
+        directories, the target directory must not exist (this function is using `shutil.copytree`
+        to copy directories and that's a requirement of the function). In case the directory exists,
+        OSError on python 2 or FileExistsError on python 3 are raised.
 
         :param src: str, path to a file or a directory within container or image
         :param dest: str, path to a file or a directory on host system
