@@ -229,66 +229,11 @@ class Container(object):
         """
         raise NotImplementedError("rm method is not implemented")
 
-    def copy_to(self, src, dest):
+    def mount(self, mount_point=None):
         """
-        copy a file or a directory from host system to a container
+        mount container filesystem
 
-        :param src: str, path to a file or a directory on host system
-        :param dest: str, path to a file or a directory within container
-        :return: None
+        :param mount_point: str, directory where the filesystem will be mounted
+        :return: instance of Filesystem
         """
-        raise NotImplementedError("copy_to method is not implemented")
-
-    def copy_from(self, src, dest):
-        """
-        copy a file or a directory from container to host system
-
-        :param src: str, path to a file or a directory within container
-        :param dest: str, path to a file or a directory on host system
-        :return: None
-        """
-        raise NotImplementedError("copy_from method is not implemented")
-
-    def get_file(self, file_path):
-        """
-        provide File object specified via 'file_path'
-
-        :param file_path: str, path to the file
-        :return: File instance
-        """
-        raise NotImplementedError("get_file method is not implemented")
-
-    def mount_container(self, mount_point=None):
-        """
-        mount a container to host system
-        :param mount_point: str, mount_point on host system
-        :return: mount_point
-        """
-        raise NotImplementedError("mount_container method is not implemented")
-
-    def file_is_present(self, file_path):
-        """
-        check if file 'file_path' is present in container
-
-        :param file_path: str, path to the file
-        :return: True if file exists, False if file does not exist
-        """
-        raise NotImplementedError("get_file method is not implemented")
-
-    def directory_is_present(self, directory_name):
-        """
-        check if directory 'directory_name' is present in container
-
-        :param directory_name: str, Directory to check
-        :return: True if directory exists, False if directory does not exist
-        """
-        raise NotImplementedError("directory_is_present is not implemented")
-
-    def get_selinux_context(self, file_path):
-        """
-        return a permissions for 'file_path'
-        :param file_path: str, path to the file
-        :return: str
-        """
-
-        raise NotImplementedError("get_selinux_context is not implemented")
+        raise NotImplementedError("mount is not implemented")

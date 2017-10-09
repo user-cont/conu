@@ -81,23 +81,6 @@ def test_networking_scenario():
     cont.rm()
 
 
-def test_read_file():
-    image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
-    c = DockerContainer.run_via_binary(
-        image,
-        DockerRunCommand(command=["sleep", "infinity"])
-    )
-    c.start()
-    time.sleep(1)  # FIXME: replace by wait once available
-    assert c.is_running()
-    content = c.read_file("/etc/system-release").decode("utf-8")
-    assert content == "Fedora release 26 (Twenty Six)\n"
-    with raises(ConuException):
-        c.read_file("/i/lost/my/banana")
-    c.stop()
-    c.rm()
-
-
 def test_http_client():
     image = DockerImage(FEDORA_REPOSITORY)
     c = DockerContainer.run_via_binary(

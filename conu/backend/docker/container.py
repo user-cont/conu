@@ -4,8 +4,11 @@ Implementation of a docker container
 from __future__ import print_function, unicode_literals
 
 import logging
+import os
+import shutil
 import subprocess
 
+from conu.apidefs.filesystem import Filesystem
 from conu.backend.docker.client import get_client
 from conu.backend.docker.image import DockerImage
 from conu.apidefs.container import Container
@@ -44,6 +47,40 @@ class DockerRunCommand(object):
     def build(self):
         return self.binary + self.global_options + self.command + self.options + \
             [self.image_name] + self.arguments
+
+
+class DockerContainerFS(Filesystem):
+    def __init__(self, container, mount_point=None):
+        """
+        :param container: instance of DockerContainer
+        :param mount_point: str, directory where the filesystem will be mounted
+        """
+        super(DockerContainerFS, self).__init__(container, mount_point=mount_point)
+        self.container = container  # convenience
+
+    def __enter__(self):
+        subprocess.check_call(["atomic", "mount", "--live", self.container.get_id(), self.mount_point])
+        return super(DockerContainerFS, self).__enter__()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        subprocess.check_call(["atomic", "umount", self.mount_point])
+        return super(DockerContainerFS, self).__exit__(exc_type, exc_val, exc_tb)
+
+    def copy_to(self, src, dest):
+        """
+        copy a file or a directory from host system to a container
+
+        :param src: str, path to a file or a directory on host system
+        :param dest: str, path to a file or a directory within container
+        :return: None
+        """
+        p = self.p(dest)
+        if os.path.isfile(src):
+            logger.info("copying file %s to %s", src, p)
+            shutil.copy2(src, p)
+        else:
+            logger.info("copying directory %s to %s", src, p)
+            shutil.copytree(src, p)
 
 
 class DockerContainer(Container):
@@ -247,38 +284,11 @@ class DockerContainer(Container):
         """
         self.d.remove_container(self.get_id(), v=volumes, force=force)
 
-    def copy_to(self, src, dest):
+    def mount(self, mount_point=None):
         """
-        copy a file or a directory from host system to a container
+        mount container filesystem
 
-        :param src: str, path to a file or a directory on host system
-        :param dest: str, path to a file or a directory within container
-        :return: None
+        :param mount_point: str, directory where the filesystem will be mounted
+        :return: instance of DockerContainerFS
         """
-        run_cmd("docker cp %s %s:%s" % (src, self._id, dest))
-
-    def copy_from(self, src, dest):
-        """
-        copy a file or a directory from container to host system
-
-        :param src: str, path to a file or a directory within container
-        :param dest: str, path to a file or a directory on host system
-        :return: None
-        """
-        self.start()
-        run_cmd("docker cp %s:%s %s" % (self._id, src, dest))
-
-    def read_file(self, file_path):
-        """
-        read file specified via 'file_path' and return its content - raises an exc if there is
-        an issue with read the file
-
-        :param file_path: str, path to the file to read
-        :return: str (not bytes), content of the file
-        """
-        # since run_cmd does split, we need to wrap like this because the command
-        # is actually being wrapped in bash -c -- time for a drink
-        try:
-            return self.execute(["cat", file_path])
-        except subprocess.CalledProcessError:
-            raise ConuException("There was in issue while accessing file %s" % file_path)
+        return DockerContainerFS(self, mount_point=mount_point)
