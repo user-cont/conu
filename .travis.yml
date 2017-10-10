@@ -14,7 +14,7 @@ before_install:
 
 install: pip install -r ./test-requirements.txt && pip install -r ./requirements.txt
 
-script: make ci-check
+script: make ci-test
 
 notifications:
   email: false

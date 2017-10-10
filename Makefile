@@ -1,11 +1,11 @@
-.PHONY: check clean install source help
+.PHONY: test ci-test clean install source
 
-check:
+test:
 	PYTHONPATH=${PWD} pytest-2 -vv
 	PYTHONPATH=${PWD} pytest-3 -vv
 
 # run in travis
-ci-check:
+ci-test:
 	PYTHONPATH=${PWD} pytest -m "not requires_atomic_cli" -vv
 
 clean:
@@ -17,15 +17,3 @@ install: clean
 
 source: clean
 	@python setup.py sdist
-
-
-help:
-	@echo "Usage: make <target>"
-	@echo
-	@echo "Available targets are:"
-	@echo " help                    show this text"
-	@echo " clean                   remove python bytecode and temp files"
-	@echo " install                 install program on current system"
-	@echo " source                  create source tarball"
-	@echo " check                   run test suite using python 2 and 3"
-
