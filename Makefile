@@ -1,9 +1,9 @@
 .PHONY: test ci-test clean install source
 
 deps:
-	yum -y install python2-pytest python3-pytest python2-docker python3-docker
+	dnf -q -y install python2-pytest python3-pytest python2-docker python3-docker
 
-test: install deps
+test: deps install
 	PYTHONPATH=${PWD} pytest-2 -vv
 	PYTHONPATH=${PWD} pytest-3 -vv
 
