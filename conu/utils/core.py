@@ -100,14 +100,17 @@ class Volume(object):
 class Probe(object):
     def check_port(self, port, host="127.0.0.1", timeout=2):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(timeout)
-        result = sock.connect_ex((host, port))
-        if result == 0:
-            logger.debug('port OPENed: %s:%s' % (host, port))
-            return True
-        else:
-            logger.debug('port CLOSEDed: %s:%s' % (host, port))
-            return False
+        try:
+            sock.settimeout(timeout)
+            result = sock.connect_ex((host, port))
+            if result == 0:
+                logger.debug('port is opened: %s:%s' % (host, port))
+                return True
+            else:
+                logger.debug('port is closed: %s:%s' % (host, port))
+                return False
+        finally:
+            sock.close()
 
     def check_file(self, path):
         return os.path.exists(path)

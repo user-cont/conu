@@ -128,6 +128,16 @@ class Container(object):
         """
         raise NotImplementedError("get_ports method is not implemented")
 
+    def is_port_open(self, port, timeout=2):
+        """
+        check if given port is open and receiving connections
+
+        :param port: int
+        :param timeout: int, how many seconds to wait for connection; defaults to 2
+        :return: True if the connection has been established inside timeout, False otherwise
+        """
+        raise NotImplementedError("is_port_open method is not implemented")
+
     def open_connection(self, port=None):
         """
         open a TCP connection to service running in the container, if port is None and
