@@ -54,12 +54,14 @@ def test_networking_scenario():
     Listen via netcat in one container, send a secret message to the container via another one.
     """
     image = DockerImage(THE_HELPER_IMAGE)
-    r1 = DockerRunCommand(command=["nc", "-l", "0.0.0.0", "1234"])
+    r1 = DockerRunCommand(command=["nc", "-l", "-k", "0.0.0.0", "1234"])
     cont = DockerContainer.run_via_binary(image, r1)
     # FIXME: wait
     time.sleep(0.2)
     assert cont.is_running()
     assert cont.get_IPv4s()
+    assert cont.is_port_open(1234)
+    assert not cont.is_port_open(2345)
 
     secret_text = b"gardener-did-it"
 
@@ -75,6 +77,7 @@ def test_networking_scenario():
     cont2.popen_instance.communicate(input=secret_text + b"\n")
     # give container time to process
     time.sleep(1)
+    cont.stop()
     assert not cont2.is_running()
     assert not cont.is_running()
     assert secret_text == cont.logs().strip()

@@ -13,6 +13,7 @@ from conu.backend.docker.client import get_client
 from conu.backend.docker.image import DockerImage
 from conu.apidefs.container import Container
 from conu.apidefs.exceptions import ConuException
+from conu.utils.core import Probe
 
 from docker.errors import NotFound
 
@@ -179,6 +180,13 @@ class DockerContainer(Container):
             # TODO: gracefullness, error handling
             ports.append(p.split("/")[0])
         return ports
+
+    def is_port_open(self, port, timeout=2):
+        addresses = self.get_IPv4s()
+        if not addresses:
+            return False
+
+        return Probe().check_port(port, host=addresses[0], timeout=timeout)
 
     @classmethod
     def run_via_binary(cls, image, run_command_instance, *args, **kwargs):
