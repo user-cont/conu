@@ -28,27 +28,11 @@ try:
 except ImportError:
     from distutils.core import setup
 
-# copy from https://github.com/avocado-framework/avocado/blob/master/setup.py
-VIRTUAL_ENV = hasattr(sys, 'real_prefix')
 
+def get_requirements():
+    with open("./requirements.txt") as fd:
+        return fd.readlines()
 
-def get_dir(system_path=None, virtual_path=None):
-    """
-    Retrieve VIRTUAL_ENV friendly path
-    :param system_path: Relative system path
-    :param virtual_path: Overrides system_path for virtual_env only
-    :return: VIRTUAL_ENV friendly path
-    """
-    if virtual_path is None:
-        virtual_path = system_path
-    if VIRTUAL_ENV:
-        if virtual_path is None:
-            virtual_path = []
-        return os.path.join(*virtual_path)
-    else:
-        if system_path is None:
-            system_path = []
-    return os.path.join(*(['/'] + system_path))
 
 data_files = {}
 
@@ -58,10 +42,10 @@ setup(
     version="0.0.1",
     description='Container testing library',
     keywords='containers,testing',
-    author='Jan Scotka',
-    author_email='jscotka@redhat.com',
+    author='Red Hat',
+    author_email='user-cont@redhat.com',
     url='https://github.com/fedora-modularity/conu',
-    license='GPLv2+',
+    license='GPLv2+',  # how about changing to permissive?
     packages=find_packages(exclude=['examples']),
     include_package_data=True,
     data_files=data_files.items(),
@@ -76,5 +60,5 @@ setup(
         'Programming Language :: Python',
         'Topic :: Software Development',
     ],
-    install_requires=[]
+    install_requires=get_requirements()
 )
