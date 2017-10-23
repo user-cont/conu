@@ -1,4 +1,7 @@
-.PHONY: test ci-test clean install source
+.PHONY: install-dependencies test ci-test clean install source
+
+install-dependencies:
+	./requirements.sh
 
 test:
 	PYTHONPATH=${PWD} pytest-2 -vv
