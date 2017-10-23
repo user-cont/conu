@@ -3,7 +3,10 @@
 install-dependencies:
 	./requirements.sh
 
-test:
+deps:
+	dnf -q -y install python2-pytest python3-pytest python2-docker python3-docker
+
+test: deps install
 	PYTHONPATH=${PWD} pytest-2 -vv
 	PYTHONPATH=${PWD} pytest-3 -vv
 
