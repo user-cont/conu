@@ -11,9 +11,10 @@ class Probe(object):
     Probe ends when function returns expected_retval or timeout is exceeded.
 
     Attributes:
-        timeout              Amount of time spent on trying. Set timeout to -1 for infinite run.
-        pause                Amount of time waited between multiple function result checks
-        expected_exceptions  When one of expected_exception is raised, probe ignores it and tries to run function again
+        timeout              Number of seconds spent on trying. Set timeout to -1 for infinite run.
+        pause                Number of seconds waited between multiple function result checks
+        expected_exceptions  When one of expected_exception is raised, probe ignores it and tries to run function again.
+                             To ignore multiple exceptions use parenthesized tuple.
         expected_retval      When expected_retval is recieved, probe ends successfully
         fnc                  Function which run is checked by probe
     """
@@ -36,12 +37,12 @@ class Probe(object):
 
     def run(self):
         if self.process and self.process.is_alive():
-            raise RuntimeError("One instance of probe can only be started once")
+            raise RuntimeError("One instance of Probe can only be probing once at any given time")
         return self._run()
 
     def run_in_background(self):
         if self.process and self.process.is_alive():
-            raise RuntimeError("One instance of probe can only be started once")
+            raise RuntimeError("One instance of Probe can only be probing once at any given time")
         self.queue = Queue()
         self.process = Process(target=self._run)
         return self.process.start()
