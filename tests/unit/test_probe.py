@@ -11,6 +11,7 @@ def sleeper(seconds=1):
     time.sleep(seconds)
     return True
 
+
 class TestProbe(object):
     def test_exception(self):
         def value_err_raise():
@@ -80,7 +81,7 @@ class TestProbe(object):
         probe.run()
         assert not probe.is_alive()
 
-        probe.run_in_backgroud()
+        probe.run_in_background()
         assert probe.is_alive()
         probe.terminate()
         probe.join()
@@ -90,7 +91,7 @@ class TestProbe(object):
         pool = []
         for i in range(3):
             probe = Probe(timeout=10, fnc=sleeper, seconds=3)
-            probe.run_in_backgroud()
+            probe.run_in_background()
             pool.append(probe)
 
         for p in pool:

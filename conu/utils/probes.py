@@ -24,16 +24,26 @@ class Probe(object):
                  expected_retval=True,
                  fnc=bool,
                  **kwargs):
-        self.probe = _ProbeHelper(timeout=timeout, pause=pause,
-                                  expected_exceptions=expected_exceptions,
-                                  expected_retval=expected_retval, fnc=fnc, **kwargs)
+
+        self.timeout = timeout
+        self.pause = pause
+        self.expected_exceptions = expected_exceptions
+        self.fnc = fnc
+        self.kwargs = kwargs
+        self.expected_retval = expected_retval
         self.process = None
+        self.queue = None
 
     def run(self):
-        return self.probe.run()
+        if self.process and self.process.is_alive():
+            raise RuntimeError("One instance of probe can only be started once")
+        return self._run()
 
-    def run_in_backgroud(self):
-        self.process = Process(target=self.probe.run)
+    def run_in_background(self):
+        if self.process and self.process.is_alive():
+            raise RuntimeError("One instance of probe can only be started once")
+        self.queue = Queue()
+        self.process = Process(target=self._run)
         return self.process.start()
 
     def terminate(self):
@@ -45,27 +55,15 @@ class Probe(object):
         if not self.process:
             return
         self.process.join()
+        if self.queue and not self.queue.empty():
+            result = self.queue.get()
+            if isinstance(result, Exception):
+                raise result
 
     def is_alive(self):
         if not self.process:
             return False
         return self.process.is_alive()
-
-
-class _ProbeHelper(object):
-    def __init__(self,
-                 timeout=1,
-                 pause=1,
-                 expected_exceptions=(),
-                 expected_retval=True,
-                 fnc=bool,
-                 **kwargs):
-        self.timeout = timeout
-        self.pause = pause
-        self.expected_exceptions = expected_exceptions
-        self.fnc = fnc
-        self.kwargs = kwargs
-        self.expected_retval = expected_retval
 
     def _wrapper(self, q, start):
         """
@@ -84,22 +82,25 @@ class _ProbeHelper(object):
         except Exception as e:
             q.put(e)
 
-    def run(self):
+    def _run(self):
         start = time.time()
-        queue = Queue()
-        p = Process(target=self._wrapper, args=(queue, start))
+        fnc_queue = Queue()
+        p = Process(target=self._wrapper, args=(fnc_queue, start))
         p.start()
         while self.timeout == -1 or time.time() - start <= self.timeout:
             if p.is_alive():
                 time.sleep(self.pause)
-            elif not queue.empty():
-                result = queue.get()
+            elif not fnc_queue.empty():
+                result = fnc_queue.get()
                 if isinstance(result, Exception):
                     # TODO: use result's traceback
-                    raise result
+                    if self.queue:
+                        self.queue.put(result)
+                    else:
+                        raise result
                 elif not (result == self.expected_retval):
                     p.join()
-                    p = Process(target=self._wrapper, args=(queue, start))
+                    p = Process(target=self._wrapper, args=(fnc_queue, start))
                     p.start()
                 else:
                     return True
@@ -108,7 +109,10 @@ class _ProbeHelper(object):
         else:
             p.terminate()
             p.join()
-            raise ProbeTimeout("Timeout exceeded.")
+            if self.queue:
+                self.queue.put(ProbeTimeout("Timeout exceeded."))
+            else:
+                raise ProbeTimeout("Timeout exceeded.")
 
 
 class ProbeTimeout(Exception):
