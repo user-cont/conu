@@ -11,7 +11,7 @@ class Probe(object):
     Probe ends when function returns expected_retval or timeout is exceeded.
 
     Attributes:
-        timeout              Amount of time spent on trying
+        timeout              Amount of time spent on trying. Set timeout to -1 for infinite run.
         pause                Amount of time waited between multiple function result checks
         expected_exceptions  When one of expected_exception is raised, probe ignores it and tries to run function again
         expected_retval      When expected_retval is recieved, probe ends successfully
@@ -89,12 +89,13 @@ class _ProbeHelper(object):
         queue = Queue()
         p = Process(target=self._wrapper, args=(queue, start))
         p.start()
-        while time.time() - start <= self.timeout:
+        while self.timeout == -1 or time.time() - start <= self.timeout:
             if p.is_alive():
                 time.sleep(self.pause)
             elif not queue.empty():
                 result = queue.get()
                 if isinstance(result, Exception):
+                    # TODO: use result's traceback
                     raise result
                 elif not (result == self.expected_retval):
                     p.join()
