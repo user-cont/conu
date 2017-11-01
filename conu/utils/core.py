@@ -9,7 +9,6 @@ import os
 import tempfile
 import shutil
 import socket
-import time
 
 logger = logging.getLogger(__name__)
 
@@ -97,35 +96,16 @@ class Volume(object):
         return self.directory, self.target
 
 
-class Probe(object):
-    def check_port(self, port, host="127.0.0.1", timeout=2):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            sock.settimeout(timeout)
-            result = sock.connect_ex((host, port))
-            if result == 0:
-                logger.debug('port is opened: %s:%s' % (host, port))
-                return True
-            else:
-                logger.debug('port is closed: %s:%s' % (host, port))
-                return False
-        finally:
-            sock.close()
-
-    def check_file(self, path):
-        return os.path.exists(path)
-
-    def wait_cnt(self, count=1, sleep=1, fnc=bool, **kwargs):
-        for cnt in range(count):
-            logger.debug("counter: %s/%s" % (cnt, count))
-            output = fnc(**kwargs)
-            if output:
-                return True
-            time.sleep(sleep)
-        raise BaseException("counter exceeded")
-
-    def wait_inet_port(self, host, port, count=1, sleep=1):
-        return self.wait_cnt(count=count, sleep=sleep, fnc=self.check_port, host=host, port=port)
-
-    def wait_file_exist(self, path, count=1, sleep=1):
-        return self.wait_cnt(count=count, sleep=sleep, fnc=self.check_file, path=path)
+def check_port(port, host="127.0.0.1", timeout=2):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.settimeout(timeout)
+        result = sock.connect_ex((host, port))
+        if result == 0:
+            logger.debug('port is opened: %s:%s' % (host, port))
+            return True
+        else:
+            logger.debug('port is closed: %s:%s' % (host, port))
+            return False
+    finally:
+        sock.close()

@@ -2,7 +2,8 @@ from __future__ import print_function, unicode_literals
 
 import subprocess
 
-from conu.utils.core import Volume, Probe, run_cmd
+from conu.utils.core import Volume, run_cmd, check_port
+from conu.utils.probes import Probe
 
 
 def test_volume():
@@ -22,21 +23,20 @@ def test_volume():
 
 
 def test_probes_port():
-    p1 = Probe()
     port = 1234
     host = "127.0.0.1"
-
-    assert not p1.check_port(host=host, port=port)
+    probe = Probe(timeout=20, fnc=check_port, host=host, port=port)
+    assert not check_port(host=host, port=port)
 
     bckgrnd = run_cmd(["nc", "-l", str(port)], raw=True, stdout=subprocess.PIPE)
-    assert p1.wait_inet_port(host, port, count=10)
-    assert not p1.check_port(host=host, port=port)
+    assert probe.run()
+    assert not check_port(host=host, port=port)
     bckgrnd.kill()
-    assert not p1.check_port(host=host, port=port)
+    assert not check_port(host=host, port=port)
 
     bckgrnd = run_cmd(["nc", "-l", str(port)], raw=True, stdout=subprocess.PIPE)
-    assert p1.wait_inet_port(host, port, count=10)
-    assert not p1.check_port(host=host, port=port)
+    assert probe.run()
+    assert not check_port(host=host, port=port)
 
 
 if __name__ == "__main__":

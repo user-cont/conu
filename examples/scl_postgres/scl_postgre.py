@@ -5,7 +5,8 @@ import subprocess
 import time
 
 from conu.backend.docker import DockerImage, DockerContainer, DockerRunCommand
-from conu.utils.core import Volume, Probe, run_cmd
+from conu.utils.core import Volume, run_cmd, check_port
+from conu.utils.probes import Probe
 from avocado import Test
 
 
@@ -29,7 +30,8 @@ class PostgresqlContainerFactory(object):
         params += docker_additional_params or self.docker_add_params
         r = DockerRunCommand(additional_opts=params)
         self.container = DockerContainer.run_via_binary(self.postgres_image, r)
-        Probe().wait_inet_port(self.container.get_IPv4s()[0], 5432, count=20)
+        p = Probe(timeout=40, fnc=check_port, host=self.container.get_IPv4s()[0], port=5432)
+        p.run()
 
     def life_check(self):
         my_env = os.environ.copy()
