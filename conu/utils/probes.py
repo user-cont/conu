@@ -13,6 +13,7 @@ class Probe(object):
     Attributes:
         timeout              Number of seconds spent on trying. Set timeout to -1 for infinite run.
         pause                Number of seconds waited between multiple function result checks
+        count                Maximum number of tries, defaults to infinite, represented by -1
         expected_exceptions  When one of expected_exception is raised, probe ignores it and tries to run function again.
                              To ignore multiple exceptions use parenthesized tuple.
         expected_retval      When expected_retval is recieved, probe ends successfully
@@ -21,6 +22,7 @@ class Probe(object):
     def __init__(self,
                  timeout=1,
                  pause=1,
+                 count=-1,
                  expected_exceptions=(),
                  expected_retval=True,
                  fnc=bool,
@@ -28,6 +30,7 @@ class Probe(object):
 
         self.timeout = timeout
         self.pause = pause
+        self.count = count
         self.expected_exceptions = expected_exceptions
         self.fnc = fnc
         self.kwargs = kwargs
@@ -88,7 +91,8 @@ class Probe(object):
         fnc_queue = Queue()
         p = Process(target=self._wrapper, args=(fnc_queue, start))
         p.start()
-        while self.timeout == -1 or time.time() - start <= self.timeout:
+        tries = 1
+        while (tries <= self.count or self.count==-1) and (self.timeout == -1 or time.time() - start <= self.timeout):
             if p.is_alive():
                 time.sleep(self.pause)
             elif not fnc_queue.empty():
@@ -103,6 +107,7 @@ class Probe(object):
                     p.join()
                     p = Process(target=self._wrapper, args=(fnc_queue, start))
                     p.start()
+                    tries += 1
                 else:
                     return True
             else:
@@ -110,11 +115,18 @@ class Probe(object):
         else:
             p.terminate()
             p.join()
-            if self.queue:
-                self.queue.put(ProbeTimeout("Timeout exceeded."))
+            if -1 < self.count < tries:
+                e = CountExceeded
             else:
-                raise ProbeTimeout("Timeout exceeded.")
+                e = ProbeTimeout("Timeout exceeded.")
+            if self.queue:
+                self.queue.put(e)
+            else:
+                raise e
 
 
 class ProbeTimeout(Exception):
+    pass
+
+class CountExceeded(Exception):
     pass

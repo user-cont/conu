@@ -1,4 +1,4 @@
-from conu.utils.probes import Probe, ProbeTimeout
+from conu.utils.probes import Probe, ProbeTimeout, CountExceeded
 import time
 
 import pytest
@@ -10,6 +10,10 @@ MESSAGE = "It is both alive and dead"
 def snoozer(seconds=1):
     time.sleep(seconds)
     return True
+
+
+def value_err_raise():
+    raise ValueError
 
 
 class TestProbe(object):
@@ -26,8 +30,6 @@ class TestProbe(object):
         assert not probe.is_alive()
 
     def test_exception(self):
-        def value_err_raise():
-            raise ValueError
 
         # probe and caller in one thread
         # probe should ignore expected_exceptions
@@ -73,6 +75,29 @@ class TestProbe(object):
         with pytest.raises(ValueError):
             probe.join()
         assert (time.time() - start) < 1, "Timeout exceeded"
+
+    def test_count(self):
+        def say_no():
+            time.sleep(1)
+            return False
+
+        start = time.time()
+        probe = Probe(timeout=5, count=1, pause=0.5, fnc=say_no)
+        with pytest.raises(CountExceeded):
+            probe.run()
+        assert (time.time() - start) < 2, "Probe should end after one allowed try"
+
+        start = time.time()
+        probe = Probe(timeout=3, count=10, pause=0.5, fnc=say_no)
+        with pytest.raises(ProbeTimeout):
+            probe.run()
+        assert (time.time() - start) > 3, "Probe should reach timeout"
+
+        start = time.time()
+        probe = Probe(timeout=5, count=0, pause=0.5, fnc=value_err_raise)
+        with pytest.raises(CountExceeded):
+            probe.run()
+        assert (time.time() - start) < 2, "Probe should always end successfully with count=0 "
 
     def test_arguments(self):
         def check_arg(arg=""):
