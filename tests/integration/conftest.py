@@ -5,12 +5,16 @@ This file has to be named conftest.py!
 """
 from __future__ import print_function, unicode_literals
 
+import logging
 import subprocess
 
 # fails when doing absolute import
 from .constants import FEDORA_MINIMAL_IMAGE, THE_HELPER_IMAGE, FEDORA_REPOSITORY
 
 import pytest
+
+
+log = logging.getLogger("conu.tests")
 
 
 def obtain_images():
