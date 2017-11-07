@@ -1,4 +1,4 @@
-.PHONY: install-dependencies test ci-test clean install source
+.PHONY: install-dependencies test ci-test clean install source container
 
 install-dependencies:
 	./requirements.sh
@@ -20,3 +20,6 @@ install: clean
 
 source: clean
 	@python setup.py sdist
+
+container:
+	docker build --tag=modularitycontainers/conu .
