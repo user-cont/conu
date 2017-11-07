@@ -247,3 +247,11 @@ class Container(object):
         :return: instance of Filesystem
         """
         raise NotImplementedError("mount is not implemented")
+
+    def get_status(self):
+        """
+        Get status of container
+
+        :return: Status of container
+        """
+        raise NotImplementedError("get_status is not implemented")
