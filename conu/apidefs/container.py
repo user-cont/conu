@@ -255,3 +255,11 @@ class Container(object):
         :return: Status of container
         """
         raise NotImplementedError("get_status is not implemented")
+
+    def wait(self):
+        """
+        Block until the container stops, then return its exit code.
+
+        :return: int, exit code
+        """
+        raise NotImplementedError("wait is not implemented")
