@@ -1,8 +1,11 @@
 FROM registry.fedoraproject.org/fedora:26
 
-COPY . /src
+RUN mkdir /src/
 WORKDIR /src
+COPY ./requirements.sh /src/
 RUN ./requirements.sh && \
-    dnf clean all && \
-    pip3 install --user . && \
+    dnf clean all
+
+COPY . /src
+RUN pip3 install --user . && \
     pip2 install --user .

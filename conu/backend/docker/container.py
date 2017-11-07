@@ -60,28 +60,14 @@ class DockerContainerFS(Filesystem):
         self.container = container  # convenience
 
     def __enter__(self):
-        subprocess.check_call(["atomic", "mount", "--live", self.container.get_id(), self.mount_point])
+        cmd = ["atomic", "mount", self.container.get_id(), self.mount_point]
+        logger.debug(cmd)
+        subprocess.check_call(cmd)
         return super(DockerContainerFS, self).__enter__()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         subprocess.check_call(["atomic", "umount", self.mount_point])
         return super(DockerContainerFS, self).__exit__(exc_type, exc_val, exc_tb)
-
-    def copy_to(self, src, dest):
-        """
-        copy a file or a directory from host system to a container
-
-        :param src: str, path to a file or a directory on host system
-        :param dest: str, path to a file or a directory within container
-        :return: None
-        """
-        p = self.p(dest)
-        if os.path.isfile(src):
-            logger.info("copying file %s to %s", src, p)
-            shutil.copy2(src, p)
-        else:
-            logger.info("copying directory %s to %s", src, p)
-            shutil.copytree(src, p)
 
 
 class DockerContainer(Container):

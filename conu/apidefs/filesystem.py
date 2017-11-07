@@ -54,16 +54,22 @@ class Filesystem(object):
         logger.debug("path = %s", p)
         return p
 
-    def copy_to(self, src, dest):
-        """
-        copy a file or a directory from host system to a container -- don't implement for images,
-        those are immutable
+    # I am removing copy_to because we are using `atomic mount --live` for copying files and it
+    # is not reliable for lvm (frequent "wrong fs type, bad option, bad superblock":
+    # https://github.com/projectatomic/atomic/issues/1113) and not
+    # implemented for overlay -- if we enable it in future, we should use put_archive for docker.
+    # The other reason is, that I personally don't see it as a good use case -- we want to test
+    # containers as a black box, we don't need to copy anything inside.
+    # def copy_to(self, src, dest):
+    #     """
+    #     copy a file or a directory from host system to a container -- don't implement for images,
+    #     those are immutable
 
-        :param src: str, path to a file or a directory on host system
-        :param dest: str, path to a file or a directory within container
-        :return: None
-        """
-        raise NotImplementedError("copy_to method is not implemented")
+    #     :param src: str, path to a file or a directory on host system
+    #     :param dest: str, path to a file or a directory within container
+    #     :return: None
+    #     """
+    #     raise NotImplementedError("copy_to method is not implemented")
 
     def copy_from(self, src, dest):
         """
