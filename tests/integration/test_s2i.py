@@ -1,0 +1,36 @@
+import os
+
+from conu.backend.docker.container import DockerContainer, DockerRunCommand
+from .constants import S2I_IMAGE
+from conu.backend.docker.image import S2IDockerImage
+
+
+def test_s2i_extending(tmpdir):
+    t = str(tmpdir)
+    exec_path = os.path.join(t, "secret-executable")
+    secret_message = "Can I have a cup of cocoa?"
+    with open(exec_path, "w") as fd:
+        fd.write("""\
+        #!/bin/bash
+        echo "%s"
+        """ % secret_message)
+    os.chmod(exec_path, 0o755)
+    i = S2IDockerImage(S2I_IMAGE)
+    ei = i.extend(t, "extended-punchbag")
+    c = DockerContainer.run_via_binary(ei, DockerRunCommand())
+    c.wait()
+    assert c.logs().decode("utf-8").strip() == secret_message
+
+
+def test_s2i_usage():
+    i = S2IDockerImage(S2I_IMAGE)
+    assert i.usage() == """\
+This is the punchbag S2I image:
+To use it, install S2I: https://github.com/openshift/source-to-image
+
+Sample invocation:
+
+s2i build git://<source code> punchbag <application image>
+
+You can then run the resulting image via:
+docker run <application image>"""
