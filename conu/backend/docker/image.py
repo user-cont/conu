@@ -4,12 +4,14 @@ Utilities related to manipulate docker images.
 """
 from __future__ import print_function, unicode_literals
 
+import os
 import logging
+import shutil
 import subprocess
 
 from conu.apidefs.exceptions import ConuException
 from conu.apidefs.filesystem import Filesystem
-from conu.apidefs.image import Image
+from conu.apidefs.image import Image, S2Image
 from conu.backend.docker.client import get_client
 
 
@@ -138,3 +140,80 @@ class DockerImage(Image):
         :return: instance of DockerImageFS
         """
         return DockerImageFS(self, mount_point=mount_point)
+
+
+class S2IDockerImage(DockerImage, S2Image):
+    def __init__(self, repository, tag="latest"):
+        """
+        :param repository: str, image name, examples: "fedora", "registry.fedoraproject.org/fedora",
+                            "tomastomecek/sen", "docker.io/tomastomecek/sen"
+        :param tag: str, tag of the image, when not specified, "latest" is implied
+        """
+        super(S2IDockerImage, self).__init__(repository, tag=tag)
+        self._s2i_exists = None
+
+    @property
+    def s2i_exists(self):
+        if self._s2i_exists is None:
+            try:
+                self._s2i_exists = bool(shutil.which("s2i"))  # py3 only
+            except AttributeError:
+                with open(os.devnull, "w") as fd:
+                    try:
+                        rc = subprocess.call(["s2i", "version"], stdout=fd, stderr=fd)
+                    except OSError:
+                        self._s2i_exists = False
+                    else:
+                        if rc != 0:
+                            logger.error("`s2i version` exited with a non-zero return code, please"
+                                         " check your s2i binary if it's okay")
+                            # FIXME: I dunno, raise an error? Or leap of faith?
+                        self._s2i_exists = True
+        return self._s2i_exists
+
+    def _s2i_command(self, args):
+        """
+        return s2i command to run
+
+        :param args: list of str, arguments and options passed to s2i binary
+        :return: list of str
+        """
+        if not self.s2i_exists:
+            raise ConuException("s2i executable is not available, please install it "
+                                "(https://github.com/openshift/source-to-image)")
+        return ["s2i"] + args
+
+    def extend(self, source, new_image_name, s2i_args=None):
+        """
+        extend this s2i-enabled image using provided source, raises ConuException if
+        `s2i build` fails
+
+        :param source: str, source used to extend the image, can be path or url
+        :param new_image_name: str, name of the new, extended image
+        :param s2i_args: list of str, additional options and arguments provided to `s2i build`
+        :return: S2Image instance
+        """
+        s2i_args = s2i_args or []
+        c = self._s2i_command(["build"] + s2i_args + [source, self.get_full_name()])
+        if new_image_name:
+            c.append(new_image_name)
+        try:
+            subprocess.check_call(c)
+        except subprocess.CalledProcessError as ex:
+            raise ConuException("s2i build failed: %s" % ex)
+        return S2IDockerImage(new_image_name)
+
+    def usage(self):
+        """
+        Provide output of `s2i usage`
+
+        :return: str
+        """
+        c = self._s2i_command(["usage", self.get_full_name()])
+        with open(os.devnull, "w") as fd:
+            process = subprocess.Popen(c, stdout=fd, stderr=subprocess.PIPE)
+            _, output = process.communicate()
+            retcode = process.poll()
+        if retcode:
+            raise ConuException("`s2i usage` failed: %s" % output)
+        return output.decode("utf-8").strip()

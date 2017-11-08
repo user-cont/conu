@@ -13,6 +13,7 @@ import socket
 logger = logging.getLogger(__name__)
 
 
+# TODO: make this function to be less magic and use it everywhere
 def run_cmd(cmd, raw=False, **kwargs):
     if not raw:
         logger.debug("command: %s" % cmd)
