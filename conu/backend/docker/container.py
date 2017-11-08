@@ -286,3 +286,11 @@ class DockerContainer(Container):
         :return: instance of DockerContainerFS
         """
         return DockerContainerFS(self, mount_point=mount_point)
+
+    def get_status(self):
+        """
+        Get status of container
+
+        :return: one of: 'created', 'restarting', 'running', 'paused', 'exited', 'dead'
+        """
+        return self.get_metadata(refresh=True)["State"]["Status"]

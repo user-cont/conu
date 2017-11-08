@@ -7,11 +7,10 @@ import time
 from .constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, THE_HELPER_IMAGE, \
     FEDORA_REPOSITORY
 
-from conu.apidefs.exceptions import ConuException
 from conu.backend.docker import DockerContainer, DockerImage
 from conu.backend.docker.container import DockerRunCommand
+from conu.utils.probes import Probe
 
-from pytest import raises
 from six import string_types
 
 
@@ -102,3 +101,16 @@ def test_http_client():
     assert r2.ok
     c.stop()
     c.rm()
+
+
+def test_wait_for_status():
+    image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+    cmd = DockerRunCommand(command=['sleep', '2'])
+    cont = DockerContainer.run_via_binary(image, cmd)
+
+    start = time.time()
+    p = Probe(timeout=6, fnc=cont.get_status, expected_retval='exited')
+    p.run()
+    end = time.time() - start
+    assert end > 2, "Probe should wait till container status is exited"
+    assert end < 7, "Probe should end when container status is exited"
