@@ -77,8 +77,12 @@ class Probe(object):
         :param start: Time of function run (used for logging)
         :return:      Return value or Exception
         """
+        try:
+            func_name = self.fnc.__name__
+        except AttributeError:
+            func_name = str(self.fnc)
         logger.debug("Running \"%s\" with parameters: \"%s\":\t%s/%s"
-                     % (self.fnc.__name__, str(self.kwargs), round(time.time() - start), self.timeout))
+                     % (func_name, str(self.kwargs), round(time.time() - start), self.timeout))
         try:
             q.put(self.fnc(**self.kwargs))
         except self.expected_exceptions:
