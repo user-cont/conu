@@ -178,7 +178,6 @@ class DockerContainer(Container):
         addresses = self.get_IPv4s()
         if not addresses:
             return False
-
         return check_port(port, host=addresses[0], timeout=timeout)
 
     @classmethod
