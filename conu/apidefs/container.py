@@ -128,7 +128,7 @@ class Container(object):
         """
         raise NotImplementedError("get_ports method is not implemented")
 
-    def is_port_open(self, port, timeout=2):
+    def is_port_open(self, port, timeout=10):
         """
         check if given port is open and receiving connections
 

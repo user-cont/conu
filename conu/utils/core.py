@@ -97,7 +97,7 @@ class Volume(object):
         return self.directory, self.target
 
 
-def check_port(port, host="127.0.0.1", timeout=2):
+def check_port(port, host="127.0.0.1", timeout=10):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         sock.settimeout(timeout)

@@ -168,6 +168,13 @@ class DockerContainer(Container):
         return ports
 
     def is_port_open(self, port, timeout=2):
+        """
+        check if given port is open and receiving connections
+
+        :param port: int
+        :param timeout: int, how many seconds to wait for connection; defaults to 2
+        :return: True if the connection has been established inside timeout, False otherwise
+        """
         addresses = self.get_IPv4s()
         if not addresses:
             return False
