@@ -3,6 +3,7 @@ Implementation of a docker container
 """
 from __future__ import print_function, unicode_literals
 
+import functools
 import logging
 import os
 import shutil
@@ -17,6 +18,7 @@ from conu.utils.core import check_port
 
 from docker.errors import NotFound
 
+from conu.utils.probes import Probe
 
 logger = logging.getLogger(__name__)
 
@@ -179,6 +181,18 @@ class DockerContainer(Container):
         if not addresses:
             return False
         return check_port(port, host=addresses[0], timeout=timeout)
+
+    def wait_for_port(self, port, timeout=10, **probe_kwargs):
+        """
+        block until specified port starts accepting connections, raises an exc ProbeTimeout
+        if timeout is reached
+
+        :param port: int, port number
+        :param timeout: int or float (seconds), time to wait for establishing the connection
+        :param probe_kwargs: arguments passed to Probe constructor
+        :return: None
+        """
+        Probe(timeout=timeout, fnc=functools.partial(self.is_port_open, port), **probe_kwargs).run()
 
     @classmethod
     def run_via_binary(cls, image, run_command_instance=None, *args, **kwargs):
