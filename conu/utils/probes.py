@@ -1,6 +1,8 @@
 import time
 import logging
+
 from multiprocessing import Process, Queue
+
 
 logger = logging.getLogger(__name__)
 
@@ -93,11 +95,15 @@ class Probe(object):
     def _run(self):
         start = time.time()
         fnc_queue = Queue()
+        logger.debug("starting probe")
         p = Process(target=self._wrapper, args=(fnc_queue, start))
         p.start()
+        logger.debug("first process started: pid=%s", p.pid)
         tries = 1
-        while (tries <= self.count or self.count==-1) and (self.timeout == -1 or time.time() - start <= self.timeout):
+        while (tries <= self.count or self.count == -1) and \
+                (self.timeout == -1 or time.time() - start <= self.timeout):
             if p.is_alive():
+                logger.debug("pausing for %s before next try", self.pause)
                 time.sleep(self.pause)
             elif not fnc_queue.empty():
                 result = fnc_queue.get()
@@ -108,10 +114,13 @@ class Probe(object):
                     else:
                         raise result
                 elif not (result == self.expected_retval):
+                    logger.info("waiting for process to end...")
                     p.join()
+                    logger.debug("process ended, about to start another one")
                     p = Process(target=self._wrapper, args=(fnc_queue, start))
                     p.start()
                     tries += 1
+                    logger.debug("attempt no. %s started, pid: %s", tries, p.pid)
                 else:
                     return True
             else:
@@ -123,6 +132,7 @@ class Probe(object):
                 e = CountExceeded
             else:
                 e = ProbeTimeout("Timeout exceeded.")
+            logger.warning("probe is unsuccessful: %s", e)
             if self.queue:
                 self.queue.put(e)
             else:
@@ -131,6 +141,7 @@ class Probe(object):
 
 class ProbeTimeout(Exception):
     pass
+
 
 class CountExceeded(Exception):
     pass
