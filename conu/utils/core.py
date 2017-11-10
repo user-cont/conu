@@ -97,11 +97,13 @@ class Volume(object):
         return self.directory, self.target
 
 
-def check_port(port, host="127.0.0.1", timeout=2):
+def check_port(port, host="127.0.0.1", timeout=10):
+    logger.info("trying to open connection to %s:%s", host, port)
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         sock.settimeout(timeout)
         result = sock.connect_ex((host, port))
+        logger.info("was connection successful? %s", result)
         if result == 0:
             logger.debug('port is opened: %s:%s' % (host, port))
             return True

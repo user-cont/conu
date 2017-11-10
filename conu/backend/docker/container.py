@@ -3,6 +3,7 @@ Implementation of a docker container
 """
 from __future__ import print_function, unicode_literals
 
+import functools
 import logging
 import os
 import shutil
@@ -17,6 +18,7 @@ from conu.utils.core import check_port
 
 from docker.errors import NotFound
 
+from conu.utils.probes import Probe
 
 logger = logging.getLogger(__name__)
 
@@ -168,14 +170,32 @@ class DockerContainer(Container):
         return ports
 
     def is_port_open(self, port, timeout=2):
+        """
+        check if given port is open and receiving connections
+
+        :param port: int
+        :param timeout: int, how many seconds to wait for connection; defaults to 2
+        :return: True if the connection has been established inside timeout, False otherwise
+        """
         addresses = self.get_IPv4s()
         if not addresses:
             return False
-
         return check_port(port, host=addresses[0], timeout=timeout)
 
+    def wait_for_port(self, port, timeout=10, **probe_kwargs):
+        """
+        block until specified port starts accepting connections, raises an exc ProbeTimeout
+        if timeout is reached
+
+        :param port: int, port number
+        :param timeout: int or float (seconds), time to wait for establishing the connection
+        :param probe_kwargs: arguments passed to Probe constructor
+        :return: None
+        """
+        Probe(timeout=timeout, fnc=functools.partial(self.is_port_open, port), **probe_kwargs).run()
+
     @classmethod
-    def run_via_binary(cls, image, run_command_instance, *args, **kwargs):
+    def run_via_binary(cls, image, run_command_instance=None, *args, **kwargs):
         """
         create container using provided image and run it in background;
         this method is useful to test real user scenarios when users invoke containers using
@@ -185,6 +205,8 @@ class DockerContainer(Container):
         :param run_command_instance: instance of DockerRunCommand
         :return: instance of DockerContainer
         """
+        logger.info("run container via binary in background")
+        run_command_instance = run_command_instance or DockerRunCommand()
         if not isinstance(run_command_instance, DockerRunCommand):
             raise ConuException("run_command_instance needs to be an instance of DockerRunCommand")
         run_command_instance.image_name = image.get_id()
@@ -194,8 +216,8 @@ class DockerContainer(Container):
         return cls(image, container_id)
 
     @classmethod
-    def run_via_binary_in_foreground(cls, image, run_command_instance, popen_params=None,
-                                        container_name=None):
+    def run_via_binary_in_foreground(
+            cls, image, run_command_instance=None, popen_params=None, container_name=None):
         """
         create container using provided image and run it in foreground;
         this method is useful to test real user scenarios when users invoke containers using
@@ -208,6 +230,7 @@ class DockerContainer(Container):
         :return: instance of DockerContainer
         """
         logger.info("run container via binary in foreground")
+        run_command_instance = run_command_instance or DockerRunCommand()
         if not isinstance(run_command_instance, DockerRunCommand):
             raise ConuException("run_command_instance needs to be an instance of DockerRunCommand")
         popen_params = popen_params or {}
