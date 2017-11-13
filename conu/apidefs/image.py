@@ -102,6 +102,7 @@ class Image(object):
     def get_selinux_context(self, file_path):
         """
         return a permissions for 'file_path'
+
         :param file_path: str, path to the file
         :return: str
         """

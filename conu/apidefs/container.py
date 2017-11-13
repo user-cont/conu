@@ -194,12 +194,9 @@ class Container(object):
         """
         execute a command in this container -- usually the container needs to be running
 
-        TODO: what about parameters?
-
-        :param command: str, command to execute in the container
-        :param kwargs:
-        :return: ? we need to provide output, exit code and there needs to be a possibility for
-                  this thing to be async and blocking
+        :param command: list of str, command to execute in the container
+        :param kwargs: specific parameters for container engines exec methods
+        :return: str (output) or iterator
         """
         raise NotImplementedError("execute method is not implemented")
 

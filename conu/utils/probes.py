@@ -12,14 +12,6 @@ class Probe(object):
     Probe can be used for waiting on specific result of a function.
     Probe ends when function returns expected_retval or timeout is exceeded.
 
-    Attributes:
-        timeout              Number of seconds spent on trying. Set timeout to -1 for infinite run.
-        pause                Number of seconds waited between multiple function result checks
-        count                Maximum number of tries, defaults to infinite, represented by -1
-        expected_exceptions  When one of expected_exception is raised, probe ignores it and tries to run function again.
-                             To ignore multiple exceptions use parenthesized tuple.
-        expected_retval      When expected_retval is recieved, probe ends successfully
-        fnc                  Function which run is checked by probe
     """
     def __init__(self,
                  timeout=1,
@@ -29,7 +21,15 @@ class Probe(object):
                  expected_retval=True,
                  fnc=bool,
                  **kwargs):
-
+        """
+        :param timeout:              Number of seconds spent on trying. Set timeout to -1 for infinite run.
+        :param pause:                Number of seconds waited between multiple function result checks
+        :param count:                Maximum number of tries, defaults to infinite, represented by -1
+        :param expected_exceptions:  When one of expected_exception is raised, probe ignores it and tries to run function again.
+                                         To ignore multiple exceptions use parenthesized tuple.
+        :param expected_retval:      When expected_retval is recieved, probe ends successfully
+        :param fnc:                  Function which run is checked by probe
+        """
         self.timeout = timeout
         self.pause = pause
         self.count = count
