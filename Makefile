@@ -2,7 +2,6 @@
 
 CONU_REPOSITORY := docker.io/modularitycontainers/conu
 TEST_IMAGE_NAME := conu-tests
-TEST_TARGET := "./tests"
 DOC_EXAMPLE_PATH := "docs/source/examples"
 
 install-dependencies:
@@ -10,8 +9,10 @@ install-dependencies:
 
 # FIXME: run both, fail if any failed -- I am not good makefile hacker
 exec-test:
-	PYTHONPATH=$(CURDIR) pytest-2 -vv $(TEST_TARGET)
-	PYTHONPATH=$(CURDIR) pytest-3 -vv $(TEST_TARGET)
+	cat pytest.ini
+	@# use it like this: `make exec-test TEST_TARGET="tests/unit/"`
+	PYTHONPATH=$(CURDIR) pytest-2 $(TEST_TARGET)
+	PYTHONPATH=$(CURDIR) pytest-3 $(TEST_TARGET)
 
 check: test
 
@@ -26,7 +27,7 @@ build-test-container: container
 test: build-test-container test-in-container test-doc-examples
 
 test-in-container:
-	docker run --net=host --rm -v /dev:/dev:ro -v /var/lib/docker:/var/lib/docker:ro --security-opt label=disable --cap-add SYS_ADMIN -ti -v /var/run/docker.sock:/var/run/docker.sock -v ${PWD}:/src $(TEST_IMAGE_NAME) make exec-test TEST_TARGET=$(TEST_TARGET)
+	docker run --net=host --rm -v /dev:/dev:ro -v /var/lib/docker:/var/lib/docker:ro --security-opt label=disable --cap-add SYS_ADMIN -ti -v /var/run/docker.sock:/var/run/docker.sock -v ${PWD}:/src -v ${PWD}/pytest-container.ini:/src/pytest.ini $(TEST_IMAGE_NAME) make exec-test
 
 test-doc-examples:
 	for file in $$(ls $(DOC_EXAMPLE_PATH)) ; do \
