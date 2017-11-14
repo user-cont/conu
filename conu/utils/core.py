@@ -27,10 +27,14 @@ def run_cmd(cmd, raw=False, **kwargs):
     return output
 
 
-def random_str():
-    random_size = 10
-    return ''.join(random.choice(string.ascii_lowercase)
-                   for _ in range(random_size))
+def random_str(size=10):
+    """
+    create random string of selected size
+
+    :param size: int, length of the string
+    :return: the string
+    """
+    return ''.join(random.choice(string.ascii_lowercase) for _ in range(size))
 
 
 class Volume(object):
