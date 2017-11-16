@@ -5,8 +5,6 @@ from __future__ import print_function, unicode_literals
 
 import functools
 import logging
-import os
-import shutil
 import subprocess
 
 from conu.apidefs.filesystem import Filesystem
@@ -14,11 +12,10 @@ from conu.backend.docker.client import get_client
 from conu.backend.docker.image import DockerImage
 from conu.apidefs.container import Container
 from conu.apidefs.exceptions import ConuException
-from conu.utils.core import check_port
+from conu.utils import check_port, run_cmd
+from conu.utils.probes import Probe
 
 from docker.errors import NotFound
-
-from conu.utils.probes import Probe
 
 logger = logging.getLogger(__name__)
 
@@ -64,11 +61,11 @@ class DockerContainerFS(Filesystem):
     def __enter__(self):
         cmd = ["atomic", "mount", self.container.get_id(), self.mount_point]
         logger.debug(cmd)
-        subprocess.check_call(cmd)
+        run_cmd(cmd)
         return super(DockerContainerFS, self).__enter__()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        subprocess.check_call(["atomic", "umount", self.mount_point])
+        run_cmd(["atomic", "umount", self.mount_point])
         return super(DockerContainerFS, self).__exit__(exc_type, exc_val, exc_tb)
 
 

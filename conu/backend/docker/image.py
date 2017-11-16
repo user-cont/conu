@@ -13,7 +13,7 @@ from conu.apidefs.exceptions import ConuException
 from conu.apidefs.filesystem import Filesystem
 from conu.apidefs.image import Image, S2Image
 from conu.backend.docker.client import get_client
-
+from conu.utils import run_cmd
 
 logger = logging.getLogger(__name__)
 
@@ -29,11 +29,11 @@ class DockerImageFS(Filesystem):
 
     def __enter__(self):
         # FIXME: I'm not sure about this, is doing docker save/export better?
-        subprocess.check_call(["atomic", "mount", self.image.get_full_name(), self.mount_point])
+        run_cmd(["atomic", "mount", self.image.get_full_name(), self.mount_point])
         return super(DockerImageFS, self).__enter__()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        subprocess.check_call(["atomic", "umount", self.mount_point])
+        run_cmd(["atomic", "umount", self.mount_point])
         return super(DockerImageFS, self).__exit__(exc_type, exc_val, exc_tb)
 
 
@@ -198,7 +198,7 @@ class S2IDockerImage(DockerImage, S2Image):
         if new_image_name:
             c.append(new_image_name)
         try:
-            subprocess.check_call(c)
+            run_cmd(c)
         except subprocess.CalledProcessError as ex:
             raise ConuException("s2i build failed: %s" % ex)
         return S2IDockerImage(new_image_name)
