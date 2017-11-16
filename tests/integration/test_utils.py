@@ -1,25 +1,73 @@
 from __future__ import print_function, unicode_literals
 
+import os
 import subprocess
 
-from conu.utils.core import Volume, run_cmd, check_port
+import pytest
+
+from conu.apidefs.exceptions import ConuException
+from conu.utils import check_port, random_str
+from conu.utils.filesystem import Directory
 from conu.utils.probes import Probe
 
 
-def test_volume():
-    vol1 = Volume()
-    vol1.clean()
-    vol2 = Volume()
-    assert "/tmp" in str(vol2)
-    vol2.clean()
+def test_directory_basic():
+    with Directory(os.path.join("/tmp/", random_str())) as d:
+        with open(os.path.join(str(d), "file"), "w") as fd:
+            fd.write("hi!")
+        with open(os.path.join(str(d), "file")) as fd:
+            assert fd.read() == "hi!"
+    assert not os.path.isdir(str(d))
 
-    vol3 = Volume(directory="/tmp/superdir", target="/tmp", permissions="a+x")
-    assert "/tmp/superdir" == str(vol3)
-    assert "-v /tmp/superdir:/tmp" == vol3.docker()
-    vol3.set_force_selinux(True)
-    vol3.set_facl(["u:26:rwx"])
-    assert "-v /tmp/superdir:/tmp:Z" == vol3.docker()
-    vol3.clean()
+
+def test_directory_mode():
+    p = os.path.join("/tmp/", random_str())
+    d = Directory(p, mode=0o0700)
+    try:
+        d.initialize()
+        m = os.stat(p).st_mode
+        print(m)
+        assert oct(m)[-4:] == "0700"
+    finally:
+        d.clean()
+    assert not os.path.isdir(p)
+
+
+def test_directory_selinux_bad():
+    selinux_type = "voodoo_file_t"
+    selinux_context = "janko_u:beer_r:spilled_all_over_the_table_t:s0"
+    p = os.path.join("/tmp/", random_str())
+    with pytest.raises(ConuException):
+        Directory(p, selinux_type=selinux_type, selinux_context=selinux_context)
+    assert not os.path.isdir(p)
+
+
+@pytest.mark.selinux
+def test_directory_selinux_type():
+    selinux_type = "container_file_t"
+    p = os.path.join("/tmp/", random_str())
+    with Directory(p, selinux_type=selinux_type):
+        output = subprocess.check_output(["ls", "-Z", "-1", "-d", p])
+        assert selinux_type in output.decode("utf-8")
+    assert not os.path.isdir(p)
+
+
+@pytest.mark.selinux
+def test_directory_selinux_context():
+    selinux_context = "system_u:object_r:unlabeled_t:s0"
+    p = os.path.join("/tmp/", random_str())
+    with Directory(p, selinux_context=selinux_context):
+        output = subprocess.check_output(["ls", "-Z", "-1", "-d", p])
+        assert selinux_context in output.decode("utf-8")
+    assert not os.path.isdir(p)
+
+
+def test_directory_acl():
+    p = os.path.join("/tmp/", random_str())
+    with Directory(p, facl_rules=["u:26:rwx"]) as d:
+        x = subprocess.check_output(["getfacl", str(d)]).decode("utf-8")
+        assert "user:26:rwx" in x.split("\n")
+    assert not os.path.isdir(str(d))
 
 
 def test_probes_port():
@@ -28,17 +76,12 @@ def test_probes_port():
     probe = Probe(timeout=20, fnc=check_port, host=host, port=port)
     assert not check_port(host=host, port=port)
 
-    bckgrnd = run_cmd(["nc", "-l", str(port)], raw=True, stdout=subprocess.PIPE)
+    bckgrnd = subprocess.Popen(["nc", "-l", str(port)], stdout=subprocess.PIPE)
     assert probe.run()
     assert not check_port(host=host, port=port)
     bckgrnd.kill()
     assert not check_port(host=host, port=port)
 
-    bckgrnd = run_cmd(["nc", "-l", str(port)], raw=True, stdout=subprocess.PIPE)
+    subprocess.Popen(["nc", "-l", str(port)], stdout=subprocess.PIPE)
     assert probe.run()
     assert not check_port(host=host, port=port)
-
-
-if __name__ == "__main__":
-    test_volume()
-    test_probes_port()

@@ -1,4 +1,4 @@
-from conu.utils.core import random_str
+from conu.utils import random_str
 
 
 def test_random_str():

@@ -2,10 +2,12 @@
 
 import os
 import subprocess
+import tempfile
 import time
 
 from conu.backend.docker import DockerImage, DockerContainer, DockerRunCommand
-from conu.utils.core import Volume, run_cmd, check_port
+from conu.utils.filesystem import Directory
+from conu.utils import check_port, run_cmd
 from conu.utils.probes import Probe
 from avocado import Test
 
@@ -55,14 +57,14 @@ class Basic(Test):
 
     def test_additional_volume(self):
         container = PostgresqlContainerFactory()
-        vol1 = Volume(target="/tmp", force_selinux=True)
-        container.postgre_start(docker_additional_params=[vol1.docker()])
-        self.assertTrue(container.life_check())
-        container.container.execute("touch /tmp/xx")
-        time.sleep(1)
-        run_cmd("test -f %s/xx" % vol1.get_source())
-        container.clean()
-        vol1.clean()
+        with Directory(tempfile.mkdtemp()) as d:
+            container.postgre_start(
+                docker_additional_params=["%s:%s" % (d.path, "/tmp")])
+            self.assertTrue(container.life_check())
+            container.container.execute("touch /tmp/xx")
+            time.sleep(1)
+            run_cmd("test -f %s/xx" % d.path)
+            container.clean()
 
     def test_NoOpFails(self):
         self.assertRaises(subprocess.CalledProcessError,
@@ -79,19 +81,20 @@ class Basic(Test):
 
 class MoreComplexExample(Test):
     def test_connection_between(self):
-        volume = Volume(facl=['u:26:rwx'], target="/tmp")
-        master = PostgresqlContainerFactory()
-        master.postgre_start(docker_additional_params=[volume.docker()])
+        with Directory(tempfile.mkdtemp(), facl_rules=['u:26:rwx']) as d:
+            master = PostgresqlContainerFactory()
+            master.postgre_start(
+                docker_additional_params=["%s:%s" % (d.path, "/tmp")])
 
-        self.assertTrue(master.life_check())
+            self.assertTrue(master.life_check())
 
-        slave = PostgresqlContainerFactory(start=True)
-        self.assertTrue(slave.life_check())
+            slave = PostgresqlContainerFactory(start=True)
+            self.assertTrue(slave.life_check())
 
-        output = slave.container.execute("PGPASSWORD=%s psql -h %s -c 'SELECT 1' %s %s" %
-                      (master.password, master.container.get_IPv4s()[0],
-                       master.database, master.user))
+            output = slave.container.execute("PGPASSWORD=%s psql -h %s -c 'SELECT 1' %s %s" %
+                          (master.password, master.container.get_IPv4s()[0],
+                           master.database, master.user))
 
-        self.assertIn("1", output)
-        master.clean()
-        slave.clean()
+            self.assertIn("1", output)
+            master.clean()
+            slave.clean()

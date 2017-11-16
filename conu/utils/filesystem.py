@@ -1,0 +1,145 @@
+# -*- coding: utf-8 -*-
+from __future__ import print_function, unicode_literals
+
+import logging
+import os
+import shutil
+
+from conu.apidefs.exceptions import ConuException
+from conu.utils import get_selinux_status, run_cmd
+
+
+logger = logging.getLogger(__name__)
+
+
+class Directory(object):
+    """
+    This class allows you to do advanced operations on filesystem directories, think of it
+    as mkdir on steroids
+    """
+    def __init__(self, path, mode=None, facl_rules=None, selinux_context=None, selinux_user=None,
+                 selinux_role=None, selinux_type=None, selinux_range=None):
+        """
+        For more info on SELinux, please see `$ man chcon`. An exception will be thrown if
+        selinux_context is specified an at least one of other SELinux fields.
+
+        :param path: str, path to the directory we will operate on
+        :param mode: int, octal representation of permission bits, e.g. 0o0400
+        :param facl_rules: list of str, file ACLs to apply, e.g. "u:26:rwx"
+        :param selinux_context: str, set directory to this SELinux context (this is the full
+                context with all the field, example: "system_u:object_r:unlabeled_t:s0")
+        :param selinux_user: str, user in the target security context, e.g. "system_u"
+        :param selinux_role: str, role in the target security context, e.g. "object_r"
+        :param selinux_type: str, type in the target security context, e.g. "unlabeled_t"
+        :param selinux_range: str, range in the target security context, e.g. "s0"
+        """
+        if selinux_context and any([selinux_user, selinux_role, selinux_type, selinux_range]):
+            raise ConuException("Don't specify both selinux_context and some of its fields.")
+        if any([selinux_context, selinux_user, selinux_role, selinux_type, selinux_range]):
+            if get_selinux_status() == "Disabled":
+                raise ConuException("You are trying to apply SELinux labels, but SELinux is "
+                                    "disabled on this system. Please enable it first.")
+        # TODO: if path is None, we could do mkdtemp
+        self.path = path
+        self.mode = mode
+        self.selinux_context = selinux_context
+        self.selinux_user = selinux_user
+        self.selinux_role = selinux_role
+        self.selinux_type = selinux_type
+        self.selinux_range = selinux_range
+        self.facl_rules = facl_rules
+
+        # if set to True, then the directory is created and set up
+        self._initialized = False
+
+    def __enter__(self):
+        self.initialize()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.clean()
+
+    def clean(self):
+        """
+        remove the directory we operated on
+
+        :return: None
+        """
+        if self._initialized:
+            logger.info("brace yourselves, removing %r", self.path)
+            shutil.rmtree(self.path)
+
+    def initialize(self):
+        """
+        create the directory if needed and configure it
+
+        :return: None
+        """
+        if not self._initialized:
+            logger.info("initializing %r", self)
+            if not os.path.exists(self.path):
+                if self.mode is not None:
+                    os.makedirs(self.path, mode=self.mode)
+                else:
+                    os.makedirs(self.path)
+            self._set_mode()
+            self._add_facl_rules()
+            self._set_selinux_context()
+            self._initialized = True
+            logger.info("initialized")
+            return
+        logger.info("%r was already initialized", self)
+
+    def _set_selinux_context(self):
+        """
+        set SELinux context or fields using chcon program
+
+        :return: None
+        """
+        # FIXME: do this using python API if possible
+        if self.selinux_context:
+            logger.debug("setting SELinux context of %s to %s", self.path, self.selinux_context)
+            run_cmd(["chcon", self.selinux_context, self.path])
+        if any([self.selinux_user, self.selinux_role, self.selinux_type, self.selinux_range]):
+            logger.debug("setting SELinux fields of %s", self.path, self.selinux_context)
+            # chcon [OPTION]... [-u USER] [-r ROLE] [-l RANGE] [-t TYPE] FILE...
+            pairs = [("-u", self.selinux_user), ("-r", self.selinux_role),
+                     ("-l", self.selinux_range), ("-t", self.selinux_type)]
+            c = ["chcon"]
+            for p in pairs:
+                if p[1]:
+                    c += p
+            c += [self.path]
+            run_cmd(c)
+
+    def _set_mode(self):
+        """
+        set permission bits if needed using python API os.chmod
+
+        :return: None
+        """
+        if self.mode is not None:
+            logger.debug("changing permission bits of %s to %s", self.path, oct(self.mode))
+            os.chmod(self.path, self.mode)
+
+    def _add_facl_rules(self):
+        """
+        apply ACL rules on the directory using setfacl program
+
+        :return: None
+        """
+        # we are not using pylibacl b/c it's only for python 2
+        if self.facl_rules:
+            logger.debug("adding ACLs %s to %s", self.facl_rules, self.path)
+            r = ",".join(self.facl_rules)
+            run_cmd(["setfacl", "-m", r, self.path])
+
+    def __repr__(self):
+        return "Directory(path=%s, mode=%s, context=%s)" % (self.path, self.mode, self.context)
+
+    def __unicode__(self):
+        return str(self.path)
+
+    def __str__(self):
+        # we could be possible initialize here, but... it's tricky
+        return str(self.path)
