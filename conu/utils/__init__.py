@@ -12,6 +12,14 @@ logger = logging.getLogger(__name__)
 
 
 def check_port(port, host="127.0.0.1", timeout=10):
+    """
+    connect to port on host and return True on success
+
+    :param port: int, port to check
+    :param host: string, host address
+    :param timeout: int, number of seconds spent trying
+    :return: bool
+    """
     logger.info("trying to open connection to %s:%s", host, port)
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
@@ -29,6 +37,11 @@ def check_port(port, host="127.0.0.1", timeout=10):
 
 
 def get_selinux_status():
+    """
+    get SELinux status of host
+
+    :return: string, one of enforced, permissive, disabled
+    """
     # alternatively, we could read directly from /sys/fs/selinux/{enforce,status}, but status is
     # empty (why?) and enforce doesn't tell whether SELinux is disabled or not
     o = run_cmd(["getenforce"], return_output=True).strip()  # libselinux-utils

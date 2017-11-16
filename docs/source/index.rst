@@ -20,10 +20,3 @@ Contribution
 =============
 
 In case of issues, questions and suggestions, please, file an issue or pull request on https://github.com/fedora-modularity/conu where conu is stored and maintained.
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

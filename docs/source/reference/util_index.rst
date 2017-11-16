@@ -4,5 +4,6 @@ Utilities
 .. toctree::
    :maxdepth: 2
 
-   volumes.rst
+   util_filesystem.rst
    probe.rst
+   other.rst
