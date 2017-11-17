@@ -1,0 +1,2 @@
+# Documentation requirements
+# Now exists for future cases and to clear up confusion between project and documentation dependencies

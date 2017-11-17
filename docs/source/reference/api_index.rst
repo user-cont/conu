@@ -6,5 +6,5 @@ API definition
 
    image.rst
    container.rst
-   filesystem.rst
+   filesystem_api.rst
 
