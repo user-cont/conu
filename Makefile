@@ -27,7 +27,8 @@ build-test-container: container
 test: build-test-container test-in-container test-doc-examples
 
 test-in-container:
-	docker run --net=host --rm -v /dev:/dev:ro -v /var/lib/docker:/var/lib/docker:ro --security-opt label=disable --cap-add SYS_ADMIN -ti -v /var/run/docker.sock:/var/run/docker.sock -v ${PWD}:/src -v ${PWD}/pytest-container.ini:/src/pytest.ini $(TEST_IMAGE_NAME) make exec-test
+	@# use it like this: `make test-in-container TEST_TARGET=tests/integration/test_utils.py`
+	docker run --net=host --rm -v /dev:/dev:ro -v /var/lib/docker:/var/lib/docker:ro --security-opt label=disable --cap-add SYS_ADMIN -ti -v /var/run/docker.sock:/var/run/docker.sock -v ${PWD}:/src -v ${PWD}/pytest-container.ini:/src/pytest.ini $(TEST_IMAGE_NAME) make exec-test TEST_TARGET=$(TEST_TARGET)
 
 test-doc-examples:
 	for file in $$(ls $(DOC_EXAMPLE_PATH)) ; do \
