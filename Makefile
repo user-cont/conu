@@ -36,3 +36,6 @@ test-doc-examples:
 		PYTHONPATH=$(CURDIR) python2 $(DOC_EXAMPLE_PATH)/$$file || exit ; \
 		PYTHONPATH=$(CURDIR) python3 $(DOC_EXAMPLE_PATH)/$$file || exit ; \
 	done
+
+check-release:
+	PYTHONPATH=$(CURDIR) pytest -m "release" -s ./tests/release/test_release.py

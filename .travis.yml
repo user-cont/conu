@@ -1,0 +1,20 @@
+language: python
+sudo: false
+notifications:
+  email: false
+python:
+- '2.7'
+- '3.5'
+- '3.6'
+install:
+- pip install -r requirements.txt
+deploy:
+  provider: pypi
+  user: conu-pypi-releases
+  password:
+    secure: nyKlDIXzy2r1835UKxipCAgpPCL60ELHX60mV9pcBB2lpTDr1W5QAqXKMuJ7+bbwh0VkbLciOIs3whmyxhi4AN+g5hJSYgfkhY8ZdpG1ggfU1EDT5zrCPjRNyIpu9ifUKF5F7Q2l6sR0DhBfIp2HvFOpl2j/4gwSjX8zEfcaVDT+/zXS2NS/4/Z30Y2yTngfzmWGOe1TAPvT8QGt6fhdyd2Jlg4cUuSgvFLLLlX72gvhcxkY6lm/CjQObWs5EGVja/kKu+Go5GHmxBcNjNK2XeshbtmHdOXvqhn2BBSSQ8oZtOpr7TGADBVYJutrpbk92ENR+HUzk1WlPQzxg68NmijaCHDLkfzoqbvl7IM1U36iAwwHxS+2XU17JJg7EONlKtUWFdcuJ85azgoG36bI798X5HKcclI66Cm6TXRJQtVWe16/vsXSXhHMI02+hrdEjcY8m6jecBBYfb2GMA0DUYSJXCPdPfUTBUxR4QPh4kwEQESPw9P75yKgKJbsuu2zzizA/oPwZsjt0gGMIstqNhUIeVOkZTYI9Hpdyib7MT9qd7dIC3SxnNA0tyRahQBN5I/2IZPfGmiaPsrGNUNjAdaq0X9C6TzCXqq2sJKezbntIirIIRF9ZOqlcTqfDbHfe+gjsslg21kqFFt2smpqhmoYrA1u8zzyuBSbs7pm+38=
+  distributions: sdist bdist_wheel
+  on:
+    tags: true
+after_deploy:
+  - make check-release

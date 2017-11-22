@@ -36,10 +36,15 @@ def get_requirements():
 
 data_files = {}
 
+# https://packaging.python.org/guides/single-sourcing-package-version/
+version = {}
+with open("./conu/version.py") as fp:
+    exec(fp.read(), version)
+
 
 setup(
     name='conu',
-    version="0.0.1",
+    version=version["__version__"],
     description='Container testing library',
     keywords='containers,testing',
     author='Red Hat',

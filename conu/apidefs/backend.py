@@ -7,9 +7,7 @@ import logging
 
 from conu.apidefs.container import Container
 from conu.apidefs.image import Image
-
-
-__version__ = "0.0.1-alpha"
+from conu import version
 
 
 def set_logging(
@@ -66,4 +64,4 @@ class Backend(object):
         logging_kwargs = logging_kwargs or {}
         logger = set_logging(level=self.logging_level, **logging_kwargs)
         logger.info("conu has initiated, welcome to the party!")
-        logger.debug("conu version: %s", __version__)
+        logger.debug("conu version: %s", version.__version__)
