@@ -4,15 +4,15 @@ Utilities related to manipulate docker images.
 """
 from __future__ import print_function, unicode_literals
 
-import os
 import logging
+import os
 import shutil
 import subprocess
 
-from conu.apidefs.exceptions import ConuException
 from conu.apidefs.filesystem import Filesystem
 from conu.apidefs.image import Image, S2Image
 from conu.backend.docker.client import get_client
+from conu.exceptions import ConuException
 from conu.utils import run_cmd
 
 logger = logging.getLogger(__name__)

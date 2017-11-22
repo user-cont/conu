@@ -8,9 +8,7 @@ import time
 from .constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, THE_HELPER_IMAGE, \
     FEDORA_REPOSITORY
 
-from conu.backend.docker import DockerContainer, DockerImage
-from conu.backend.docker.container import DockerRunCommand
-from conu.utils.probes import Probe
+from conu import DockerContainer, DockerImage, DockerRunCommand, Probe
 
 from six import string_types
 

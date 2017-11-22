@@ -1,6 +1,6 @@
 from __future__ import print_function, unicode_literals
 
-from conu.backend.docker.container import DockerRunCommand
+from conu import DockerRunCommand
 
 
 def test_dr_command_class():

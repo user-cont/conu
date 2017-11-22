@@ -7,7 +7,7 @@ import shutil
 import pwd
 
 
-from conu.apidefs.exceptions import ConuException
+from conu.exceptions import ConuException
 from conu.utils import get_selinux_status, run_cmd
 
 import six

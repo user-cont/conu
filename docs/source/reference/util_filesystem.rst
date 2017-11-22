@@ -1,6 +1,6 @@
 Filesystem utilities
 =====================
 
-.. autoclass:: conu.utils.filesystem.Directory
+.. autoclass:: conu.Directory
    :members:
 

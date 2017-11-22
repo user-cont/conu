@@ -3,8 +3,7 @@ from __future__ import print_function, unicode_literals
 
 import subprocess
 
-from conu.utils import check_port
-from conu.utils.probes import Probe
+from conu import check_port, Probe
 
 
 def test_probes_port():

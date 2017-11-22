@@ -1,5 +1,4 @@
-from conu.backend.docker.image import S2IDockerImage
-from conu.backend.docker.container import DockerContainer
+from conu import S2IDockerImage, DockerContainer
 
 source = 'https://github.com/dbarnett/python-helloworld'
 image = S2IDockerImage("centos/python-35-centos7")

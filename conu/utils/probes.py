@@ -3,6 +3,7 @@ import logging
 
 from multiprocessing import Process, Queue
 
+from conu.exceptions import ConuException
 
 logger = logging.getLogger(__name__)
 
@@ -139,9 +140,9 @@ class Probe(object):
                 raise e
 
 
-class ProbeTimeout(Exception):
+class ProbeTimeout(ConuException):
     pass
 
 
-class CountExceeded(Exception):
+class CountExceeded(ConuException):
     pass

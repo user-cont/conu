@@ -1,13 +1,10 @@
 import logging
 import os
 import shutil
-
+import xattr
 from tempfile import mkdtemp
 
-import xattr
-
-from conu.apidefs.exceptions import ConuException
-
+from conu.exceptions import ConuException
 
 logger = logging.getLogger(__name__)
 

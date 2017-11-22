@@ -6,9 +6,7 @@ import subprocess
 
 import pytest
 
-from conu.apidefs.exceptions import ConuException
-from conu.utils import random_str
-from conu.utils.filesystem import Directory
+from conu import ConuException, random_str, Directory
 
 
 def test_random_str():

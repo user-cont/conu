@@ -7,15 +7,15 @@ import functools
 import logging
 import subprocess
 
+from docker.errors import NotFound
+
+from conu.apidefs.container import Container
 from conu.apidefs.filesystem import Filesystem
 from conu.backend.docker.client import get_client
 from conu.backend.docker.image import DockerImage
-from conu.apidefs.container import Container
-from conu.apidefs.exceptions import ConuException
+from conu.exceptions import ConuException
 from conu.utils import check_port, run_cmd
 from conu.utils.probes import Probe
-
-from docker.errors import NotFound
 
 logger = logging.getLogger(__name__)
 
