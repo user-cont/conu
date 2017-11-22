@@ -36,7 +36,7 @@ class Container(object):
         :param path: str, path within the reqest, e.g. "/api/version"
         :param method: str, HTTP method
         :param host: str, if None, set self.get_IPv4s()[0]
-        :param port: str, if None, set to self.get_ports()[0]
+        :param port: str or int, if None, set to self.get_ports()[0]
         :param json: bool, should we expect json?
         :param data: data to send (can be dict, list, str)
         :return: dict
@@ -44,7 +44,7 @@ class Container(object):
         host = host or self.get_IPv4s()[0]
         port = port or self.get_ports()[0]
         url = urlunsplit(
-            ("http", host + ":" + port, path, "", "")
+            ("http", "%s:%s" % (host, port), path, "", "")
         )
         return self.http_session.request(method, url, json=json, data=data)
 
