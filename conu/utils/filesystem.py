@@ -4,9 +4,13 @@ from __future__ import print_function, unicode_literals
 import logging
 import os
 import shutil
+import pwd
+
 
 from conu.apidefs.exceptions import ConuException
 from conu.utils import get_selinux_status, run_cmd
+
+import six
 
 
 logger = logging.getLogger(__name__)
@@ -17,7 +21,8 @@ class Directory(object):
     This class allows you to do advanced operations on filesystem directories, think of it
     as mkdir on steroids
     """
-    def __init__(self, path, mode=None, facl_rules=None, selinux_context=None, selinux_user=None,
+    def __init__(self, path, mode=None, user_owner=None, group_owner=None, facl_rules=None,
+                 selinux_context=None, selinux_user=None,
                  selinux_role=None, selinux_type=None, selinux_range=None):
         """
         For more info on SELinux, please see `$ man chcon`. An exception will be thrown if
@@ -25,6 +30,8 @@ class Directory(object):
 
         :param path: str, path to the directory we will operate on
         :param mode: int, octal representation of permission bits, e.g. 0o0400
+        :param user_owner: str or int, uid or username to own the directory
+        :param group_owner: str or int, gid or group name to own the directory
         :param facl_rules: list of str, file ACLs to apply, e.g. "u:26:rwx"
         :param selinux_context: str, set directory to this SELinux context (this is the full
                 context with all the field, example: "system_u:object_r:unlabeled_t:s0")
@@ -39,6 +46,10 @@ class Directory(object):
             if get_selinux_status() == "Disabled":
                 raise ConuException("You are trying to apply SELinux labels, but SELinux is "
                                     "disabled on this system. Please enable it first.")
+
+        # if set to True, it means the directory is created and set up
+        self._initialized = False
+
         # TODO: if path is None, we could do mkdtemp
         self.path = path
         self.mode = mode
@@ -49,8 +60,22 @@ class Directory(object):
         self.selinux_range = selinux_range
         self.facl_rules = facl_rules
 
-        # if set to True, then the directory is created and set up
-        self._initialized = False
+        # os.chown wants int
+        if isinstance(user_owner, six.string_types):
+            try:
+                self.owner = pwd.getpwnam(user_owner)[2]
+            except KeyError as ex:
+                raise ConuException("User %r not found, error message: %r" % (user_owner, ex))
+        else:
+            self.owner = user_owner
+        if isinstance(group_owner, six.string_types):
+            try:
+                self.group = pwd.getpwnam(group_owner)[3]
+            except KeyError as ex:
+                raise ConuException("Group %r not found, error message: %r" % (group_owner, ex))
+        else:
+            self.group = group_owner
+        # make this thing last so that all the variables are initialized
 
     def __enter__(self):
         self.initialize()
@@ -85,6 +110,7 @@ class Directory(object):
             self._set_mode()
             self._add_facl_rules()
             self._set_selinux_context()
+            self._set_ownership()
             self._initialized = True
             logger.info("initialized")
             return
@@ -112,6 +138,21 @@ class Directory(object):
             c += [self.path]
             run_cmd(c)
 
+    def _set_ownership(self):
+        """
+        set ownership of the directory: user and group
+
+        :return: None
+        """
+        if self.owner or self.group:
+            args = (
+                self.path,
+                self.owner if self.owner else -1,
+                self.group if self.group else -1,
+            )
+            logger.debug("changing ownership bits of %s to %s", self.path, args)
+            os.chown(*args)
+
     def _set_mode(self):
         """
         set permission bits if needed using python API os.chmod
@@ -135,7 +176,7 @@ class Directory(object):
             run_cmd(["setfacl", "-m", r, self.path])
 
     def __repr__(self):
-        return "Directory(path=%s, mode=%s, context=%s)" % (self.path, self.mode, self.context)
+        return "Directory(path=%s)" % (self.path, )
 
     def __unicode__(self):
         return str(self.path)
