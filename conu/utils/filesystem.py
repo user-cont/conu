@@ -15,13 +15,27 @@ logger = logging.getLogger(__name__)
 class Directory(object):
     """
     This class allows you to do advanced operations on filesystem directories, think of it
-    as mkdir on steroids
+    as mkdir on steroids.
+
+    We advise you to use it as a context manager:
+
+        with Directory("/funky/path", mode=0o0700) as directory:
+            ...
+
+    The directory is being removed once leaving the context. You can also easily do it on your own:
+
+        directory = Directory("/funky/path", mode=0o0700)
+        try:
+            directory.initialize()
+            ...
+        finally:
+            directory.clean()
     """
     def __init__(self, path, mode=None, facl_rules=None, selinux_context=None, selinux_user=None,
                  selinux_role=None, selinux_type=None, selinux_range=None):
         """
         For more info on SELinux, please see `$ man chcon`. An exception will be thrown if
-        selinux_context is specified an at least one of other SELinux fields.
+        selinux_context is specified and at least one of other SELinux fields.
 
         :param path: str, path to the directory we will operate on
         :param mode: int, octal representation of permission bits, e.g. 0o0400

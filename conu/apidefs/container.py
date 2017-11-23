@@ -102,7 +102,7 @@ class Container(object):
 
     def get_IPv4s(self):
         """
-        Return all knwon IPv4 addresses of this container. It may be possible
+        Return all known IPv4 addresses of this container. It may be possible
         that the container has disabled networking: in that case, the list is
         empty
 
@@ -112,7 +112,7 @@ class Container(object):
 
     def get_IPv6s(self):
         """
-        Return all knwon IPv6 addresses of this container. It may be possible
+        Return all known IPv6 addresses of this container. It may be possible
         that the container has disabled networking: in that case, the list is
         empty
 
@@ -192,7 +192,7 @@ class Container(object):
     # exec is a keyword in python
     def execute(self, command, **kwargs):
         """
-        execute a command in this container -- usually the container needs to be running
+        execute a command in this container
 
         :param command: list of str, command to execute in the container
         :param kwargs: specific parameters for container engines exec methods
