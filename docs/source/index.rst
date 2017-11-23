@@ -1,12 +1,12 @@
-.. Conu documentation master file, created by
+.. conu documentation master file, created by
    sphinx-quickstart on Fri Nov 10 13:42:30 2017.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-ConU - Container Utilities for image testing
+conu - Container Utilities for image testing
 =============================================
 
-ConU gathers utilities that come in handy when creating tests, provides nice logging for troubleshooting and is easily extensible.
+conu gathers utilities that come in handy when creating tests, provides nice logging for troubleshooting and is easily extensible.
 
 .. toctree::
    :maxdepth: 2

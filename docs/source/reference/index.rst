@@ -1,4 +1,4 @@
-Conu API Reference
+conu API Reference
 ===================
 
 .. toctree::

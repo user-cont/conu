@@ -1,7 +1,7 @@
 Installation
 ============
 
-Conu is now in initial phase. To try it out use following commands:
+conu is now in initial phase. To try it out use following commands:
 
 Clone repository:
 
