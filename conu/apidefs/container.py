@@ -148,6 +148,26 @@ class Container(object):
         """
         raise NotImplementedError("open_connection method is not implemented")
 
+    def copy_to(self, src, dest):
+        """
+        copy a file or a directory from host system to a container
+
+        :param src: str, path to a file or a directory on host system
+        :param dest: str, path to a file or a directory within container
+        :return: None
+        """
+        raise NotImplementedError("copy_to method is not implemented")
+
+    def copy_from(self, src, dest):
+        """
+        copy a file or a directory from container to host system
+
+        :param src: str, path to a file or a directory within container or image
+        :param dest: str, path to a file or a directory on host system
+        :return: None
+        """
+        raise NotImplementedError("copy_from method is not implemented")
+
     @classmethod
     def run_via_binary(cls, image, *args, **kwargs):
         """

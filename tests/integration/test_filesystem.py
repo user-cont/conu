@@ -42,17 +42,6 @@ class TestDockerContainerFilesystem(object):
             content = fs.read_file("/etc/system-release")
         assert content == "Fedora release 26 (Twenty Six)\n"
 
-    # since live mounts don't work well, let's skip testing them for now
-    # also live mounts are not supported in overlay backend
-    # def test_copy_to(self, tmpdir):
-    #     content = b"gardener did it"
-    #     p = tmpdir.join("secret")
-    #     p.write(content)
-
-    #     with self.container.mount() as fs:
-    #         fs.copy_to(str(p), "/")
-    #     assert content == self.container.execute(["cat", "/secret"])
-
     def test_copy_from(self, tmpdir):
         with self.container.mount() as fs:
             fs.copy_from("/etc/system-release", str(tmpdir))
