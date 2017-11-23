@@ -11,7 +11,7 @@ import subprocess
 logger = logging.getLogger(__name__)
 
 
-def check_port(port, host="127.0.0.1", timeout=10):
+def check_port(port, host, timeout=10):
     """
     connect to port on host and return True on success
 
