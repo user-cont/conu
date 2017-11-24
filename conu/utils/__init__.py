@@ -49,6 +49,15 @@ def get_selinux_status():
     return o
 
 
+def is_selinux_disabled():
+    """
+    check if SELinux is disabled
+
+    :return: bool, True if disabled, False otherwise
+    """
+    return get_selinux_status() == "Disabled"
+
+
 def random_str(size=10):
     """
     create random string of selected size
