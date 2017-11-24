@@ -67,7 +67,7 @@ def test_webserver():
             assert 'You no take candle!' in container.http_request(
                 path="/candle", port=port).content.decode("utf-8")
         finally:
-            container.stop()
+            container.kill()
             container.rm()
 
 

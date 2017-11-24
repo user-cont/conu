@@ -313,6 +313,16 @@ class DockerContainer(Container):
         """
         self.d.stop(self.get_id())
 
+    def kill(self, signal=None):
+        """
+        send a signal to this container (bear in mind that the process won't have time
+        to shutdown properly and your service may end up in an inconsistent state)
+
+        :param signal: str or int, signal to use for killing the container (SIGKILL by default)
+        :return: None
+        """
+        self.d.kill(self.get_id(), signal=signal)
+
     def rm(self, force=False, volumes=False, **kwargs):
         """
         remove this container; kwargs indicate that some container runtimes
