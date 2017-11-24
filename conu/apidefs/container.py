@@ -144,7 +144,7 @@ class Container(object):
         container exposes only a single port, connect to it, otherwise raise an exception
 
         :param port: int or None
-        :return: list of int
+        :return: socket
         """
         raise NotImplementedError("open_connection method is not implemented")
 
@@ -239,9 +239,10 @@ class Container(object):
 
     def kill(self, signal=None):
         """
-        kill this container
+        kill this container (bear in mind that the process won't have time to shutdown properly
+        and your service may end up in an inconsistent state)
 
-        :param signal: str, signal to use for killing the container
+        :param signal: str or int, signal to use for killing the container (SIGKILL by default)
         :return: None
         """
         raise NotImplementedError("kill method is not implemented")

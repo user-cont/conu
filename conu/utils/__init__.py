@@ -40,7 +40,7 @@ def get_selinux_status():
     """
     get SELinux status of host
 
-    :return: string, one of enforced, permissive, disabled
+    :return: string, one of Enforced, Permissive, Disabled
     """
     # alternatively, we could read directly from /sys/fs/selinux/{enforce,status}, but status is
     # empty (why?) and enforce doesn't tell whether SELinux is disabled or not
