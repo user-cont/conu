@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals
 
+import os
 import subprocess
 import time
 
@@ -39,13 +40,51 @@ def test_container():
         image,
         DockerRunCommand(command=["cat"], additional_opts=["-i", "-t"])
     )
-    assert "Config" in c.inspect()
-    assert "Config" in c.get_metadata()
-    assert c.get_id() == str(c)
-    assert repr(c)
-    assert isinstance(c.get_id(), string_types)
-    c.stop()
-    c.rm()
+    try:
+        assert "Config" in c.inspect()
+        assert "Config" in c.get_metadata()
+        assert c.get_id() == str(c)
+        assert repr(c)
+        assert isinstance(c.get_id(), string_types)
+    finally:
+        c.stop()
+        c.rm()
+
+
+def test_copy_to(tmpdir):
+    content = b"gardener did it"
+    p = tmpdir.join("secret")
+    p.write(content)
+
+    image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+    c = DockerContainer.run_via_binary(
+        image,
+        DockerRunCommand(command=["cat"], additional_opts=["-i", "-t"])
+    )
+    try:
+        c.copy_to(str(p), "/")
+        assert content == c.execute(["cat", "/secret"])
+    finally:
+        c.stop()
+        c.rm()
+
+
+def test_copy_from(tmpdir):
+    image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+    c = DockerContainer.run_via_binary(
+        image,
+        DockerRunCommand(command=["cat"], additional_opts=["-i", "-t"])
+    )
+    try:
+        c.copy_from("/etc/fedora-release", str(tmpdir))
+        with open(os.path.join(str(tmpdir), "fedora-release")) as fd:
+            assert fd.read() == "Fedora release 26 (Twenty Six)\n"
+
+        c.copy_from("/etc", str(tmpdir))
+        os.path.exists(os.path.join(str(tmpdir), "passwd"))
+    finally:
+        c.stop()
+        c.rm()
 
 
 def test_networking_scenario():

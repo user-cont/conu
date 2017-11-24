@@ -191,6 +191,32 @@ class DockerContainer(Container):
         """
         Probe(timeout=timeout, fnc=functools.partial(self.is_port_open, port), **probe_kwargs).run()
 
+    def copy_to(self, src, dest):
+        """
+        copy a file or a directory from host system to a container
+
+        :param src: str, path to a file or a directory on host system
+        :param dest: str, path to a file or a directory within container
+        :return: None
+        """
+        # using `docker cp` b/c put_archive is too complicated
+        logger.debug("copying %s from host to container at %s", src, dest)
+        cmd = ["docker", "cp", src, "%s:%s" % (self.get_id(), dest)]
+        run_cmd(cmd)
+
+    def copy_from(self, src, dest):
+        """
+        copy a file or a directory from container or image to host system.
+
+        :param src: str, path to a file or a directory within container or image
+        :param dest: str, path to a file or a directory on host system
+        :return: None
+        """
+        # using `docker cp` b/c get_archive is too complicated
+        logger.debug("copying %s from host to container at %s", src, dest)
+        cmd = ["docker", "cp", "%s:%s" % (self.get_id(), src), dest]
+        run_cmd(cmd)
+
     @classmethod
     def run_via_binary(cls, image, run_command_instance=None, *args, **kwargs):
         """

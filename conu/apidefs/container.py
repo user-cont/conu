@@ -102,7 +102,7 @@ class Container(object):
 
     def get_IPv4s(self):
         """
-        Return all knwon IPv4 addresses of this container. It may be possible
+        Return all known IPv4 addresses of this container. It may be possible
         that the container has disabled networking: in that case, the list is
         empty
 
@@ -112,7 +112,7 @@ class Container(object):
 
     def get_IPv6s(self):
         """
-        Return all knwon IPv6 addresses of this container. It may be possible
+        Return all known IPv6 addresses of this container. It may be possible
         that the container has disabled networking: in that case, the list is
         empty
 
@@ -147,6 +147,26 @@ class Container(object):
         :return: list of int
         """
         raise NotImplementedError("open_connection method is not implemented")
+
+    def copy_to(self, src, dest):
+        """
+        copy a file or a directory from host system to a container
+
+        :param src: str, path to a file or a directory on host system
+        :param dest: str, path to a file or a directory within container
+        :return: None
+        """
+        raise NotImplementedError("copy_to method is not implemented")
+
+    def copy_from(self, src, dest):
+        """
+        copy a file or a directory from container to host system
+
+        :param src: str, path to a file or a directory within container or image
+        :param dest: str, path to a file or a directory on host system
+        :return: None
+        """
+        raise NotImplementedError("copy_from method is not implemented")
 
     @classmethod
     def run_via_binary(cls, image, *args, **kwargs):
@@ -192,7 +212,7 @@ class Container(object):
     # exec is a keyword in python
     def execute(self, command, **kwargs):
         """
-        execute a command in this container -- usually the container needs to be running
+        execute a command in this container
 
         :param command: list of str, command to execute in the container
         :param kwargs: specific parameters for container engines exec methods

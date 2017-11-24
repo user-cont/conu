@@ -83,18 +83,19 @@ class Image(object):
 
     def file_is_present(self, file_path):
         """
-        check if file 'file_path' is present in container
+        check if file specified via 'file_path' is present in the image
 
         :param file_path: str, path to the file
-        :return: True if file exists, False if file does not exist
+        :return: True if file exists, False if the file is missing
         """
-        raise NotImplementedError("get_file method is not implemented")
+        raise NotImplementedError("file_is_present method is not implemented")
 
-    def directory_is_present(self, directory_name):
+    def directory_is_present(self, directory_path):
         """
-        check if directory 'directory_name' is present in container
+        check if directory specified via 'directory_path' is present inside the image; this
+        method raises ConuException if the path exists but is not a directory
 
-        :param directory_name: str, Directory to check
+        :param directory_path: str, directory to check
         :return: True if directory exists, False if directory does not exist
         """
         raise NotImplementedError("directory_is_present is not implemented")
