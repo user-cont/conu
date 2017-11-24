@@ -25,7 +25,7 @@ def check_port(port, host, timeout=10):
     try:
         sock.settimeout(timeout)
         result = sock.connect_ex((host, port))
-        logger.info("was connection successful? %s", result)
+        logger.info("was connection successful? errno: %s", result)
         if result == 0:
             logger.debug('port is opened: %s:%s' % (host, port))
             return True
