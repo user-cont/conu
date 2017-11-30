@@ -46,7 +46,7 @@ def test_container():
         assert isinstance(c.get_id(), string_types)
     finally:
         c.stop()
-        c.rm()
+        c.delete()
 
 
 def test_copy_to(tmpdir):
@@ -64,7 +64,7 @@ def test_copy_to(tmpdir):
         assert content == c.execute(["cat", "/secret"])
     finally:
         c.stop()
-        c.rm()
+        c.delete()
 
 
 def test_copy_from(tmpdir):
@@ -82,7 +82,7 @@ def test_copy_from(tmpdir):
         os.path.exists(os.path.join(str(tmpdir), "passwd"))
     finally:
         c.stop()
-        c.rm()
+        c.delete()
 
 
 def test_networking_scenario():
@@ -117,7 +117,7 @@ def test_networking_scenario():
     assert not cont2.is_running()
     assert not cont.is_running()
     assert secret_text == cont.logs().strip()
-    cont.rm()
+    cont.delete()
 
 
 def test_http_client():
@@ -137,7 +137,7 @@ def test_http_client():
     assert "passwd" in r2.content.decode("utf-8")
     assert r2.ok
     c.stop()
-    c.rm()
+    c.delete()
 
 
 def test_wait_for_status():

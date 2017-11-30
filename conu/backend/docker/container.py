@@ -323,7 +323,7 @@ class DockerContainer(Container):
         """
         self.d.kill(self.get_id(), signal=signal)
 
-    def rm(self, force=False, volumes=False, **kwargs):
+    def delete(self, force=False, volumes=False, **kwargs):
         """
         remove this container; kwargs indicate that some container runtimes
         might accept more parameters

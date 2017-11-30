@@ -247,7 +247,7 @@ class Container(object):
         """
         raise NotImplementedError("kill method is not implemented")
 
-    def rm(self, force=False, **kwargs):
+    def delete(self, force=False, **kwargs):
         """
         remove this container; kwargs indicate that some container runtimes
         might accept more parameters

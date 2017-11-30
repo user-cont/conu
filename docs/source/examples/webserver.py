@@ -68,7 +68,7 @@ def test_webserver():
                 path="/candle", port=port).content.decode("utf-8")
         finally:
             container.kill()
-            container.rm()
+            container.delete()
 
 
 test_webserver()

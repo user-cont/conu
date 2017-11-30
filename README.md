@@ -68,7 +68,7 @@ container = DockerContainer.run_via_binary(image, command)
 
 # cleanup
 container.stop()
-container.rm()
+container.delete()
 ```
 
 # Documentation
