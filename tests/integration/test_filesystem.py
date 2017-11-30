@@ -1,15 +1,13 @@
 import os
 
+import pytest
 import six
-
-from conu.apidefs.exceptions import ConuException
-from .constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
-from conu.backend.docker.container import DockerContainer, DockerRunCommand
-from conu.backend.docker.image import DockerImage
-
 from docker.errors import NotFound
 
-import pytest
+from conu.backend.docker.container import (
+    DockerContainer, DockerRunCommand, DockerImage, ConuException
+)
+from .constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
 
 
 @pytest.mark.requires_atomic_cli

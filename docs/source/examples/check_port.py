@@ -1,5 +1,4 @@
-from conu.backend.docker.image import DockerImage
-from conu.backend.docker.container import DockerContainer, DockerRunCommand
+from conu import DockerImage, DockerContainer, DockerRunCommand
 
 image = DockerImage('centos/httpd-24-centos7')
 image.pull()

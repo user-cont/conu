@@ -1,6 +1,6 @@
 Probe
 ======
 
-.. autoclass:: conu.utils.probes.Probe
+.. autoclass:: conu.Probe
    :members:
 

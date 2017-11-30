@@ -1,5 +1,6 @@
-from conu.utils.probes import Probe, ProbeTimeout, CountExceeded
 import time
+
+from conu import Probe, ProbeTimeout, CountExceeded
 
 import pytest
 
