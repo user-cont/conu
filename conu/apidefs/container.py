@@ -274,10 +274,11 @@ class Container(object):
         """
         raise NotImplementedError("get_status is not implemented")
 
-    def wait(self):
+    def wait(self, timeout):
         """
         Block until the container stops, then return its exit code.
 
+        :param timeout: int, Request timeout
         :return: int, exit code
         """
         raise NotImplementedError("wait is not implemented")

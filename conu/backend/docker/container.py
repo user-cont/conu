@@ -351,11 +351,12 @@ class DockerContainer(Container):
         """
         return self.get_metadata(refresh=True)["State"]["Status"]
 
-    def wait(self):
+    def wait(self, timeout=None):
         """
         Block until the container stops, then return its exit code. Similar to
         the ``docker wait`` command.
 
+        :param timeout: int, Request timeout
         :return: int, exit code
         """
-        return self.d.wait(self.get_id())
+        return self.d.wait(self.get_id(), timeout)
