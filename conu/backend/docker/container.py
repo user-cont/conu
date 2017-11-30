@@ -267,7 +267,7 @@ class DockerContainer(Container):
 
     def start(self):
         """
-        start current container
+        start current container - the container has to be created
 
         :return: None
         """
