@@ -7,4 +7,4 @@ container = DockerContainer.run_via_binary(image, command)
 container.wait_for_port(port=8080, timeout=-1)
 
 container.stop()
-container.rm()
+container.delete()

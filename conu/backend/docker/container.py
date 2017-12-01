@@ -267,7 +267,7 @@ class DockerContainer(Container):
 
     def start(self):
         """
-        start current container
+        start current container - the container has to be created
 
         :return: None
         """
@@ -323,7 +323,7 @@ class DockerContainer(Container):
         """
         self.d.kill(self.get_id(), signal=signal)
 
-    def rm(self, force=False, volumes=False, **kwargs):
+    def delete(self, force=False, volumes=False, **kwargs):
         """
         remove this container; kwargs indicate that some container runtimes
         might accept more parameters
@@ -351,11 +351,12 @@ class DockerContainer(Container):
         """
         return self.get_metadata(refresh=True)["State"]["Status"]
 
-    def wait(self):
+    def wait(self, timeout=None):
         """
         Block until the container stops, then return its exit code. Similar to
         the ``docker wait`` command.
 
+        :param timeout: int, Request timeout
         :return: int, exit code
         """
-        return self.d.wait(self.get_id())
+        return self.d.wait(self.get_id(), timeout)

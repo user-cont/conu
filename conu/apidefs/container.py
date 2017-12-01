@@ -203,7 +203,7 @@ class Container(object):
 
     def start(self):
         """
-        start current container
+        start current container - the container has to be created
 
         :return: None
         """
@@ -247,7 +247,7 @@ class Container(object):
         """
         raise NotImplementedError("kill method is not implemented")
 
-    def rm(self, force=False, **kwargs):
+    def delete(self, force=False, **kwargs):
         """
         remove this container; kwargs indicate that some container runtimes
         might accept more parameters
@@ -274,10 +274,11 @@ class Container(object):
         """
         raise NotImplementedError("get_status is not implemented")
 
-    def wait(self):
+    def wait(self, timeout):
         """
         Block until the container stops, then return its exit code.
 
+        :param timeout: int, Request timeout
         :return: int, exit code
         """
         raise NotImplementedError("wait is not implemented")

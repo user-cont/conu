@@ -29,7 +29,7 @@ class TestDockerContainerFilesystem(object):
     def teardown_class(cls):
         for c in cls.containers_to_remove:
             try:
-                DockerContainer(cls.image, c).rm(force=True, volumes=True)
+                DockerContainer(cls.image, c).delete(force=True, volumes=True)
             except NotFound:  # FIXME: implementation leak, we should own exc for this
                 pass
 

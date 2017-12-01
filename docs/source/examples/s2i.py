@@ -7,4 +7,4 @@ extended_image = image.extend(source, "myapp")
 container = DockerContainer.run_via_binary(extended_image)
 
 container.stop()
-container.rm()
+container.delete()
