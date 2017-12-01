@@ -40,13 +40,22 @@ def get_selinux_status():
     """
     get SELinux status of host
 
-    :return: string, one of enforced, permissive, disabled
+    :return: string, one of Enforced, Permissive, Disabled
     """
     # alternatively, we could read directly from /sys/fs/selinux/{enforce,status}, but status is
     # empty (why?) and enforce doesn't tell whether SELinux is disabled or not
     o = run_cmd(["getenforce"], return_output=True).strip()  # libselinux-utils
     logger.debug("SELinux is %r", o)
     return o
+
+
+def is_selinux_disabled():
+    """
+    check if SELinux is disabled
+
+    :return: bool, True if disabled, False otherwise
+    """
+    return get_selinux_status() == "Disabled"
 
 
 def random_str(size=10):

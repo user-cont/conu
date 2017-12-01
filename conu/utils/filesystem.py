@@ -7,7 +7,7 @@ import shutil
 import pwd
 
 from conu.exceptions import ConuException
-from conu.utils import get_selinux_status, run_cmd
+from conu.utils import run_cmd, is_selinux_disabled
 
 import six
 
@@ -60,7 +60,7 @@ class Directory(object):
         if selinux_context and any([selinux_user, selinux_role, selinux_type, selinux_range]):
             raise ConuException("Don't specify both selinux_context and some of its fields.")
         if any([selinux_context, selinux_user, selinux_role, selinux_type, selinux_range]):
-            if get_selinux_status() == "Disabled":
+            if is_selinux_disabled():
                 raise ConuException("You are trying to apply SELinux labels, but SELinux is "
                                     "disabled on this system. Please enable it first.")
 
