@@ -6,7 +6,6 @@ import os
 import shutil
 import pwd
 
-
 from conu.exceptions import ConuException
 from conu.utils import get_selinux_status, run_cmd
 
@@ -23,17 +22,21 @@ class Directory(object):
 
     We advise you to use it as a context manager:
 
+    ::
+
         with Directory("/funky/path", mode=0o0700) as directory:
-            ...
+            path = os.path.join(directory.path, "my-dir")
 
     The directory is being removed once leaving the context. You can also easily do it on your own:
+
+    ::
 
         directory = Directory("/funky/path", mode=0o0700)
         try:
             directory.initialize()
-            ...
         finally:
             directory.clean()
+
     """
     def __init__(self, path, mode=None, user_owner=None, group_owner=None, facl_rules=None,
                  selinux_context=None, selinux_user=None,
