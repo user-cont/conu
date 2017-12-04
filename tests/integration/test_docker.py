@@ -151,3 +151,16 @@ def test_wait_for_status():
     end = time.time() - start
     assert end > 2, "Probe should wait till container status is exited"
     assert end < 7, "Probe should end when container status is exited"
+
+def test_exit_code():
+    image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+    cmd = DockerRunCommand(command=['sleep', '2'])
+    cont = DockerContainer.run_via_binary(image, cmd)
+    assert cont.is_running() and cont.exit_code() == 0
+    p = Probe(timeout=5, fnc=cont.get_status, expected_retval='exited')
+    p.run()
+
+    assert not cont.is_running() and cont.exit_code() == 0
+    cmd = DockerRunCommand(command=['bubububu'])
+    cont = DockerContainer.run_via_binary(image, cmd)
+    assert cont.exit_code() == 127
