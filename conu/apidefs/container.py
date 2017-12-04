@@ -282,3 +282,11 @@ class Container(object):
         :return: int, exit code
         """
         raise NotImplementedError("wait is not implemented")
+
+    def exit_code(self):
+        """
+        get exit code of container. Return value is 0 for running and created containers
+
+        :return: int
+        """
+        raise NotImplementedError("exit_code is not implemented")

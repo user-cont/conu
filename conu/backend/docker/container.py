@@ -360,3 +360,11 @@ class DockerContainer(Container):
         :return: int, exit code
         """
         return self.d.wait(self.get_id(), timeout)
+
+    def exit_code(self):
+        """
+        get exit code of container. Return value is 0 for running and created containers
+
+        :return: int
+        """
+        return self.get_metadata()["State"]["ExitCode"]
