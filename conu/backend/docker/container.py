@@ -161,16 +161,19 @@ class DockerContainer(Container):
         :return: list of str
         """
         ports = []
-        for p in self.get_metadata(refresh=True)["NetworkSettings"]["Ports"]:
+        container_ports = self.get_metadata(refresh=True)["NetworkSettings"]["Ports"]
+        if not container_ports:
+            return ports
+        for p in container_ports:
             # TODO: gracefullness, error handling
             ports.append(p.split("/")[0])
         return ports
 
     def is_port_open(self, port, timeout=2):
         """
-        check if given port is open and receiving connections
+        check if given port is open and receiving connections on container ip_address
 
-        :param port: int
+        :param port: int, container port
         :param timeout: int, how many seconds to wait for connection; defaults to 2
         :return: True if the connection has been established inside timeout, False otherwise
         """
@@ -178,6 +181,27 @@ class DockerContainer(Container):
         if not addresses:
             return False
         return check_port(port, host=addresses[0], timeout=timeout)
+
+    def get_port_mappings(self, port=None):
+        """
+        for port in container get list of port mappings on host in form:
+        {"HostIp": XX, "HostPort": YY};
+        when port is None - get all port mappings
+
+        :param port: int or None, container port
+        :return: list of dict or None; dict when port=None
+        """
+        port_mappings = self.get_metadata(refresh=True)["NetworkSettings"]["Ports"]
+
+        if not port:
+            return port_mappings
+
+        if str(port) not in self.get_ports():
+            return []
+
+        for p in port_mappings:
+            if p.split("/")[0] == str(port):
+                return port_mappings[p]
 
     def wait_for_port(self, port, timeout=10, **probe_kwargs):
         """
