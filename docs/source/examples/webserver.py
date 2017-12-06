@@ -2,11 +2,7 @@
 import logging
 import os
 
-from conu.backend.docker.container import DockerRunBuilder
-
-from conu import DockerBackend
-from conu.utils import random_str
-from conu.utils.filesystem import Directory
+from conu import DockerRunBuilder, DockerBackend, random_str, Directory
 
 
 # this is the port where we can access our app
