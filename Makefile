@@ -39,3 +39,15 @@ test-doc-examples:
 
 check-release:
 	PYTHONPATH=$(CURDIR) pytest -m "release" -s ./tests/release/test_release.py
+
+sdist:
+	./setup.py sdist -d .
+
+rpm: sdist
+	rpmbuild ./*.spec -bb --define "_sourcedir ${PWD}" --define "_specdir ${PWD}" --define "_builddir ${PWD}" --define "_srcrpmdir ${PWD}" --define "_rpmdir ${PWD}"
+
+srpm: sdist
+	rpmbuild ./*.spec -bs --define "_sourcedir ${PWD}" --define "_specdir ${PWD}" --define "_builddir ${PWD}" --define "_srcrpmdir ${PWD}" --define "_rpmdir ${PWD}"
+
+rpm-in-mock: srpm
+	mock --rebuild -r fedora-27-x86_64 ./*.src.rpm
