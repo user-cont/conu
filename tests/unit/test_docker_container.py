@@ -1,24 +1,24 @@
 from __future__ import print_function, unicode_literals
 
-from conu import DockerRunCommand, DockerImage, DockerContainer
+from conu import DockerRunBuilder, DockerImage, DockerContainer
 
 
 def test_dr_command_class():
-    simple = DockerRunCommand()
+    simple = DockerRunBuilder()
     simple.image_name = "voodoo"
     assert ["docker", "container", "run", "voodoo"] == simple.build()
 
-    complex = DockerRunCommand(additional_opts=["-a", "--foo"])
+    complex = DockerRunBuilder(additional_opts=["-a", "--foo"])
     complex.image_name = "voodoo"
     assert ["docker", "container", "run", "-a", "--foo", "voodoo"] == complex.build()
 
-    w_cmd = DockerRunCommand(command=["x", "y"], additional_opts=["-a", "--foo"])
+    w_cmd = DockerRunBuilder(command=["x", "y"], additional_opts=["-a", "--foo"])
     w_cmd.image_name = "voodoo"
     assert ["docker", "container", "run", "-a", "--foo", "voodoo", "x", "y"] == w_cmd.build()
 
     # test whether mutable params are not mutable across instances
     simple.options += ["spy"]
-    assert "spy" not in DockerRunCommand().options
+    assert "spy" not in DockerRunBuilder().options
 
 
 def test_get_port_mappings():
@@ -26,7 +26,7 @@ def test_get_port_mappings():
     image_tag = "27"
     image = DockerImage(image_name, image_tag)
 
-    command = DockerRunCommand(additional_opts=["-p", "321:123"])
+    command = DockerRunBuilder(additional_opts=["-p", "321:123"])
 
     try:
         image.get_metadata()
@@ -47,7 +47,7 @@ def test_get_port_mappings():
         container.stop()
         container.delete()
 
-    command = DockerRunCommand()
+    command = DockerRunBuilder()
     container = DockerContainer.run_via_binary(image, command)
     try:
         mappings = container.get_port_mappings(123)

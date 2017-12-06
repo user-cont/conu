@@ -20,7 +20,7 @@ from conu.utils.probes import Probe
 logger = logging.getLogger(__name__)
 
 
-class DockerRunCommand(object):
+class DockerRunBuilder(object):
     """
     helper to execute `docker run` -- users can easily change or override anything
     """
@@ -249,13 +249,13 @@ class DockerContainer(Container):
         binary
 
         :param image: instance of Image
-        :param run_command_instance: instance of DockerRunCommand
+        :param run_command_instance: instance of DockerRunBuilder
         :return: instance of DockerContainer
         """
         logger.info("run container via binary in background")
-        run_command_instance = run_command_instance or DockerRunCommand()
-        if not isinstance(run_command_instance, DockerRunCommand):
-            raise ConuException("run_command_instance needs to be an instance of DockerRunCommand")
+        run_command_instance = run_command_instance or DockerRunBuilder()
+        if not isinstance(run_command_instance, DockerRunBuilder):
+            raise ConuException("run_command_instance needs to be an instance of DockerRunBuilder")
         run_command_instance.image_name = image.get_id()
         run_command_instance.options += ["-d"]
         popen_instance = subprocess.Popen(run_command_instance.build(), stdout=subprocess.PIPE)
@@ -282,15 +282,15 @@ class DockerContainer(Container):
         how you should work with instance of Popen
 
         :param image: instance of Image
-        :param run_command_instance: instance of DockerRunCommand
+        :param run_command_instance: instance of DockerRunBuilder
         :param popen_params: dict, keyword arguments passed to Popen constructor
         :param container_name: str, pretty container identifier
         :return: instance of DockerContainer
         """
         logger.info("run container via binary in foreground")
-        run_command_instance = run_command_instance or DockerRunCommand()
-        if not isinstance(run_command_instance, DockerRunCommand):
-            raise ConuException("run_command_instance needs to be an instance of DockerRunCommand")
+        run_command_instance = run_command_instance or DockerRunBuilder()
+        if not isinstance(run_command_instance, DockerRunBuilder):
+            raise ConuException("run_command_instance needs to be an instance of DockerRunBuilder")
         popen_params = popen_params or {}
         run_command_instance.image_name = image.get_id()
         if container_name:
