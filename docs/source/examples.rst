@@ -4,7 +4,7 @@ Examples
 Run a container
 ----------------
 
-For running a container, you need to have image initialized. Image holds information of repository and tag and provides other methods. To run image using docker binary (as user would) use :func:`conu.apidefs.container.Container.run_via_binary` method with :class:`conu.backend.docker.image.Image` and :class:`conu.backend.docker.container.DockerRunCommand` as parameters.
+For running a container, you need to have image initialized. Image holds information of repository and tag and provides other methods. To run image using docker binary (as user would) use :func:`conu.apidefs.container.Container.run_via_binary` method with :class:`conu.backend.docker.image.Image` and :class:`conu.backend.docker.container.DockerRunBuilder` as parameters.
 
 .. include:: examples/run_image.py
    :code: python

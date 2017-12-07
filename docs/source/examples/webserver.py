@@ -2,7 +2,7 @@
 import logging
 import os
 
-from conu.backend.docker.container import DockerRunCommand
+from conu.backend.docker.container import DockerRunBuilder
 
 from conu import DockerBackend
 from conu.utils import random_str
@@ -34,7 +34,7 @@ def run_container(local_dir):
         image.pull()
 
     # helper class to create `docker run ...` -- we want test the same experience as our users
-    b = DockerRunCommand(
+    b = DockerRunBuilder(
         # the command to run in a container
         command=["python3", "-m", "http.server", "--bind", "0.0.0.0", "%d" % port],
         # additional options passed to `run` command

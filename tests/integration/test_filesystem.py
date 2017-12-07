@@ -5,7 +5,7 @@ import six
 from docker.errors import NotFound
 
 from conu.backend.docker.container import (
-    DockerContainer, DockerRunCommand, DockerImage, ConuException
+    DockerContainer, DockerRunBuilder, DockerImage, ConuException
 )
 from .constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
 
@@ -21,7 +21,7 @@ class TestDockerContainerFilesystem(object):
         cls.image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
         cls.container = DockerContainer.run_via_binary(
             cls.image,
-            DockerRunCommand(command=["sleep", "infinity"])
+            DockerRunBuilder(command=["sleep", "infinity"])
         )
         cls.containers_to_remove.append(cls.container.get_id())
 

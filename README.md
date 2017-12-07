@@ -58,12 +58,12 @@ More info [here](http://conu.readthedocs.io/en/latest/installation.html).
 ```python
 # TODO: use more complex example with assertions and stuff
 from conu.backend.docker.image import DockerImage
-from conu.backend.docker.container import DockerContainer, DockerRunCommand
+from conu.backend.docker.container import DockerContainer, DockerRunBuilder
 
 # initialization
 image = DockerImage('fedora', tag='26')
 image.pull()
-command = DockerRunCommand(command=["ls"], additional_opts=["-i", "-t"])
+command = DockerRunBuilder(command=["ls"], additional_opts=["-i", "-t"])
 container = DockerContainer.run_via_binary(image, command)
 
 # cleanup
