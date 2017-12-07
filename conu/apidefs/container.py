@@ -168,39 +168,6 @@ class Container(object):
         """
         raise NotImplementedError("copy_from method is not implemented")
 
-    @classmethod
-    def run_via_binary(cls, image, *args, **kwargs):
-        """
-        create container using provided image and run it in the background; this method is useful
-        to test real user scenarios when users invoke containers using binary and not an API
-
-        :param image: instance of Image
-        :return: instance of Container
-        """
-        raise NotImplementedError("run_via_binary method is not implemented")
-
-    @classmethod
-    def run_via_api(cls, image, container_params):
-        """
-        create container using provided image and run it in the background
-
-        :param image: instance of Image
-        :param container_params: instance of ContainerParameters
-        :return: instance of Container
-        """
-        raise NotImplementedError("run_via_api method is not implemented")
-
-    @classmethod
-    def create(cls, image, container_params):
-        """
-        create container using provided image
-
-        :param image: instance of Image
-        :param container_params: instance of ContainerParameters
-        :return: instance of Container
-        """
-        raise NotImplementedError("create method is not implemented")
-
     def start(self):
         """
         start current container - the container has to be created

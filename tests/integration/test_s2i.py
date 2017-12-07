@@ -1,6 +1,6 @@
 import os
 
-from conu import DockerContainer, DockerRunBuilder, S2IDockerImage
+from conu import DockerRunBuilder, S2IDockerImage
 from .constants import S2I_IMAGE
 
 
@@ -16,7 +16,7 @@ def test_s2i_extending(tmpdir):
     os.chmod(exec_path, 0o755)
     i = S2IDockerImage(S2I_IMAGE)
     ei = i.extend(t, "extended-punchbag")
-    c = DockerContainer.run_via_binary(ei, DockerRunBuilder())
+    c = ei.run_via_binary(DockerRunBuilder())
     c.wait()
     assert c.logs().decode("utf-8").strip() == secret_message
 

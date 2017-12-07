@@ -41,7 +41,7 @@ def run_container(local_dir):
         additional_opts=["-v", "%s:/webroot" % local_dir, "-w", "/webroot"]
     )
     # let's run the container (in the background)
-    container = backend.ContainerClass.run_via_binary(image, run_command_instance=b)
+    container = image.run_via_binary(run_command_instance=b)
     return container
 
 

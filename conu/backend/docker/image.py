@@ -12,6 +12,7 @@ import subprocess
 from conu.apidefs.filesystem import Filesystem
 from conu.apidefs.image import Image, S2Image
 from conu.backend.docker.client import get_client
+from conu.backend.docker.container import DockerContainer, DockerRunBuilder
 from conu.exceptions import ConuException
 from conu.utils import run_cmd
 
@@ -141,6 +142,61 @@ class DockerImage(Image):
         """
         return DockerImageFS(self, mount_point=mount_point)
 
+    def run_via_binary(self, run_command_instance=None, *args, **kwargs):
+        """
+        create container using provided image and run it in background;
+        this method is useful to test real user scenarios when users invoke containers using
+        binary
+
+        :param image: instance of Image
+        :param run_command_instance: instance of DockerRunBuilder
+        :return: instance of DockerContainer
+        """
+        logger.info("run container via binary in background")
+        run_command_instance = run_command_instance or DockerRunBuilder()
+        if not isinstance(run_command_instance, DockerRunBuilder):
+            raise ConuException("run_command_instance needs to be an instance of DockerRunBuilder")
+        run_command_instance.image_name = self.get_id()
+        run_command_instance.options += ["-d"]
+        popen_instance = subprocess.Popen(run_command_instance.build(), stdout=subprocess.PIPE)
+        stdout = popen_instance.communicate()[0].strip().decode("utf-8")
+        if popen_instance.returncode > 0:
+            raise ConuException("Container exited with an error: %s" % popen_instance.returncode)
+        # no error, stdout is the container id
+        return DockerContainer(self, stdout)
+
+    def run_via_binary_in_foreground(
+            self, run_command_instance=None, popen_params=None, container_name=None):
+        """
+        Create container using image and run it in foreground;
+        this method is useful to test real user scenarios when users invoke containers using
+        binary and pass input into the container via STDIN. Please bear in mind that conu doesn't
+        know the ID of the container when created like this, so it's highly recommended to name
+        your container. You are also responsible for checking whether the container exited
+        successfully via:
+
+            container.popen_instance.returncode
+
+        Please consult the documentation for subprocess python module for best practices on
+        how you should work with instance of Popen
+
+        :param run_command_instance: instance of DockerRunBuilder
+        :param popen_params: dict, keyword arguments passed to Popen constructor
+        :param container_name: str, pretty container identifier
+        :return: instance of DockerContainer
+        """
+        logger.info("run container via binary in foreground")
+        run_command_instance = run_command_instance or DockerRunBuilder()
+        if not isinstance(run_command_instance, DockerRunBuilder):
+            raise ConuException("run_command_instance needs to be an instance of DockerRunBuilder")
+        popen_params = popen_params or {}
+        run_command_instance.image_name = self.get_id()
+        if container_name:
+            run_command_instance.options += ["--name", container_name]
+        logger.debug("command = %s", str(run_command_instance))
+        popen_instance = subprocess.Popen(run_command_instance.build(), **popen_params)
+        container_id = None
+        return DockerContainer(self, container_id, popen_instance=popen_instance, name=container_name)
 
 class S2IDockerImage(DockerImage, S2Image):
     def __init__(self, repository, tag="latest"):

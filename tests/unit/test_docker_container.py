@@ -1,6 +1,6 @@
 from __future__ import print_function, unicode_literals
 
-from conu import DockerRunBuilder, DockerImage, DockerContainer
+from conu import DockerRunBuilder, DockerImage
 
 
 def test_dr_command_class():
@@ -33,7 +33,7 @@ def test_get_port_mappings():
     except Exception:
         image.pull()
 
-    container = DockerContainer.run_via_binary(image, command)
+    container = image.run_via_binary(command)
     try:
         mappings = container.get_port_mappings(123)
 
@@ -48,7 +48,7 @@ def test_get_port_mappings():
         container.delete()
 
     command = DockerRunBuilder()
-    container = DockerContainer.run_via_binary(image, command)
+    container = image.run_via_binary(command)
     try:
         mappings = container.get_port_mappings(123)
 

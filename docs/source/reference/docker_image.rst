@@ -4,7 +4,7 @@ Docker Image
 Aside from methods in API definition - :class:`conu.apidefs.image.Image`, DockerImage implements following methods:
 
 .. autoclass:: conu.DockerImage
-   :members: inspect, tag_image
+   :members: inspect, tag_image, run_via_binary_in_foreground
 
 .. autoclass:: conu.DockerImageFS
    :members:

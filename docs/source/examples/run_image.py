@@ -1,9 +1,9 @@
-from conu import DockerImage, DockerContainer, DockerRunBuilder
+from conu import DockerImage, DockerRunBuilder
 
 image = DockerImage('fedora', tag='26')
 image.pull()
 command = DockerRunBuilder(command=["ls"], additional_opts=["-i", "-t"])
-container = DockerContainer.run_via_binary(image, command)
+container = image.run_via_binary(command)
 
 container.stop()
 container.delete()
