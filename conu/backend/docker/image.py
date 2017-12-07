@@ -144,7 +144,7 @@ class DockerImage(Image):
 
     def run_via_binary(self, run_command_instance=None, *args, **kwargs):
         """
-        create container using provided image and run it in background;
+        create a container using this image and run it in background;
         this method is useful to test real user scenarios when users invoke containers using
         binary
 
@@ -168,7 +168,7 @@ class DockerImage(Image):
     def run_via_binary_in_foreground(
             self, run_command_instance=None, popen_params=None, container_name=None):
         """
-        Create container using image and run it in foreground;
+        Create a container using this image and run it in foreground;
         this method is useful to test real user scenarios when users invoke containers using
         binary and pass input into the container via STDIN. Please bear in mind that conu doesn't
         know the ID of the container when created like this, so it's highly recommended to name
