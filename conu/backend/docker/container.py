@@ -259,16 +259,27 @@ class DockerContainer(Container):
         run_command_instance.image_name = image.get_id()
         run_command_instance.options += ["-d"]
         popen_instance = subprocess.Popen(run_command_instance.build(), stdout=subprocess.PIPE)
-        container_id = popen_instance.communicate()[0].strip().decode("utf-8")
-        return cls(image, container_id)
+        stdout = popen_instance.communicate()[0].strip().decode("utf-8")
+        if popen_instance.returncode > 0:
+            raise ConuException("Container exited with an error: %s" % popen_instance.returncode)
+        # no error, stdout is the container id
+        return cls(image, stdout)
 
     @classmethod
     def run_via_binary_in_foreground(
             cls, image, run_command_instance=None, popen_params=None, container_name=None):
         """
-        create container using provided image and run it in foreground;
+        Create container using provided image and run it in foreground;
         this method is useful to test real user scenarios when users invoke containers using
-        binary and pass input into the container via STDIN
+        binary and pass input into the container via STDIN. Please bear in mind that conu doesn't
+        know the ID of the container when created like this, so it's highly recommended to name
+        your container. You are also responsible for checking whether the container exited
+        successfully via:
+
+            container.popen_instance.returncode
+
+        Please consult the documentation for subprocess python module for best practices on
+        how you should work with instance of Popen
 
         :param image: instance of Image
         :param run_command_instance: instance of DockerRunCommand

@@ -5,10 +5,12 @@ import os
 import subprocess
 import time
 
+import pytest
+
 from .constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, THE_HELPER_IMAGE, \
     FEDORA_REPOSITORY
 
-from conu import DockerContainer, DockerImage, DockerRunCommand, Probe
+from conu import DockerContainer, DockerImage, DockerRunCommand, Probe, ConuException
 
 from six import string_types
 
@@ -85,6 +87,22 @@ def test_copy_from(tmpdir):
         c.delete()
 
 
+def test_container_create_failed():
+    image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+    # should raise an exc, there is no such command: waldo; we need to find waldo first
+    with pytest.raises(ConuException):
+        DockerContainer.run_via_binary(
+            image,
+            DockerRunCommand(command=["waldo"])
+        )
+    c = DockerContainer.run_via_binary_in_foreground(
+        image,
+        DockerRunCommand(command=["waldo"])
+    )
+    c.popen_instance.communicate()
+    assert c.popen_instance.returncode > 0
+
+
 def test_networking_scenario():
     """
     Listen via netcat in one container, send a secret message to the container via another one.
@@ -152,6 +170,7 @@ def test_wait_for_status():
     assert end > 2, "Probe should wait till container status is exited"
     assert end < 7, "Probe should end when container status is exited"
 
+
 def test_exit_code():
     image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
     cmd = DockerRunCommand(command=['sleep', '2'])
@@ -161,6 +180,7 @@ def test_exit_code():
     p.run()
 
     assert not cont.is_running() and cont.exit_code() == 0
-    cmd = DockerRunCommand(command=['bubububu'])
+    cmd = DockerRunCommand(command=['bash', '-c', "exit 42"])
     cont = DockerContainer.run_via_binary(image, cmd)
-    assert cont.exit_code() == 127
+    cont.wait()
+    assert cont.exit_code() == 42
