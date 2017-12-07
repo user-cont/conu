@@ -10,7 +10,7 @@ import pytest
 from .constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, THE_HELPER_IMAGE, \
     FEDORA_REPOSITORY
 
-from conu import DockerContainer, DockerImage, DockerRunBuilder, Probe, ConuException
+from conu import DockerImage, DockerRunBuilder, Probe, ConuException
 
 from six import string_types
 
@@ -36,8 +36,7 @@ def test_container():
     Basic tests of interacting with a container
     """
     image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
-    c = DockerContainer.run_via_binary(
-        image,
+    c = image.run_via_binary(
         DockerRunBuilder(command=["cat"], additional_opts=["-i", "-t"])
     )
     try:
@@ -57,8 +56,7 @@ def test_copy_to(tmpdir):
     p.write(content)
 
     image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
-    c = DockerContainer.run_via_binary(
-        image,
+    c = image.run_via_binary(
         DockerRunBuilder(command=["cat"], additional_opts=["-i", "-t"])
     )
     try:
@@ -71,8 +69,7 @@ def test_copy_to(tmpdir):
 
 def test_copy_from(tmpdir):
     image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
-    c = DockerContainer.run_via_binary(
-        image,
+    c = image.run_via_binary(
         DockerRunBuilder(command=["cat"], additional_opts=["-i", "-t"])
     )
     try:
@@ -91,12 +88,10 @@ def test_container_create_failed():
     image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
     # should raise an exc, there is no such command: waldo; we need to find waldo first
     with pytest.raises(ConuException):
-        DockerContainer.run_via_binary(
-            image,
+        image.run_via_binary(
             DockerRunBuilder(command=["waldo"])
         )
-    c = DockerContainer.run_via_binary_in_foreground(
-        image,
+    c = image.run_via_binary_in_foreground(
         DockerRunBuilder(command=["waldo"])
     )
     c.popen_instance.communicate()
@@ -109,7 +104,7 @@ def test_networking_scenario():
     """
     image = DockerImage(THE_HELPER_IMAGE)
     r1 = DockerRunBuilder(command=["nc", "-l", "-k", "0.0.0.0", "1234"])
-    cont = DockerContainer.run_via_binary(image, r1)
+    cont = image.run_via_binary(r1)
     # FIXME: wait
     time.sleep(0.2)
     assert cont.is_running()
@@ -121,8 +116,8 @@ def test_networking_scenario():
 
     r2 = DockerRunBuilder(command=["nc", cont.get_IPv4s()[0], "1234"])
     r2.options = ["-i", "--rm"]
-    cont2 = DockerContainer.run_via_binary_in_foreground(
-        image, r2, popen_params={"stdin": subprocess.PIPE}, container_name="test-container")
+    cont2 = image.run_via_binary_in_foreground(
+        r2, popen_params={"stdin": subprocess.PIPE}, container_name="test-container")
     # FIXME: wait
     time.sleep(1)
     assert "" == cont.logs().decode("utf-8").strip()
@@ -140,8 +135,7 @@ def test_networking_scenario():
 
 def test_http_client():
     image = DockerImage(FEDORA_REPOSITORY)
-    c = DockerContainer.run_via_binary(
-        image,
+    c = image.run_via_binary(
         DockerRunBuilder(command=["python3", "-m", "http.server", "--bind", "0.0.0.0 8000"])
     )
     c.start()
@@ -161,7 +155,7 @@ def test_http_client():
 def test_wait_for_status():
     image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
     cmd = DockerRunBuilder(command=['sleep', '2'])
-    cont = DockerContainer.run_via_binary(image, cmd)
+    cont = image.run_via_binary(cmd)
 
     start = time.time()
     p = Probe(timeout=6, fnc=cont.get_status, expected_retval='exited')
@@ -174,13 +168,13 @@ def test_wait_for_status():
 def test_exit_code():
     image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
     cmd = DockerRunBuilder(command=['sleep', '2'])
-    cont = DockerContainer.run_via_binary(image, cmd)
+    cont = image.run_via_binary(cmd)
     assert cont.is_running() and cont.exit_code() == 0
     p = Probe(timeout=5, fnc=cont.get_status, expected_retval='exited')
     p.run()
 
     assert not cont.is_running() and cont.exit_code() == 0
     cmd = DockerRunBuilder(command=['bash', '-c', "exit 42"])
-    cont = DockerContainer.run_via_binary(image, cmd)
+    cont = image.run_via_binary(cmd)
     cont.wait()
     assert cont.exit_code() == 42
