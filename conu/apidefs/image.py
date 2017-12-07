@@ -120,7 +120,7 @@ class Image(object):
 
     def run_via_binary(self, *args, **kwargs):
         """
-        create container using image and run it in the background; this method is useful
+        create a container using this image and run it in the background; this method is useful
         to test real user scenarios when users invoke containers using binary and not an API
 
         :param image: instance of Image
@@ -130,21 +130,21 @@ class Image(object):
 
     def run_via_api(self, container_params):
         """
-        create container using image and run it in the background
+        create a container using this image and run it in the background
 
         :param container_params: instance of ContainerParameters
         :return: instance of Container
         """
         raise NotImplementedError("run_via_api method is not implemented")
 
-    def create(self, container_params):
+    def create_container(self, container_params):
         """
-        create container using image
+        create a container using this image
 
         :param container_params: instance of ContainerParameters
         :return: instance of Container
         """
-        raise NotImplementedError("create method is not implemented")
+        raise NotImplementedError("create_container method is not implemented")
 
 class S2Image:
     """

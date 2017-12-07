@@ -12,11 +12,14 @@ BuildArch:      noarch
 
 BuildRequires:  python2-devel
 BuildRequires:  python2-setuptools
+
+# for docs
+BuildRequires:  python2-docker
 BuildRequires:  python2-sphinx
+BuildRequires:  pyxattr
 
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
-BuildRequires:  python3-sphinx
 
 %description
 `conu` is a library which makes it easy to write tests for your containers
@@ -79,7 +82,7 @@ rm -rf %{pypi_name}.egg-info
 %py2_build
 %py3_build
 # generate html docs
-sphinx-build docs/source html
+PYTHONPATH=${PWD} sphinx-build docs/source html
 # remove the sphinx-build leftovers
 rm -rf html/.{doctrees,buildinfo}
 
