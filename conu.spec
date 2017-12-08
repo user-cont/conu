@@ -1,7 +1,7 @@
 %global pypi_name conu
 
 Name:           %{pypi_name}
-Version:        0.1.0
+Version:        0.1.1
 Release:        1%{?dist}
 Summary:        library which makes it easy to write tests for your containers
 
@@ -107,5 +107,8 @@ rm -rf html/.{doctrees,buildinfo}
 %license LICENSE
 
 %changelog
+* Fri Dec 08 2017 Tomas Tomecek <ttomecek@redhat.com> 0.1.1-1
+- new package built with tito
+
 * Wed Dec 06 2017 Tomas Tomecek <ttomecek@redhat.com> - 0.1.0-1
 - Initial package.
