@@ -249,28 +249,54 @@ class DockerContainer(Container):
         """
         self.d.start(self.get_id())
 
-    def execute(self, command, exec_create_kwargs=None, exec_start_kwargs=None):
+    def execute(self, command, blocking=True, exec_create_kwargs=None, exec_start_kwargs=None):
         """
-        execute a command in this container -- the container needs to be running
+        Execute a command in this container -- the container needs to be running.
+
+        If the command fails, a ConuException is thrown.
+
+        This is a blocking call by default and writes output of the command to logger
+        using the INFO level -- this behavior can be changed if you set
+        the argument `blocking` to `False`.
+
+        If not blocking, you should consume the returned iterator in order to see logs or know
+        when the command finished:
+
+        ::
+
+            for line in container.execute(["ping", "-c", "4", "8.8.8.8"], blocking=False):
+                print(line)
+            print("command finished")
 
         :param command: list of str, command to execute in the container
+        :param blocking: bool, if True blocks until the command finishes
         :param exec_create_kwargs: dict, params to pass to exec_create()
         :param exec_start_kwargs: dict, params to pass to exec_start()
-        :return: str (output) or iterator
+        :return: iterator if non-blocking or list of bytes if blocking
         """
+        logger.info("running command %s", command)
+
         exec_create_kwargs = exec_create_kwargs or {}
         exec_start_kwargs = exec_start_kwargs or {}
+        exec_start_kwargs["stream"] = True  # we want stream no matter what
         exec_i = self.d.exec_create(self.get_id(), command, **exec_create_kwargs)
-        response = self.d.exec_start(exec_i, **exec_start_kwargs)
-        e_inspect = self.d.exec_inspect(exec_i)
-        # FIXME: if not stream
-        if e_inspect["ExitCode"]:
-            logger.error("command failed: %s", command)
-            logger.info("exec metadata: %s", e_inspect)
-            logger.debug("output = %s", response)
-            raise ConuException("failed to execute command %s", command)
-        # maybe return e_inspect too?
-        return response
+        output = self.d.exec_start(exec_i, **exec_start_kwargs)
+        if blocking:
+            response = []
+            for line in output:
+                response.append(line)
+                logger.info("%s", line.decode("utf-8").strip("\n\r"))
+
+            e_inspect = self.d.exec_inspect(exec_i)
+            exit_code = e_inspect["ExitCode"]
+            if exit_code:
+                logger.error("command failed")
+                logger.info("exec metadata: %s", e_inspect)
+                raise ConuException("failed to execute command %s, exit code %s" % (
+                                    command, exit_code))
+            return response
+        # TODO: for interactive use cases we need to provide API so users can do exec_inspect
+        return output
 
     def logs(self, follow=False):
         """
