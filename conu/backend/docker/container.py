@@ -14,6 +14,7 @@ from conu.backend.docker.client import get_client
 from conu.exceptions import ConuException
 from conu.utils import check_port, run_cmd
 from conu.utils.probes import Probe
+from conu.backend.docker.constants import CONU_ARTIFACT_TAG
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ class DockerRunBuilder(object):
 
     def build(self):
         return self.binary + self.global_options + self.command + self.options + \
-            [self.image_name] + self.arguments
+            ["-l", CONU_ARTIFACT_TAG] + [self.image_name] + self.arguments
 
 
 class DockerContainerFS(Filesystem):
