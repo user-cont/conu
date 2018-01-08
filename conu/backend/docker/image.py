@@ -76,12 +76,23 @@ class DockerImage(Image):
             self._id = self.get_metadata(refresh=False)["Id"]
         return self._id
 
-    def pull(self):
+    def pull(self, always=False):
         """
         pull this image
 
+        :param always: bool, when set to false image is not pulled if
+                        it is already found on system; defaults to false
         :return: None
         """
+        present = True
+        try:
+            self.get_metadata()
+        except Exception:
+            present = False
+
+        if present and not always:
+            return
+
         for o in self.d.pull(repository=self.name, tag=self.tag, stream=True):
             logger.debug(o)
 
