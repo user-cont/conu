@@ -169,6 +169,7 @@ class DockerImage(Image):
             raise ConuException("run_command_instance needs to be an instance of DockerRunBuilder")
         run_command_instance.image_name = self.get_id()
         run_command_instance.options += ["-d"]
+        logger.debug("Docker command: %s" % run_command_instance)
         popen_instance = subprocess.Popen(run_command_instance.build(), stdout=subprocess.PIPE)
         stdout = popen_instance.communicate()[0].strip().decode("utf-8")
         if popen_instance.returncode > 0:
