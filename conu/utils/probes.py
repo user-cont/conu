@@ -115,6 +115,7 @@ class Probe(object):
                     else:
                         raise result
                 elif not (result == self.expected_retval):
+                    logger.info("result = %s", result)
                     logger.info("waiting for process to end...")
                     p.join()
                     logger.debug("process ended, about to start another one")
