@@ -46,8 +46,7 @@ def test_container():
         assert repr(c)
         assert isinstance(c.get_id(), string_types)
     finally:
-        c.stop()
-        c.delete()
+        c.delete(force=True)
 
 
 def test_copy_to(tmpdir):
@@ -63,8 +62,7 @@ def test_copy_to(tmpdir):
         c.copy_to(str(p), "/")
         assert content == c.execute(["cat", "/secret"])
     finally:
-        c.stop()
-        c.delete()
+        c.delete(force=True)
 
 
 def test_copy_from(tmpdir):
@@ -80,8 +78,7 @@ def test_copy_from(tmpdir):
         c.copy_from("/etc", str(tmpdir))
         os.path.exists(os.path.join(str(tmpdir), "passwd"))
     finally:
-        c.stop()
-        c.delete()
+        c.delete(force=True)
 
 
 def test_container_create_failed():
@@ -138,18 +135,18 @@ def test_http_client():
     c = image.run_via_binary(
         DockerRunBuilder(command=["python3", "-m", "http.server", "--bind", "0.0.0.0 8000"])
     )
-    c.start()
-    time.sleep(1)  # FIXME: replace by wait once available
-    assert c.is_running()
-    r = c.http_request(port="8000")
-    assert "<!DOCTYPE HTML PUBLIC" in r.content.decode("utf-8")
-    assert r.ok
-    r2 = c.http_request(path="/etc", port="8000")
-    assert "<!DOCTYPE HTML PUBLIC" in r2.content.decode("utf-8")
-    assert "passwd" in r2.content.decode("utf-8")
-    assert r2.ok
-    c.stop()
-    c.delete()
+    try:
+        c.wait_for_port(8000)
+        assert c.is_running()
+        r = c.http_request(port="8000")
+        assert "<!DOCTYPE HTML PUBLIC" in r.content.decode("utf-8")
+        assert r.ok
+        r2 = c.http_request(path="/etc", port="8000")
+        assert "<!DOCTYPE HTML PUBLIC" in r2.content.decode("utf-8")
+        assert "passwd" in r2.content.decode("utf-8")
+        assert r2.ok
+    finally:
+        c.delete(force=True)
 
 
 def test_wait_for_status():
@@ -157,24 +154,33 @@ def test_wait_for_status():
     cmd = DockerRunBuilder(command=['sleep', '2'])
     cont = image.run_via_binary(cmd)
 
-    start = time.time()
-    p = Probe(timeout=6, fnc=cont.get_status, expected_retval='exited')
-    p.run()
-    end = time.time() - start
-    assert end > 2, "Probe should wait till container status is exited"
-    assert end < 7, "Probe should end when container status is exited"
+    try:
+        start = time.time()
+        p = Probe(timeout=6, fnc=cont.get_status, expected_retval='exited')
+        p.run()
+        end = time.time() - start
+        assert end > 2, "Probe should wait till container status is exited"
+        assert end < 7, "Probe should end when container status is exited"
+    finally:
+        cont.delete(force=True)
 
 
 def test_exit_code():
     image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
     cmd = DockerRunBuilder(command=['sleep', '2'])
     cont = image.run_via_binary(cmd)
-    assert cont.is_running() and cont.exit_code() == 0
-    p = Probe(timeout=5, fnc=cont.get_status, expected_retval='exited')
-    p.run()
+    try:
+        assert cont.is_running() and cont.exit_code() == 0
+        p = Probe(timeout=5, fnc=cont.get_status, expected_retval='exited')
+        p.run()
+        assert not cont.is_running() and cont.exit_code() == 0
+    finally:
+        cont.delete(force=True)
 
-    assert not cont.is_running() and cont.exit_code() == 0
     cmd = DockerRunBuilder(command=['bash', '-c', "exit 42"])
     cont = image.run_via_binary(cmd)
-    cont.wait()
-    assert cont.exit_code() == 42
+    try:
+        cont.wait()
+        assert cont.exit_code() == 42
+    finally:
+        cont.delete(force=True)
