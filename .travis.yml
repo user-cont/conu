@@ -19,4 +19,4 @@ deploy:
   on:
     tags: true
 after_deploy:
-  - make check-release
+  - make check-pypi-release
