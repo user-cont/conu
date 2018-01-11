@@ -14,7 +14,9 @@ from conu.apidefs.image import Image, S2Image
 from conu.backend.docker.client import get_client
 from conu.backend.docker.container import DockerContainer, DockerRunBuilder
 from conu.exceptions import ConuException
-from conu.utils import run_cmd
+from conu.utils import run_cmd, mkstemp, mkdtemp
+from conu.utils.probes import Probe
+
 
 logger = logging.getLogger(__name__)
 
@@ -153,13 +155,36 @@ class DockerImage(Image):
         """
         return DockerImageFS(self, mount_point=mount_point)
 
+    def _run_container(self, run_command_instance, callback):
+        """ this is internal method """
+        tmpdir = mkdtemp()
+        tmpfile_fd, tmpfile = mkstemp(dir=tmpdir)
+        # the cid file must not exist
+        os.unlink(tmpfile)
+        container_id, response = None, None
+        try:
+            run_command_instance.options += ["--cidfile=%s" % tmpfile]
+            logger.debug("docker command: %s" % run_command_instance)
+            response = callback()
+            # and we need to wait now; inotify would be better but is way more complicated and
+            # adds dependency
+            Probe(timeout=10, count=10, pause=0.1, fnc=lambda: os.path.exists(tmpfile)).run()
+            with open(tmpfile, 'r') as fd:
+                container_id = fd.read()
+        finally:
+            # we don't have rights to do this, the file is owned by root
+            try:
+                os.unlink(tmpfile)
+            except OSError:
+                logger.info("we were not able to remove temporary file %s", tmpfile)
+        return container_id, response
+
     def run_via_binary(self, run_command_instance=None, *args, **kwargs):
         """
         create a container using this image and run it in background;
         this method is useful to test real user scenarios when users invoke containers using
         binary
 
-        :param image: instance of Image
         :param run_command_instance: instance of DockerRunBuilder
         :return: instance of DockerContainer
         """
@@ -169,23 +194,23 @@ class DockerImage(Image):
             raise ConuException("run_command_instance needs to be an instance of DockerRunBuilder")
         run_command_instance.image_name = self.get_id()
         run_command_instance.options += ["-d"]
-        logger.debug("Docker command: %s" % run_command_instance)
-        popen_instance = subprocess.Popen(run_command_instance.build(), stdout=subprocess.PIPE)
-        stdout = popen_instance.communicate()[0].strip().decode("utf-8")
-        if popen_instance.returncode > 0:
-            raise ConuException("Container exited with an error: %s" % popen_instance.returncode)
-        # no error, stdout is the container id
-        return DockerContainer(self, stdout)
+
+        def callback():
+            try:
+                run_cmd(run_command_instance.build())
+            except subprocess.CalledProcessError as ex:
+                raise ConuException("Container exited with an error: %s" % ex.returncode)
+        container_id, _ = self._run_container(run_command_instance, callback)
+
+        return DockerContainer(self, container_id)
 
     def run_via_binary_in_foreground(
             self, run_command_instance=None, popen_params=None, container_name=None):
         """
         Create a container using this image and run it in foreground;
         this method is useful to test real user scenarios when users invoke containers using
-        binary and pass input into the container via STDIN. Please bear in mind that conu doesn't
-        know the ID of the container when created like this, so it's highly recommended to name
-        your container. You are also responsible for checking whether the container exited
-        successfully via:
+        binary and pass input into the container via STDIN. You are also responsible for
+        checking whether the container exited successfully via:
 
             container.popen_instance.returncode
 
@@ -205,10 +230,13 @@ class DockerImage(Image):
         run_command_instance.image_name = self.get_id()
         if container_name:
             run_command_instance.options += ["--name", container_name]
-        logger.debug("command = %s", str(run_command_instance))
-        popen_instance = subprocess.Popen(run_command_instance.build(), **popen_params)
-        container_id = None
+
+        def callback():
+            return subprocess.Popen(run_command_instance.build(), **popen_params)
+        container_id, popen_instance = self._run_container(run_command_instance, callback)
+
         return DockerContainer(self, container_id, popen_instance=popen_instance, name=container_name)
+
 
 class S2IDockerImage(DockerImage, S2Image):
     def __init__(self, repository, tag="latest"):

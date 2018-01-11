@@ -6,7 +6,7 @@ import random
 import socket
 import string
 import subprocess
-
+import tempfile
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +81,26 @@ def run_cmd(cmd, return_output=False, **kwargs):
     """
     logger.debug("command: %s" % cmd)
     if return_output:
-        return subprocess.check_output(cmd, **kwargs).decode("utf-8")
+        return subprocess.check_output(cmd, stderr=subprocess.STDOUT, **kwargs).decode("utf-8")
     else:
         subprocess.check_call(cmd, **kwargs)
+
+
+def mkstemp(dir=None):
+    """
+    calls tempfile.mkstemp, the temporary file is prefixed with 'conu-'
+
+    :param dir: str, path to dir where the temporary file should be created
+
+    :return: tuple, (fd, filename)
+    """
+    return tempfile.mkstemp(prefix="conu-", dir=dir)
+
+
+def mkdtemp():
+    """
+    calls tempfile.mkdtemp, the temporary directory is prefixed with 'conu-'
+
+    :return: str, path to the directory
+    """
+    return tempfile.mkdtemp(prefix="conu-")

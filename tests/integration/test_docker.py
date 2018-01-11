@@ -2,6 +2,7 @@
 from __future__ import print_function, unicode_literals
 
 import os
+import random
 import subprocess
 import time
 
@@ -100,34 +101,40 @@ def test_networking_scenario():
     Listen via netcat in one container, send a secret message to the container via another one.
     """
     image = DockerImage(THE_HELPER_IMAGE)
-    r1 = DockerRunBuilder(command=["nc", "-l", "-k", "0.0.0.0", "1234"])
+    port = random.randint(9000, 9999)
+    # the reason for host netw is that this test fails for me on rawhide, docker 1.13.1
+    # the information about who is the murderer don't get to cont (docker logs says '')
+    r1 = DockerRunBuilder(command=["bash", "-c", "nc -l -k 0.0.0.0 %s ; sleep 0.1" % port],
+                          additional_opts=["--network=host"])
     cont = image.run_via_binary(r1)
-    # FIXME: wait
-    time.sleep(0.2)
-    assert cont.is_running()
-    assert cont.get_IPv4s()
-    assert cont.is_port_open(1234)
-    assert not cont.is_port_open(2345)
+    try:
+        cont.wait_for_port(port)
+        assert cont.is_running()
+        assert cont.get_IPv4s()
+        assert cont.is_port_open(port)
+        assert not cont.is_port_open(2345)
 
-    secret_text = b"gardener-did-it"
+        secret_text = b"gardener-did-it"
 
-    r2 = DockerRunBuilder(command=["nc", cont.get_IPv4s()[0], "1234"])
-    r2.options = ["-i", "--rm"]
-    cont2 = image.run_via_binary_in_foreground(
-        r2, popen_params={"stdin": subprocess.PIPE}, container_name="test-container")
-    # FIXME: wait
-    time.sleep(1)
-    assert "" == cont.logs().decode("utf-8").strip()
-    assert cont2.is_running()
-    assert cont.is_running()
-    cont2.popen_instance.communicate(input=secret_text + b"\n")
-    # give container time to process
-    time.sleep(1)
-    cont.stop()
-    assert not cont2.is_running()
-    assert not cont.is_running()
-    assert secret_text == cont.logs().strip()
-    cont.delete()
+        command = ["bash", "-c", "nc 127.0.0.1 %s" % port]
+        # command = ["nc", '127.0.0.1', "%s" % port]
+        r2 = DockerRunBuilder(command=command, additional_opts=["--network=host", "-it"])
+        cont2 = image.run_via_binary_in_foreground(r2, popen_params={"stdin": subprocess.PIPE})
+        try:
+            assert "" == cont.logs().decode("utf-8").strip()
+            assert cont2.is_running()
+            assert cont.is_running()
+            cont2.popen_instance.communicate(input=secret_text + b"\n\n\n")
+            # give container time to process
+            time.sleep(0.1)
+
+            def callback():
+                return secret_text == cont.logs().strip()
+            Probe(timeout=10, pause=0.1, count=15, fnc=callback).run()
+        finally:
+            cont2.delete(force=True)
+    finally:
+        cont.delete(force=True)
 
 
 def test_http_client():
