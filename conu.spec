@@ -7,7 +7,7 @@ Summary:        library which makes it easy to write tests for your containers
 
 License:        GPLv3+
 URL:            https://github.com/fedora-modularity/conu
-Source0:        %{pypi_name}-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/source/c/%{pypi_name}/%{pypi_name}-%{version}.tar.gz
 BuildArch:      noarch
 
 BuildRequires:  python2-devel
