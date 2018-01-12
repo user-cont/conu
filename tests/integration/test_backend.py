@@ -1,6 +1,6 @@
 import logging
 
-from .constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
+from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
 
 from conu import DockerImage, DockerRunBuilder, DockerBackend
 from conu.backend.docker.client import get_client

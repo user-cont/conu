@@ -1,5 +1,6 @@
 from __future__ import print_function, unicode_literals
 
+from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
 from conu import DockerRunBuilder, DockerImage
 from conu.backend.docker.constants import CONU_ARTIFACT_TAG
 
@@ -23,16 +24,10 @@ def test_dr_command_class():
 
 
 def test_get_port_mappings():
-    image_name = "registry.fedoraproject.org/fedora"
-    image_tag = "27"
-    image = DockerImage(image_name, image_tag)
+    image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
 
-    command = DockerRunBuilder(additional_opts=["-p", "321:123"])
-
-    try:
-        image.get_metadata()
-    except Exception:
-        image.pull()
+    # the container needs to be running in order to get port mappings
+    command = DockerRunBuilder(additional_opts=["-p", "321:123", "-i"])
 
     container = image.run_via_binary(command)
     try:
@@ -45,8 +40,7 @@ def test_get_port_mappings():
         assert len(mappings) == 1
         assert mappings == {'123/tcp': [{'HostIp': '0.0.0.0', 'HostPort': '321'}]}
     finally:
-        container.stop()
-        container.delete()
+        container.delete(force=True)
 
     command = DockerRunBuilder()
     container = image.run_via_binary(command)
@@ -55,5 +49,4 @@ def test_get_port_mappings():
 
         assert not mappings
     finally:
-        container.stop()
-        container.delete()
+        container.delete(force=True)

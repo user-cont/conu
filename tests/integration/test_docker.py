@@ -2,13 +2,12 @@
 from __future__ import print_function, unicode_literals
 
 import os
-import random
 import subprocess
 import time
 
 import pytest
 
-from .constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, THE_HELPER_IMAGE, \
+from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, \
     FEDORA_REPOSITORY
 
 from conu import DockerImage, DockerRunBuilder, Probe, ConuException

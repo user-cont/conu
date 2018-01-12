@@ -181,9 +181,12 @@ class DockerContainer(Container):
 
     def get_port_mappings(self, port=None):
         """
-        for port in container get list of port mappings on host in form:
-        {"HostIp": XX, "HostPort": YY};
-        when port is None - get all port mappings
+        Get list of port mappings between container and host. The format of dicts is:
+
+            {"HostIp": XX, "HostPort": YY};
+
+        When port is None - return all port mappings. The container needs
+        to be running, otherwise this returns an empty list.
 
         :param port: int or None, container port
         :return: list of dict or None; dict when port=None
