@@ -21,7 +21,7 @@ check: test
 container:
 	docker build --network host --tag=$(CONU_REPOSITORY) .
 
-build-test-container: container
+build-test-container:
 	docker build --network host --tag=$(TEST_IMAGE_NAME) -f ./Dockerfile.tests .
 
 test: build-test-container test-in-container test-doc-examples
