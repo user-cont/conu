@@ -1,7 +1,7 @@
 import os
 
 from conu import DockerRunBuilder, S2IDockerImage
-from .constants import S2I_IMAGE
+from ..constants import S2I_IMAGE
 
 
 def test_s2i_extending(tmpdir):

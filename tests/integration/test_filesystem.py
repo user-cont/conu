@@ -8,7 +8,7 @@ from conu.backend.docker.container import (
     DockerContainer, DockerRunBuilder, ConuException
 )
 from conu.backend.docker.image import DockerImage
-from .constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
+from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
 
 
 @pytest.mark.requires_atomic_cli

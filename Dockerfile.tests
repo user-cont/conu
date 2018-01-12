@@ -1,4 +1,4 @@
-FROM docker.io/modularitycontainers/conu
+FROM docker.io/modularitycontainers/conu:dev
 
 ENV PYTHONDONTWRITEBYTECODE=yes-please
 

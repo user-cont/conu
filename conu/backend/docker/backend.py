@@ -13,8 +13,6 @@ from conu.backend.docker.constants import CONU_ARTIFACT_TAG
 logger = logging.getLogger(__name__)
 
 
-# TODO: use docker-py
-# TODO: write some tests for this backend class
 class DockerBackend(Backend):
     """
     This class groups classes related to a specific backend.

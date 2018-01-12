@@ -10,7 +10,7 @@ import logging
 import subprocess
 
 # fails when doing absolute import
-from .constants import FEDORA_MINIMAL_IMAGE, THE_HELPER_IMAGE, FEDORA_REPOSITORY, S2I_IMAGE
+from ..constants import FEDORA_MINIMAL_IMAGE, THE_HELPER_IMAGE, FEDORA_REPOSITORY, S2I_IMAGE
 
 import pytest
 

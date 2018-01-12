@@ -7,7 +7,7 @@ import time
 
 import pytest
 
-from .constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, THE_HELPER_IMAGE, \
+from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, \
     FEDORA_REPOSITORY
 
 from conu import DockerImage, DockerRunBuilder, Probe, ConuException
@@ -46,8 +46,7 @@ def test_container():
         assert repr(c)
         assert isinstance(c.get_id(), string_types)
     finally:
-        c.stop()
-        c.delete()
+        c.delete(force=True)
 
 
 def test_copy_to(tmpdir):
@@ -63,8 +62,7 @@ def test_copy_to(tmpdir):
         c.copy_to(str(p), "/")
         assert content == c.execute(["cat", "/secret"])
     finally:
-        c.stop()
-        c.delete()
+        c.delete(force=True)
 
 
 def test_copy_from(tmpdir):
@@ -80,8 +78,7 @@ def test_copy_from(tmpdir):
         c.copy_from("/etc", str(tmpdir))
         os.path.exists(os.path.join(str(tmpdir), "passwd"))
     finally:
-        c.stop()
-        c.delete()
+        c.delete(force=True)
 
 
 def test_container_create_failed():
@@ -98,39 +95,22 @@ def test_container_create_failed():
     assert c.popen_instance.returncode > 0
 
 
-def test_networking_scenario():
-    """
-    Listen via netcat in one container, send a secret message to the container via another one.
-    """
-    image = DockerImage(THE_HELPER_IMAGE)
-    r1 = DockerRunBuilder(command=["nc", "-l", "-k", "0.0.0.0", "1234"])
-    cont = image.run_via_binary(r1)
-    # FIXME: wait
-    time.sleep(0.2)
-    assert cont.is_running()
-    assert cont.get_IPv4s()
-    assert cont.is_port_open(1234)
-    assert not cont.is_port_open(2345)
-
-    secret_text = b"gardener-did-it"
-
-    r2 = DockerRunBuilder(command=["nc", cont.get_IPv4s()[0], "1234"])
-    r2.options = ["-i", "--rm"]
-    cont2 = image.run_via_binary_in_foreground(
-        r2, popen_params={"stdin": subprocess.PIPE}, container_name="test-container")
-    # FIXME: wait
-    time.sleep(1)
-    assert "" == cont.logs().decode("utf-8").strip()
-    assert cont2.is_running()
-    assert cont.is_running()
-    cont2.popen_instance.communicate(input=secret_text + b"\n")
-    # give container time to process
-    time.sleep(1)
-    cont.stop()
-    assert not cont2.is_running()
-    assert not cont.is_running()
-    assert secret_text == cont.logs().strip()
-    cont.delete()
+def test_interactive_container():
+    image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+    command = ["bash"]
+    r = DockerRunBuilder(command=command, additional_opts=["-i"])
+    cont = image.run_via_binary_in_foreground(
+        r, popen_params={"stdin": subprocess.PIPE, "stdout": subprocess.PIPE})
+    try:
+        assert "" == cont.logs().decode("utf-8").strip()
+        assert cont.is_running()
+        time.sleep(0.1)
+        cont.popen_instance.stdin.write(b"echo palacinky\n")
+        cont.popen_instance.stdin.flush()
+        time.sleep(0.2)
+        assert b"palacinky" in cont.popen_instance.stdout.readline()
+    finally:
+        cont.delete(force=True)
 
 
 def test_http_client():
@@ -138,18 +118,18 @@ def test_http_client():
     c = image.run_via_binary(
         DockerRunBuilder(command=["python3", "-m", "http.server", "--bind", "0.0.0.0 8000"])
     )
-    c.start()
-    time.sleep(1)  # FIXME: replace by wait once available
-    assert c.is_running()
-    r = c.http_request(port="8000")
-    assert "<!DOCTYPE HTML PUBLIC" in r.content.decode("utf-8")
-    assert r.ok
-    r2 = c.http_request(path="/etc", port="8000")
-    assert "<!DOCTYPE HTML PUBLIC" in r2.content.decode("utf-8")
-    assert "passwd" in r2.content.decode("utf-8")
-    assert r2.ok
-    c.stop()
-    c.delete()
+    try:
+        c.wait_for_port(8000)
+        assert c.is_running()
+        r = c.http_request(port="8000")
+        assert "<!DOCTYPE HTML PUBLIC" in r.content.decode("utf-8")
+        assert r.ok
+        r2 = c.http_request(path="/etc", port="8000")
+        assert "<!DOCTYPE HTML PUBLIC" in r2.content.decode("utf-8")
+        assert "passwd" in r2.content.decode("utf-8")
+        assert r2.ok
+    finally:
+        c.delete(force=True)
 
 
 def test_wait_for_status():
@@ -157,24 +137,33 @@ def test_wait_for_status():
     cmd = DockerRunBuilder(command=['sleep', '2'])
     cont = image.run_via_binary(cmd)
 
-    start = time.time()
-    p = Probe(timeout=6, fnc=cont.get_status, expected_retval='exited')
-    p.run()
-    end = time.time() - start
-    assert end > 2, "Probe should wait till container status is exited"
-    assert end < 7, "Probe should end when container status is exited"
+    try:
+        start = time.time()
+        p = Probe(timeout=6, fnc=cont.get_status, expected_retval='exited')
+        p.run()
+        end = time.time() - start
+        assert end > 2, "Probe should wait till container status is exited"
+        assert end < 7, "Probe should end when container status is exited"
+    finally:
+        cont.delete(force=True)
 
 
 def test_exit_code():
     image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
     cmd = DockerRunBuilder(command=['sleep', '2'])
     cont = image.run_via_binary(cmd)
-    assert cont.is_running() and cont.exit_code() == 0
-    p = Probe(timeout=5, fnc=cont.get_status, expected_retval='exited')
-    p.run()
+    try:
+        assert cont.is_running() and cont.exit_code() == 0
+        p = Probe(timeout=5, fnc=cont.get_status, expected_retval='exited')
+        p.run()
+        assert not cont.is_running() and cont.exit_code() == 0
+    finally:
+        cont.delete(force=True)
 
-    assert not cont.is_running() and cont.exit_code() == 0
     cmd = DockerRunBuilder(command=['bash', '-c', "exit 42"])
     cont = image.run_via_binary(cmd)
-    cont.wait()
-    assert cont.exit_code() == 42
+    try:
+        cont.wait()
+        assert cont.exit_code() == 42
+    finally:
+        cont.delete(force=True)
