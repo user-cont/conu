@@ -4,10 +4,27 @@ Definition for a backend class and logging initialization
 from __future__ import print_function, unicode_literals
 
 import logging
+import shutil
 
 from conu.apidefs.container import Container
 from conu.apidefs.image import Image
 from conu import version
+from conu.utils import mkdtemp
+
+
+_backend_tmpdir = None
+
+
+def get_backend_tmpdir():
+    """
+    provide tmpdir which is scoped for the whole backend
+
+    :return: str, path to the temporary directory
+    """
+    global _backend_tmpdir
+    if _backend_tmpdir is None:
+        _backend_tmpdir = mkdtemp()
+    return _backend_tmpdir
 
 
 def set_logging(
@@ -60,8 +77,20 @@ class Backend(object):
         :param logging_kwargs: dict, additional keyword arguments for logger set up, for more info
                                 see docstring of set_logging function
         """
+        self.tmpdir = get_backend_tmpdir()
+
         self.logging_level = logging_level
         logging_kwargs = logging_kwargs or {}
-        logger = set_logging(level=self.logging_level, **logging_kwargs)
-        logger.info("conu has initiated, welcome to the party!")
-        logger.debug("conu version: %s", version.__version__)
+        self.logger = set_logging(level=self.logging_level, **logging_kwargs)
+        self.logger.info("conu has initiated, welcome to the party!")
+        self.logger.debug("conu version: %s", version.__version__)
+
+    # would be much better to enforce this functionality via context manager
+    def __del__(self):
+        def onerror(fnc, path, excinfo):
+            # we might not have rights to do this, the files could be owned by root
+            self.logger.info("we were not able to remove temporary file %s: %s", path, excinfo[1])
+        shutil.rmtree(self.tmpdir, onerror=onerror)
+        self.tmpdir = None
+        global _backend_tmpdir
+        _backend_tmpdir = None

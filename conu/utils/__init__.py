@@ -104,3 +104,8 @@ def mkdtemp():
     :return: str, path to the directory
     """
     return tempfile.mkdtemp(prefix="conu-")
+
+
+def random_tmp_filename():
+    """ generate string which can be used as a filename for temporary file """
+    return "conu-" + random_str(32)

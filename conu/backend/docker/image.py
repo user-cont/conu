@@ -9,12 +9,13 @@ import os
 import shutil
 import subprocess
 
+from conu.apidefs.backend import get_backend_tmpdir
 from conu.apidefs.filesystem import Filesystem
 from conu.apidefs.image import Image, S2Image
 from conu.backend.docker.client import get_client
 from conu.backend.docker.container import DockerContainer, DockerRunBuilder
 from conu.exceptions import ConuException
-from conu.utils import run_cmd, mkstemp, mkdtemp
+from conu.utils import run_cmd, random_tmp_filename
 from conu.utils.probes import Probe
 
 
@@ -157,26 +158,16 @@ class DockerImage(Image):
 
     def _run_container(self, run_command_instance, callback):
         """ this is internal method """
-        tmpdir = mkdtemp()
-        tmpfile_fd, tmpfile = mkstemp(dir=tmpdir)
+        tmpfile = os.path.join(get_backend_tmpdir(), random_tmp_filename())
         # the cid file must not exist
-        os.unlink(tmpfile)
-        container_id, response = None, None
-        try:
-            run_command_instance.options += ["--cidfile=%s" % tmpfile]
-            logger.debug("docker command: %s" % run_command_instance)
-            response = callback()
-            # and we need to wait now; inotify would be better but is way more complicated and
-            # adds dependency
-            Probe(timeout=10, count=10, pause=0.1, fnc=lambda: os.path.exists(tmpfile)).run()
-            with open(tmpfile, 'r') as fd:
-                container_id = fd.read()
-        finally:
-            # we don't have rights to do this, the file is owned by root
-            try:
-                os.unlink(tmpfile)
-            except OSError:
-                logger.info("we were not able to remove temporary file %s", tmpfile)
+        run_command_instance.options += ["--cidfile=%s" % tmpfile]
+        logger.debug("docker command: %s" % run_command_instance)
+        response = callback()
+        # and we need to wait now; inotify would be better but is way more complicated and
+        # adds dependency
+        Probe(timeout=10, count=10, pause=0.1, fnc=lambda: os.path.exists(tmpfile)).run()
+        with open(tmpfile, 'r') as fd:
+            container_id = fd.read()
         return container_id, response
 
     def run_via_binary(self, run_command_instance=None, *args, **kwargs):
