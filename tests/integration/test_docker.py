@@ -96,43 +96,20 @@ def test_container_create_failed():
     assert c.popen_instance.returncode > 0
 
 
-def test_networking_scenario():
-    """
-    Listen via netcat in one container, send a secret message to the container via another one.
-    """
-    image = DockerImage(THE_HELPER_IMAGE)
-    port = random.randint(9000, 9999)
-    # the reason for host netw is that this test fails for me on rawhide, docker 1.13.1
-    # the information about who is the murderer don't get to cont (docker logs says '')
-    r1 = DockerRunBuilder(command=["bash", "-c", "nc -l -k 0.0.0.0 %s ; sleep 0.1" % port],
-                          additional_opts=["--network=host"])
-    cont = image.run_via_binary(r1)
+def test_interactive_container():
+    image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+    command = ["bash"]
+    r = DockerRunBuilder(command=command, additional_opts=["-i"])
+    cont = image.run_via_binary_in_foreground(
+        r, popen_params={"stdin": subprocess.PIPE, "stdout": subprocess.PIPE})
     try:
-        cont.wait_for_port(port)
+        assert "" == cont.logs().decode("utf-8").strip()
         assert cont.is_running()
-        assert cont.get_IPv4s()
-        assert cont.is_port_open(port)
-        assert not cont.is_port_open(2345)
-
-        secret_text = b"gardener-did-it"
-
-        command = ["bash", "-c", "nc 127.0.0.1 %s" % port]
-        # command = ["nc", '127.0.0.1', "%s" % port]
-        r2 = DockerRunBuilder(command=command, additional_opts=["--network=host", "-it"])
-        cont2 = image.run_via_binary_in_foreground(r2, popen_params={"stdin": subprocess.PIPE})
-        try:
-            assert "" == cont.logs().decode("utf-8").strip()
-            assert cont2.is_running()
-            assert cont.is_running()
-            cont2.popen_instance.communicate(input=secret_text + b"\n\n\n")
-            # give container time to process
-            time.sleep(0.1)
-
-            def callback():
-                return secret_text == cont.logs().strip()
-            Probe(timeout=10, pause=0.1, count=15, fnc=callback).run()
-        finally:
-            cont2.delete(force=True)
+        time.sleep(0.1)
+        cont.popen_instance.stdin.write(b"echo palacinky\n")
+        cont.popen_instance.stdin.flush()
+        time.sleep(0.2)
+        assert b"palacinky" in cont.popen_instance.stdout.readline()
     finally:
         cont.delete(force=True)
 
