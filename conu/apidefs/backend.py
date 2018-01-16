@@ -85,7 +85,10 @@ class Backend(object):
         self.logger.info("conu has initiated, welcome to the party!")
         self.logger.debug("conu version: %s", version.__version__)
 
-    # would be much better to enforce this functionality via context manager
+    # TODO: provide backend as context manager, this just doesn't work
+    #     File "conu/apidefs/backend.py", line 93, in __del__
+    #   TypeError: 'NoneType' object is not callable
+    #     "'NoneType' object has no attribute 'rmtree'"
     def __del__(self):
         def onerror(fnc, path, excinfo):
             # we might not have rights to do this, the files could be owned by root
