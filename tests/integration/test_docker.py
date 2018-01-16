@@ -60,7 +60,7 @@ def test_copy_to(tmpdir):
     )
     try:
         c.copy_to(str(p), "/")
-        assert content == c.execute(["cat", "/secret"])
+        assert [content] == c.execute(["cat", "/secret"])
     finally:
         c.delete(force=True)
 
@@ -167,3 +167,29 @@ def test_exit_code():
         assert cont.exit_code() == 42
     finally:
         cont.delete(force=True)
+
+
+def test_blocking_execute():
+    image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+    cmd = DockerRunBuilder(command=['sleep', 'infinity'])
+    cont = image.run_via_binary(cmd)
+    cont.execute(["bash", "-c", "exit 0"])
+    assert [b"asd"] == cont.execute(["printf", "asd"])
+    assert [b"asd\nasd"] == cont.execute(["printf", "asd\nasd"])
+    with pytest.raises(ConuException) as ex:
+        cont.execute(["bash", "-c", "exit 110"])
+        assert "exit code 110" in ex.value.message
+        assert "bash" in ex.value.message
+
+
+def test_nonblocking_execute():
+    image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+    cmd = DockerRunBuilder(command=['sleep', 'infinity'])
+    cont = image.run_via_binary(cmd)
+    stream = cont.execute(["bash", "-c", "exit 0"], blocking=False)
+    list(stream)
+    gen = cont.execute(["printf", "asd"], blocking=False)
+    assert [b"asd"] == list(gen)
+    gen = cont.execute(["printf", "asd\nasd"], blocking=False)
+    assert [b"asd\nasd"] == list(gen)
+    cont.execute(["bash", "-c", "sleep 0.01; exit 110"], blocking=False)
