@@ -370,3 +370,14 @@ class DockerContainer(Container):
         :return: int
         """
         return self.get_metadata()["State"]["ExitCode"]
+
+    def active_write(self, message):
+        """
+        Send a message to running container
+
+        :param message: input to be written on container terminal
+        """
+        if not self.is_running():
+            raise ConuException("Container must be running")
+        self.popen_instance.stdin.write(message)
+        self.popen_instance.stdin.flush()
