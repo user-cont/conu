@@ -102,7 +102,7 @@ def test_interactive_container():
     cont = image.run_via_binary_in_foreground(
         r, popen_params={"stdin": subprocess.PIPE, "stdout": subprocess.PIPE})
     try:
-        assert "" == cont.logs().decode("utf-8").strip()
+        assert "" == "".join(list(cont.logs())).strip()
         assert cont.is_running()
         time.sleep(0.1)
         cont.popen_instance.stdin.write(b"echo palacinky\n")
