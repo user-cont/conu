@@ -11,7 +11,7 @@ try:
     assert cont.is_running()
     assert cont.logs() == b''
 
-    cont.active_write(message=b'echo $KEY\n')
+    cont.write_to_stdin(message=b'echo $KEY\n')
     assert cont.logs() == b'space\n'
 finally:
     cont.delete(force=True)

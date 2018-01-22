@@ -26,8 +26,8 @@ clientcont = image.run_via_binary_in_foreground(request_command, popen_params={"
 expected_output = b'Password: \n ?column? \n----------\n        1\n(1 row)\n'
 
 # send requests
-clientcont.active_write(b'pass\n')
-clientcont.active_write(b'SELECT 1;\n')
+clientcont.write_to_stdin(b'pass\n')
+clientcont.write_to_stdin(b'SELECT 1;\n')
 stdout = clientcont.logs()
 
 try:

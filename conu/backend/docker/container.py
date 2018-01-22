@@ -5,6 +5,7 @@ from __future__ import print_function, unicode_literals
 
 import functools
 import logging
+import subprocess
 
 from docker.errors import NotFound
 
@@ -371,13 +372,35 @@ class DockerContainer(Container):
         """
         return self.get_metadata()["State"]["ExitCode"]
 
-    def active_write(self, message):
+    def write_to_stdin(self, message):
         """
-        Send a message to running container
+        Write provided text to container's standard input. In order to make this function work, there needs to be several conditions met:
+         * the container needs to be running
+         * the container needs to have stdin open
+         * the container has to be created using method `run_via_binary_in_foreground`
 
-        :param message: input to be written on container terminal
+        For more info see documentation in run_via_binary_in_foreground()
+
+        :param message: str or bytes, text to be written to container standard input
         """
         if not self.is_running():
-            raise ConuException("Container must be running")
-        self.popen_instance.stdin.write(message)
-        self.popen_instance.stdin.flush()
+            raise ConuException(
+                "Container must be running")
+        if not self.popen_instance:
+            raise ConuException(
+                "This container doesn't seem to be created using method `run_via_binary_in_foreground`.")
+        if not self.popen_instance.stdin:
+            raise ConuException(
+                "Container should be run with stdin redirection.")
+
+        if not isinstance(message, bytes):
+            if isinstance(message, str):
+                message = message.encode()
+            else:
+                raise ConuException(
+                    "Message should be an instance of str or bytes")
+        try:
+            self.popen_instance.stdin.write(message)
+            self.popen_instance.stdin.flush()
+        except subprocess.CalledProcessError as e:
+            raise ConuException(e)
