@@ -113,6 +113,19 @@ def test_interactive_container():
         cont.delete(force=True)
 
 
+def test_container_logs():
+    image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+    command = ["bash", "-c", "for x in `seq 1 5`; do echo $x; done"]
+    r = DockerRunBuilder(command=command)
+    cont = image.run_via_binary(r)
+    try:
+        Probe(timeout=5, fnc=cont.get_status, expected_retval='exited').run()
+        assert not cont.is_running()
+        assert list(cont.logs()) == [b"1\n", b"2\n", b"3\n", b"4\n", b"5\n"]
+    finally:
+        cont.delete(force=True)
+
+
 def test_http_client():
     image = DockerImage(FEDORA_REPOSITORY)
     c = image.run_via_binary(
