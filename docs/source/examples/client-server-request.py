@@ -29,14 +29,18 @@ with DockerBackend(logging_level=logging.DEBUG) as backend:
         request_command,
         popen_params={"stdin": subprocess.PIPE}
     )
-    expected_output = b'Password: \n ?column? \n----------\n        1\n(1 row)\n\n'
+    expected_output = b'Password: \n ?column? \n----------\n        1\n(1 row)'
 
     # send requests
     clientcont.write_to_stdin(b'pass\n')
+    # give postgres time to process
+    time.sleep(0.1)
     clientcont.write_to_stdin(b'SELECT 1;\n')
     # give postgres time to process
-    time.sleep(0.3)
-    stdout = clientcont.logs()
+    time.sleep(0.2)
+    logs_it = clientcont.logs()
+    stdout = b"".join(list(logs_it))
+    stdout = stdout.rstrip()
     try:
         assert stdout == expected_output
         assert clientcont.is_running()
