@@ -200,10 +200,13 @@ class DockerImage(Image):
         """
         Create a container using this image and run it in foreground;
         this method is useful to test real user scenarios when users invoke containers using
-        binary and pass input into the container via STDIN. You are also responsible for
-        checking whether the container exited successfully via:
+        binary and pass input into the container via STDIN. You are also responsible for:
 
-            container.popen_instance.returncode
+         * redirecting STDIN when intending to use container.write_to_stdin afterwards by setting
+              popen_params={"stdin": subprocess.PIPE} during run_via_binary_in_foreground
+
+         * checking whether the container exited successfully via:
+              container.popen_instance.returncode
 
         Please consult the documentation for subprocess python module for best practices on
         how you should work with instance of Popen
