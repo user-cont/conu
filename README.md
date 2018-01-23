@@ -76,52 +76,78 @@ Let's look at a practical example:
 $ cat ./example.py
 ```
 ```python
+#!/usr.bin/python3
 import logging
+import os
 
 from conu import DockerRunBuilder, DockerBackend, random_str, Directory
 
-# our webserver will be accessible on this port
+
+# this is the port where we can access our app
 port = 8765
 
-# we'll utilize this container image
-image_name = "registry.fedoraproject.org/fedora"
-image_tag = "27"
 
-# we'll run our container using docker engine
-backend = DockerBackend(logging_level=logging.DEBUG)
-image = backend.ImageClass(image_name, tag=image_tag)
+# convenience function to run our application - webserver
+def run_container(backend, local_dir):
+    """
+    serve path `local_dir` using the python http webserver in a docker container
 
-# is the image present? if not, pull it
-try:
-    image.get_metadata()
-except Exception:
-    image.pull()
+    :param backend: DockerBackend instance
+    :param local_dir: str, path to the directory, it should exist
+    :return: instance of DockerContainer
+    """
+    image_name = "registry.fedoraproject.org/fedora"
+    image_tag = "27"
 
-# helper class to create `docker run ...` command -- we want to test the same
-# experience as our users
-b = DockerRunBuilder(
-    # the command to run in a container
-    command=["python3", "-m", "http.server", "--bind", "0.0.0.0", "%d" % port],
-)
-# let's run the container (in the background)
-container = image.run_via_binary(run_command_instance=b)
-try:
-    # we need to wait for the webserver to start serving
-    container.wait_for_port(port)
-    # GET on /
-    # this is standard `requests.Response`
-    http_response = container.http_request(path="/", port=port)
-    assert http_response.ok
-    assert '<a href="etc/">etc/</a>' in http_response.content.decode("utf-8")
-    # let's access /etc/passwd
-    etc_passwd = container.http_request(path="/etc/passwd", port=port).content.decode("utf-8")
-    assert 'root:x:0:0:root:/root:' in etc_passwd
-    # we can also access it directly on disk and compare
-    with container.mount() as fs:
-        assert etc_passwd == fs.read_file("/etc/passwd")
-finally:
-    container.kill()
-    container.delete()
+    # we'll run our container using docker engine
+    image = backend.ImageClass(image_name, tag=image_tag)
+
+    # is the image present?
+    try:
+        image.get_metadata()
+    except Exception:
+        image.pull()
+
+    # helper class to create `docker run ...` -- we want test the same experience as our users
+    b = DockerRunBuilder(
+        # the command to run in a container
+        command=["python3", "-m", "http.server", "--bind", "0.0.0.0", "%d" % port],
+        # additional options passed to `run` command
+        additional_opts=["-v", "%s:/webroot" % local_dir, "-w", "/webroot"]
+    )
+    # let's run the container (in the background)
+    container = image.run_via_binary(run_command_instance=b)
+    return container
+
+
+def test_webserver():
+    # let's setup the directory to serve first
+    temp_dir_name = "shiny-%s" % random_str()
+    temp_dir_path = os.path.join("/tmp", temp_dir_name)
+    with DockerBackend(logging_level=logging.DEBUG) as backend:
+        # helper class to create and initialize the dir -- will be removed once we
+        # leave the context manager
+        with Directory(temp_dir_path, mode=0o0700):
+            # let's put some file in it
+            with open(os.path.join(temp_dir_path, "candle"), "w") as fd:
+                fd.write("You no take candle!")
+            container = run_container(backend, temp_dir_path)
+            try:
+                # we need to wait for the webserver to start serving
+                container.wait_for_port(port)
+                # GET on /
+                http_response = container.http_request(path="/", port=port)
+                assert http_response.ok
+                assert '<a href="candle">candle</a>' in http_response.content.decode("utf-8")
+                # now GETting the file
+                assert 'You no take candle!' in container.http_request(
+                    path="/candle", port=port).content.decode("utf-8")
+            finally:
+                container.kill()
+                container.delete()
+
+
+test_webserver()
 ```
 
 Let's run it! Please make sure that you run the provided example as root, since
@@ -133,28 +159,27 @@ Let's run it and look at the logs:
 $ python3 ./example.py
 ```
 ```
-13:55:19.510 backend.py        INFO   conu has initiated, welcome to the party!
-13:55:19.510 backend.py        DEBUG  conu version: 0.1.0
-13:55:19.520 container.py      INFO   run container via binary in background
-13:55:19.875 probes.py         DEBUG  starting probe
-13:55:19.877 probes.py         DEBUG  first process started: pid=434
-13:55:19.879 probes.py         DEBUG  pausing for 1 before next try
-13:55:19.879 probes.py         DEBUG  Running "functools.partial(<bound method DockerContainer.is_port_open of DockerContainer(image=registry.fedoraproject.org/fedora:27, id=4931a079dbf3d52f39f5a530f5bc0025130146b7463f2543f2d8bce5379bd106)>, 8765)" with parameters: "{}":       0/10
-13:55:19.886 __init__.py       INFO   trying to open connection to 172.17.0.2:8765
-13:55:19.887 __init__.py       INFO   was connection successful? errno: 111
-13:55:19.887 __init__.py       DEBUG  port is closed: 172.17.0.2:8765
-13:55:20.881 probes.py         INFO   waiting for process to end...
-13:55:20.881 probes.py         DEBUG  process ended, about to start another one
-13:55:20.883 probes.py         DEBUG  attempt no. 2 started, pid: 463
-13:55:20.884 probes.py         DEBUG  pausing for 1 before next try
-13:55:20.887 probes.py         DEBUG  Running "functools.partial(<bound method DockerContainer.is_port_open of DockerContainer(image=registry.fedoraproject.org/fedora:27, id=4931a079dbf3d52f39f5a530f5bc0025130146b7463f2543f2d8bce5379bd106)>, 8765)" with parameters: "{}":       1/10
-13:55:20.899 __init__.py       INFO   trying to open connection to 172.17.0.2:8765
-13:55:20.900 __init__.py       INFO   was connection successful? errno: 0
-13:55:20.900 __init__.py       DEBUG  port is opened: 172.17.0.2:8765
-13:55:24.193 container.py      DEBUG  ['atomic', 'mount', '4931a079dbf3d52f39f5a530f5bc0025130146b7463f2543f2d8bce5379bd106', '/tmp/conur9nsvcyz']
-13:55:24.193 __init__.py       DEBUG  command: ['atomic', 'mount', '4931a079dbf3d52f39f5a530f5bc0025130146b7463f2543f2d8bce5379bd106', '/tmp/conur9nsvcyz']
-13:55:25.038 filesystem.py     DEBUG  path = /tmp/conur9nsvcyz/etc/passwd
-13:55:25.038 __init__.py       DEBUG  command: ['atomic', 'umount', '/tmp/conur9nsvcyz']
+13:32:17.668 backend.py        INFO   conu has initiated, welcome to the party!
+13:32:17.668 backend.py        DEBUG  conu version: 0.1.0
+13:32:17.669 filesystem.py     INFO   initializing Directory(path=/tmp/shiny-kbjmsxgett)
+13:32:17.669 filesystem.py     DEBUG  changing permission bits of /tmp/shiny-kbjmsxgett to 0o700
+13:32:17.669 filesystem.py     INFO   initialized
+13:32:17.676 image.py          INFO   run container via binary in background
+13:32:17.676 image.py          DEBUG  docker command: ['docker', 'container', 'run', '-v', '/tmp/shiny-kbjmsxgett:/webroot', '-w', '/webroot', '-d', '--cidfile=/tmp/conu-b3jluxsc/conu-cbtbokqsedrtmiktfawbozgczdgxktmt', '-l', 'conu.test_artifact', 'sha256:9881e4229c9517b592980740ab2dfd8b5176adf7eb3be0f32b10a5dac5a3f12a', 'python3', '-m', 'http.server', '--bind', '0.0.0.0', '8765']
+13:32:17.676 __init__.py       DEBUG  command: ['docker', 'container', 'run', '-v', '/tmp/shiny-kbjmsxgett:/webroot', '-w', '/webroot', '-d', '--cidfile=/tmp/conu-b3jluxsc/conu-cbtbokqsedrtmiktfawbozgczdgxktmt', '-l', 'conu.test_artifact', 'sha256:9881e4229c9517b592980740ab2dfd8b5176adf7eb3be0f32b10a5dac5a3f12a', 'python3', '-m', 'http.server', '--bind', '0.0.0.0', '8765']
+6a0530ab32c17858180c9c3867c17a2aaf3466c6dd17c329ab7a0cf9d991f626
+13:32:18.131 probes.py         DEBUG  starting probe
+13:32:18.137 probes.py         DEBUG  Running "<lambda>" with parameters: "{}": 0/10
+13:32:18.133 probes.py         DEBUG  first process started: pid=5812
+13:32:18.141 probes.py         DEBUG  pausing for 0.1 before next try
+13:32:18.243 probes.py         DEBUG  starting probe
+13:32:18.244 probes.py         DEBUG  first process started: pid=5828
+13:32:18.245 probes.py         DEBUG  pausing for 1 before next try
+13:32:18.246 probes.py         DEBUG  Running "functools.partial(<bound method DockerContainer.is_port_open of DockerContainer(image=registry.fedoraproject.org/fedora:27, id=6a0530ab32c17858180c9c3867c17a2aaf3466c6dd17c329ab7a0cf9d991f626)>, 8765)" with parameters: "{}":      0/10
+13:32:18.251 __init__.py       INFO   trying to open connection to 172.17.0.2:8765
+13:32:18.251 __init__.py       INFO   was connection successful? errno: 0
+13:32:18.251 __init__.py       DEBUG  port is opened: 172.17.0.2:8765
+13:32:19.444 filesystem.py     INFO   brace yourselves, removing '/tmp/shiny-kbjmsxgett'
 ```
 
 The test passed! The logs should be easy to read, so you should have pretty good overview of what happened.

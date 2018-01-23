@@ -63,7 +63,21 @@ def set_logging(
 
 class Backend(object):
     """
-    This class groups classes related to a specific backend.
+    This class groups classes and functionality related to a specific backend.
+
+    We strongly advise you to use backend as a context manager:
+
+    ::
+
+        with SomeBackend() as backend:
+            image = backend.ImageClass(...)
+
+    When entering the context manager, the backend will create a new temporary directory.
+    You can use it if you want, the path is stored in attribute `tmpdir` of the backend instance.
+    Some backend implementations use this temporary directory to store some short-lived
+    runtime files (e.g. container-id file in case of docker). Once the context manager goes
+    out of scope, this temporary directory is removed. If you don't use the backend class as a
+    context manager, the temporary directory isn't removed and therefore lingers.
     """
 
     ContainerClass = Container
@@ -77,7 +91,7 @@ class Backend(object):
         :param logging_kwargs: dict, additional keyword arguments for logger set up, for more info
                                 see docstring of set_logging function
         """
-        self.tmpdir = get_backend_tmpdir()
+        self.tmpdir = None
 
         self.logging_level = logging_level
         logging_kwargs = logging_kwargs or {}
@@ -85,11 +99,12 @@ class Backend(object):
         self.logger.info("conu has initiated, welcome to the party!")
         self.logger.debug("conu version: %s", version.__version__)
 
-    # TODO: provide backend as context manager, this just doesn't work
-    #     File "conu/apidefs/backend.py", line 93, in __del__
-    #   TypeError: 'NoneType' object is not callable
-    #     "'NoneType' object has no attribute 'rmtree'"
-    def __del__(self):
+    def _clean(self):
+        """
+        Remove temporary dir associated with this backend instance.
+
+        :return: None
+        """
         def onerror(fnc, path, excinfo):
             # we might not have rights to do this, the files could be owned by root
             self.logger.info("we were not able to remove temporary file %s: %s", path, excinfo[1])
@@ -97,3 +112,10 @@ class Backend(object):
         self.tmpdir = None
         global _backend_tmpdir
         _backend_tmpdir = None
+
+    def __enter__(self):
+        self.tmpdir = get_backend_tmpdir()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._clean()

@@ -13,11 +13,12 @@ from conu.backend.docker.constants import CONU_ARTIFACT_TAG
 logger = logging.getLogger(__name__)
 
 
+# let this class inherit docstring from its parent
 class DockerBackend(Backend):
     """
-    This class groups classes related to a specific backend.
+    For more info on using the Backend classes, see documentation of
+    the parent :class:`conu.apidefs.backend.Backend` class.
     """
-
     ContainerClass = DockerContainer
     ImageClass = DockerImage
 

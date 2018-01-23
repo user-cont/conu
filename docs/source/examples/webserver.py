@@ -10,9 +10,11 @@ port = 8765
 
 
 # convenience function to run our application - webserver
-def run_container(local_dir):
+def run_container(backend, local_dir):
     """
     serve path `local_dir` using the python http webserver in a docker container
+
+    :param backend: DockerBackend instance
     :param local_dir: str, path to the directory, it should exist
     :return: instance of DockerContainer
     """
@@ -20,7 +22,6 @@ def run_container(local_dir):
     image_tag = "27"
 
     # we'll run our container using docker engine
-    backend = DockerBackend(logging_level=logging.DEBUG)
     image = backend.ImageClass(image_name, tag=image_tag)
 
     # is the image present?
@@ -45,26 +46,27 @@ def test_webserver():
     # let's setup the directory to serve first
     temp_dir_name = "shiny-%s" % random_str()
     temp_dir_path = os.path.join("/tmp", temp_dir_name)
-    # helper class to create and inittialize the dir -- will be removed once we
-    # leave the context manager
-    with Directory(temp_dir_path, mode=0o0700):
-        # let's put some file in it
-        with open(os.path.join(temp_dir_path, "candle"), "w") as fd:
-            fd.write("You no take candle!")
-        container = run_container(temp_dir_path)
-        try:
-            # we need to wait for the webserver to start serving
-            container.wait_for_port(port)
-            # GET on /
-            http_response = container.http_request(path="/", port=port)
-            assert http_response.ok
-            assert '<a href="candle">candle</a>' in http_response.content.decode("utf-8")
-            # now GETting the file
-            assert 'You no take candle!' in container.http_request(
-                path="/candle", port=port).content.decode("utf-8")
-        finally:
-            container.kill()
-            container.delete()
+    with DockerBackend(logging_level=logging.DEBUG) as backend:
+        # helper class to create and initialize the dir -- will be removed once we
+        # leave the context manager
+        with Directory(temp_dir_path, mode=0o0700):
+            # let's put some file in it
+            with open(os.path.join(temp_dir_path, "candle"), "w") as fd:
+                fd.write("You no take candle!")
+            container = run_container(backend, temp_dir_path)
+            try:
+                # we need to wait for the webserver to start serving
+                container.wait_for_port(port)
+                # GET on /
+                http_response = container.http_request(path="/", port=port)
+                assert http_response.ok
+                assert '<a href="candle">candle</a>' in http_response.content.decode("utf-8")
+                # now GETting the file
+                assert 'You no take candle!' in container.http_request(
+                    path="/candle", port=port).content.decode("utf-8")
+            finally:
+                container.kill()
+                container.delete()
 
 
 test_webserver()

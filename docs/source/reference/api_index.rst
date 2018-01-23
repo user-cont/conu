@@ -8,3 +8,6 @@ API definition
    container.rst
    filesystem_api.rst
 
+
+.. autoclass:: conu.apidefs.backend.Backend
+   :members:

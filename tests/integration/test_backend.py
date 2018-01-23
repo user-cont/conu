@@ -8,25 +8,31 @@ from conu.backend.docker.client import get_client
 
 
 def test_cleanup_containers():
-    backend = DockerBackend(logging_level=logging.DEBUG)
+    with DockerBackend(logging_level=logging.DEBUG) as backend:
+        # cleaning up from previous runs
+        backend.cleanup_containers()
 
-    # cleaning up from previous runs
-    backend.cleanup_containers()
+        client = get_client()
+        container_sum = len(client.containers(all=True))
+        image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+        command = DockerRunBuilder(command=["ls"], additional_opts=["-i", "-t"])
 
-    client = get_client()
-    container_sum = len(client.containers(all=True))
-    image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
-    command = DockerRunBuilder(command=["ls"], additional_opts=["-i", "-t"])
+        for i in range(3):
+            image.run_via_binary(command)
 
-    for i in range(3):
-        image.run_via_binary(command)
-
-    assert container_sum+3 == len(client.containers(all=True))
-    backend.cleanup_containers()
-    assert container_sum == len(client.containers(all=True))
+        assert container_sum+3 == len(client.containers(all=True))
+        backend.cleanup_containers()
+        assert container_sum == len(client.containers(all=True))
 
 
-def test_cleanup_tmpdir():
+def test_standard_cleanup_tmpdir():
+    with DockerBackend() as backend:
+        t = backend.tmpdir
+        assert os.path.isdir(t)
+    assert not os.path.isdir(t)
+
+
+def test_non_cm_backend_tmpdir():
     from conu.apidefs.backend import get_backend_tmpdir
 
     b_tmp = get_backend_tmpdir()
@@ -34,10 +40,16 @@ def test_cleanup_tmpdir():
 
     def scope():
         backend = DockerBackend(logging_level=logging.DEBUG)
-        assert os.path.isdir(backend.tmpdir)
-        assert b_tmp == backend.tmpdir
-        return backend.tmpdir
-    tmpdir = scope()
-    assert not os.path.isdir(tmpdir)
-    b_tmp = get_backend_tmpdir()
+        assert backend.tmpdir is None
+
     scope()
+    assert os.path.isdir(b_tmp)
+    b_tmp = get_backend_tmpdir()
+
+    # test reinitialization
+    with DockerBackend(logging_level=logging.DEBUG) as b:
+        t = b.tmpdir
+        assert os.path.isdir(t)
+        assert b_tmp == t
+
+    assert not os.path.isdir(t)

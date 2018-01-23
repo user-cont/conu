@@ -2,36 +2,32 @@ import os
 
 import pytest
 import six
-from docker.errors import NotFound
 
+from conu.backend.docker.backend import DockerBackend
 from conu.backend.docker.container import (
-    DockerContainer, DockerRunBuilder, ConuException
+    DockerRunBuilder, ConuException
 )
-from conu.backend.docker.image import DockerImage
 from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
 
 
 @pytest.mark.requires_atomic_cli
 class TestDockerContainerFilesystem(object):
-    containers_to_remove = []
     image = None
     container = None
 
     @classmethod
     def setup_class(cls):
-        cls.image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+        cls.backend = DockerBackend().__enter__()
+        cls.image = cls.backend.ImageClass(
+            FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
         cls.container = cls.image.run_via_binary(
             DockerRunBuilder(command=["sleep", "infinity"])
         )
-        cls.containers_to_remove.append(cls.container.get_id())
 
     @classmethod
     def teardown_class(cls):
-        for c in cls.containers_to_remove:
-            try:
-                DockerContainer(cls.image, c).delete(force=True, volumes=True)
-            except NotFound:  # FIXME: implementation leak, we should own exc for this
-                pass
+        cls.backend.cleanup_containers()
+        cls.backend.__exit__(None, None, None)
 
     def test_read_file(self):
         with self.container.mount() as fs:
@@ -83,7 +79,13 @@ class TestDockerImageFilesystem(object):
 
     @classmethod
     def setup_class(cls):
-        cls.image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+        cls.backend = DockerBackend().__enter__()
+        cls.image = cls.backend.ImageClass(
+            FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+
+    @classmethod
+    def teardown_class(cls):
+        cls.backend.__exit__(None, None, None)
 
     def test_read_file(self):
         with self.image.mount() as fs:
