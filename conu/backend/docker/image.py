@@ -188,6 +188,7 @@ class DockerImage(Image):
 
         def callback():
             try:
+                # FIXME: catch std{out,err}, print stdout to logger.debug, stderr to logger.error
                 run_cmd(run_command_instance.build())
             except subprocess.CalledProcessError as ex:
                 raise ConuException("Container exited with an error: %s" % ex.returncode)

@@ -189,10 +189,10 @@ class Container(object):
 
     def logs(self, follow=False):
         """
-        get logs from this container
+        Get logs from this container.
 
-        :param follow: bool, provide iterator if True
-        :return: str or iterator
+        :param follow: bool, provide new logs as they come
+        :return: iterator
         """
         raise NotImplementedError("logs method is not implemented")
 

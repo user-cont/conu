@@ -301,12 +301,31 @@ class DockerContainer(Container):
 
     def logs(self, follow=False):
         """
-        get logs from this container
+        Get logs from this container. Every item of the iterator contains one log line
+        terminated with a newline. The logs are encoded (they are bytes, not str).
 
-        :param follow: bool, provide iterator if True and follow logs
-        :return: str or iterator
+        Let's look at an example::
+
+            image = conu.DockerImage("fedora", tag="27")
+            command = conu.DockerRunBuilder(["bash", "-c", "for x in `seq 1 5`; do echo $x; sleep 1; done"])
+            container = image.run_via_binary(command)
+            for line in container.logs(follow=True):
+                print(line)
+
+        This will output
+
+        .. code-block:: none
+
+            b'1\\n'
+            b'2\\n'
+            b'3\\n'
+            b'4\\n'
+            b'5\\n'
+
+        :param follow: bool, provide new logs as they come
+        :return: iterator (of bytes)
         """
-        return self.d.logs(self.get_id(), stream=follow, follow=follow)
+        return self.d.logs(self.get_id(), stream=True, follow=follow)
 
     def stop(self):
         """

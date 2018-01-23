@@ -102,13 +102,26 @@ def test_interactive_container():
     cont = image.run_via_binary_in_foreground(
         r, popen_params={"stdin": subprocess.PIPE, "stdout": subprocess.PIPE})
     try:
-        assert "" == cont.logs().decode("utf-8").strip()
+        assert "" == "".join(list(cont.logs())).strip()
         assert cont.is_running()
         time.sleep(0.1)
         cont.popen_instance.stdin.write(b"echo palacinky\n")
         cont.popen_instance.stdin.flush()
         time.sleep(0.2)
         assert b"palacinky" in cont.popen_instance.stdout.readline()
+    finally:
+        cont.delete(force=True)
+
+
+def test_container_logs():
+    image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+    command = ["bash", "-c", "for x in `seq 1 5`; do echo $x; done"]
+    r = DockerRunBuilder(command=command)
+    cont = image.run_via_binary(r)
+    try:
+        Probe(timeout=5, fnc=cont.get_status, expected_retval='exited').run()
+        assert not cont.is_running()
+        assert list(cont.logs()) == [b"1\n", b"2\n", b"3\n", b"4\n", b"5\n"]
     finally:
         cont.delete(force=True)
 
