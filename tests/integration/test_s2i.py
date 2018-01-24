@@ -18,8 +18,7 @@ def test_s2i_extending(tmpdir):
     ei = i.extend(t, "extended-punchbag")
     c = ei.run_via_binary(DockerRunBuilder())
     c.wait()
-    logs = b"".join(list(c.logs())).decode("utf-8")
-    assert logs.strip() == secret_message
+    assert c.logs_unicode() == secret_message + '\n'
 
 
 def test_s2i_usage():

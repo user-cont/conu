@@ -327,6 +327,24 @@ class DockerContainer(Container):
         """
         return self.d.logs(self.get_id(), stream=True, follow=follow)
 
+    def logs_in_bytes(self):
+        """
+        Get output of container in bytes.
+
+        :return: bytes
+        """
+        logs = self.logs()
+        return b"".join(list(logs))
+
+    def logs_unicode(self):
+        """
+        Get output of container decoded using utf-8.
+
+        :return: str
+        """
+        logs = self.logs_in_bytes()
+        return logs.decode("utf-8")
+
     def stop(self):
         """
         stop this container
