@@ -10,11 +10,11 @@ with DockerBackend() as backend:
     cont = image.run_via_binary_in_foreground(cmd, popen_params={"stdin": subprocess.PIPE})
     try:
         assert cont.is_running()
-        assert list(cont.logs()) == []
+        assert cont.logs_unicode() == ""
 
         cont.write_to_stdin(message=b'echo $KEY\n')
         # give container time to process
         time.sleep(0.2)
-        assert list(cont.logs()) == [b'space\n']
+        assert cont.logs_unicode() == 'space\n'
     finally:
         cont.delete(force=True)

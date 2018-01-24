@@ -108,7 +108,7 @@ def test_interactive_container():
         cont = image.run_via_binary_in_foreground(
             r, popen_params={"stdin": subprocess.PIPE, "stdout": subprocess.PIPE})
         try:
-            assert "" == "".join(list(cont.logs())).strip()
+            assert "" == cont.logs_unicode()
             assert cont.is_running()
             time.sleep(0.1)
             cont.popen_instance.stdin.write(b"echo palacinky\n")
@@ -129,6 +129,8 @@ def test_container_logs():
             Probe(timeout=5, fnc=cont.get_status, expected_retval='exited').run()
             assert not cont.is_running()
             assert list(cont.logs()) == [b"1\n", b"2\n", b"3\n", b"4\n", b"5\n"]
+            assert cont.logs_unicode() == "1\n2\n3\n4\n5\n"
+            assert cont.logs_in_bytes() == b"1\n2\n3\n4\n5\n"
         finally:
             cont.delete(force=True)
 

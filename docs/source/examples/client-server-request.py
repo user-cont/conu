@@ -38,11 +38,8 @@ with DockerBackend(logging_level=logging.DEBUG) as backend:
     clientcont.write_to_stdin(b'SELECT 1;\n')
     # give postgres time to process
     time.sleep(0.2)
-    logs_it = clientcont.logs()
-    stdout = b"".join(list(logs_it))
-    stdout = stdout.rstrip()
     try:
-        assert stdout == expected_output
+        assert clientcont.logs_in_bytes() == expected_output + b'\n'
         assert clientcont.is_running()
     finally:
         dbcont.delete(force=True)
