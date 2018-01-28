@@ -20,7 +20,11 @@ BuildRequires:  python2-devel
 BuildRequires:  python2-setuptools
 
 # for docs
+%if 0%{?fedora}
 BuildRequires:  python2-docker
+%else
+BuildRequires:  python-docker-py
+%endif
 BuildRequires:  python%{?fedora:2}-sphinx
 BuildRequires:  pyxattr
 

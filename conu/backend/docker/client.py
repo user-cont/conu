@@ -14,8 +14,11 @@ client = None
 def get_client():
     global client
     if client is None:
-        client = docker.APIClient(version="auto")
         # FIXME: once we implement `run_via_api`, move this elsewhere; ideally to run_via_binary
         #        and check only once
         check_docker_command_works()
+        try:
+            client = docker.APIClient(version="auto")  # >= 2
+        except AttributeError:
+            client = docker.Client(version="auto")  # < 2
     return client
