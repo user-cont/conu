@@ -82,6 +82,7 @@ def run_in_container(img_name, img_tag, script):
 )
 @pytest.mark.release_pypi
 def test_pypi(c):
+    # TODO: verify proper exc are being raised when binaries are missing
     run_in_container(
         c["container_image"],
         c["container_image_tag"],

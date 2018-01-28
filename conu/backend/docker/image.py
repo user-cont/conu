@@ -15,7 +15,7 @@ from conu.apidefs.image import Image, S2Image
 from conu.backend.docker.client import get_client
 from conu.backend.docker.container import DockerContainer, DockerRunBuilder
 from conu.exceptions import ConuException
-from conu.utils import run_cmd, random_tmp_filename
+from conu.utils import run_cmd, random_tmp_filename, atomic_command_exists, s2i_command_exists
 from conu.utils.probes import Probe
 
 
@@ -25,9 +25,12 @@ logger = logging.getLogger(__name__)
 class DockerImageFS(Filesystem):
     def __init__(self, image, mount_point=None):
         """
+        Raises CommandDoesNotExistException if the command is not present on the system.
+
         :param image: instance of DockerImage
         :param mount_point: str, directory where the filesystem will be mounted
         """
+        atomic_command_exists()
         super(DockerImageFS, self).__init__(image, mount_point=mount_point)
         self.image = image
 
@@ -243,25 +246,6 @@ class S2IDockerImage(DockerImage, S2Image):
         super(S2IDockerImage, self).__init__(repository, tag=tag)
         self._s2i_exists = None
 
-    @property
-    def s2i_exists(self):
-        if self._s2i_exists is None:
-            try:
-                self._s2i_exists = bool(shutil.which("s2i"))  # py3 only
-            except AttributeError:
-                with open(os.devnull, "w") as fd:
-                    try:
-                        rc = subprocess.call(["s2i", "version"], stdout=fd, stderr=fd)
-                    except OSError:
-                        self._s2i_exists = False
-                    else:
-                        if rc != 0:
-                            logger.error("`s2i version` exited with a non-zero return code, please"
-                                         " check your s2i binary if it's okay")
-                            # FIXME: I dunno, raise an error? Or leap of faith?
-                        self._s2i_exists = True
-        return self._s2i_exists
-
     def _s2i_command(self, args):
         """
         return s2i command to run
@@ -269,9 +253,7 @@ class S2IDockerImage(DockerImage, S2Image):
         :param args: list of str, arguments and options passed to s2i binary
         :return: list of str
         """
-        if not self.s2i_exists:
-            raise ConuException("s2i executable is not available, please install it "
-                                "(https://github.com/openshift/source-to-image)")
+        s2i_command_exists()
         return ["s2i"] + args
 
     def extend(self, source, new_image_name, s2i_args=None):

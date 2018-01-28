@@ -7,7 +7,7 @@ import shutil
 import pwd
 
 from conu.exceptions import ConuException
-from conu.utils import run_cmd, is_selinux_disabled
+from conu.utils import run_cmd, is_selinux_disabled, setfacl_command_exists, chcon_command_exists
 
 import six
 
@@ -37,6 +37,8 @@ class Directory(object):
         finally:
             directory.clean()
 
+    This class utilizes CLI tools to perform some operations. If some of them is missing, the
+    exception is raised.
     """
     def __init__(self, path, mode=None, user_owner=None, group_owner=None, facl_rules=None,
                  selinux_context=None, selinux_user=None,
@@ -135,10 +137,12 @@ class Directory(object):
 
     def _set_selinux_context(self):
         """
-        set SELinux context or fields using chcon program
+        Set SELinux context or fields using chcon program. Raises CommandDoesNotExistException
+        if the command is not present on the system.
 
         :return: None
         """
+        chcon_command_exists()
         # FIXME: do this using python API if possible
         if self.selinux_context:
             logger.debug("setting SELinux context of %s to %s", self.path, self.selinux_context)
@@ -182,10 +186,12 @@ class Directory(object):
 
     def _add_facl_rules(self):
         """
-        apply ACL rules on the directory using setfacl program
+        Apply ACL rules on the directory using setfacl program. Raises CommandDoesNotExistException
+        if the command is not present on the system.
 
         :return: None
         """
+        setfacl_command_exists()
         # we are not using pylibacl b/c it's only for python 2
         if self.facl_rules:
             logger.debug("adding ACLs %s to %s", self.facl_rules, self.path)
