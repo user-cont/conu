@@ -7,7 +7,8 @@ import pytest
 
 from conu import check_port, Probe
 from conu.utils import s2i_command_exists, atomic_command_exists, getenforce_command_exists, \
-    chcon_command_exists, setfacl_command_exists, command_exists, CommandDoesNotExistException
+    chcon_command_exists, setfacl_command_exists, command_exists, CommandDoesNotExistException, \
+    check_docker_command_works
 
 
 def test_probes_port():
@@ -42,3 +43,7 @@ def test_command_exists():
     with pytest.raises(CommandDoesNotExistException) as exc:
         command_exists("printof", ["printof", "--versionotron"], m)
         assert exc.value.msg == m
+
+
+def test_check_docker():
+    assert check_docker_command_works()
