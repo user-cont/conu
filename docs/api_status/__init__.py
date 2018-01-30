@@ -6,7 +6,10 @@ about implementation status of methods
 import inspect
 
 from six import text_type as t
-from sphinx.util import logging
+try:
+    from sphinx.util import logging
+except ImportError:  # el7 has old sphinx
+    import logging
 
 
 logger = logging.getLogger(__name__)

@@ -50,8 +50,8 @@ setup(
     author='Red Hat',
     author_email='user-cont@redhat.com',
     url='https://github.com/fedora-modularity/conu',
-    license='GPLv2+',  # how about changing to permissive?
-    packages=find_packages(exclude=['examples']),
+    license='GPLv2+',
+    packages=find_packages(exclude=['examples', 'tests', 'tests.*']),
     include_package_data=True,
     data_files=data_files.items(),
     entry_points={},
