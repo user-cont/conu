@@ -13,7 +13,7 @@ from conu.apidefs.container import Container
 from conu.apidefs.filesystem import Filesystem
 from conu.backend.docker.client import get_client
 from conu.exceptions import ConuException
-from conu.utils import check_port, run_cmd
+from conu.utils import check_port, run_cmd, atomic_command_exists
 from conu.utils.probes import Probe
 from conu.backend.docker.constants import CONU_ARTIFACT_TAG
 
@@ -52,9 +52,12 @@ class DockerRunBuilder(object):
 class DockerContainerFS(Filesystem):
     def __init__(self, container, mount_point=None):
         """
+        Raises CommandDoesNotExistException if the command is not present on the system.
+
         :param container: instance of DockerContainer
         :param mount_point: str, directory where the filesystem will be mounted
         """
+        atomic_command_exists()
         super(DockerContainerFS, self).__init__(container, mount_point=mount_point)
         self.container = container  # convenience
 

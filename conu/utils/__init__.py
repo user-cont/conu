@@ -3,10 +3,14 @@ from __future__ import print_function, unicode_literals
 
 import logging
 import random
+import shutil
 import socket
 import string
 import subprocess
 import tempfile
+
+from conu.exceptions import ConuException
+
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +46,7 @@ def get_selinux_status():
 
     :return: string, one of Enforced, Permissive, Disabled
     """
+    getenforce_command_exists()
     # alternatively, we could read directly from /sys/fs/selinux/{enforce,status}, but status is
     # empty (why?) and enforce doesn't tell whether SELinux is disabled or not
     o = run_cmd(["getenforce"], return_output=True).strip()  # libselinux-utils
@@ -109,3 +114,112 @@ def mkdtemp():
 def random_tmp_filename():
     """ generate string which can be used as a filename for temporary file """
     return "conu-" + random_str(32)
+
+
+class CommandDoesNotExistException(ConuException):
+    """ Requested command is not present on the system """
+
+
+def command_exists(command, noop_invocation, exc_msg):
+    """
+    Verify that the provided command exists. Raise CommandDoesNotExistException in case of an
+    error or if the command does not exist.
+
+    :param command: str, command to check (python 3 only)
+    :param noop_invocation: list of str, command to check (python 2 only)
+    :param exc_msg: str, message of exception when command does not exist
+    :return: bool, True if everything's all right (otherwise exception is thrown)
+    """
+    try:
+        found = bool(shutil.which(command))  # py3 only
+    except AttributeError:  # py2 branch
+        try:
+            p = subprocess.Popen(noop_invocation, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except OSError:
+            found = False
+        else:
+            stdout, stderr = p.communicate()
+            found = p.returncode == 0
+            if not found:
+                logger.error("`%s` exited with a non-zero return code (%s)",
+                             noop_invocation, p.returncode)
+                logger.error("command stdout = %s", stdout)
+                logger.error("command stderr = %s", stderr)
+    if not found:
+        raise CommandDoesNotExistException(exc_msg)
+    return True
+
+
+def s2i_command_exists():
+    return command_exists(
+        "s2i",
+        ["s2i", "version"],
+        "s2i command doesn't seem to be available on your system. Usually it's available in "
+        "'source-to-image' package. For more info, please consult the upstream documentation "
+        "available at 'https://github.com/openshift/source-to-image'."
+    )
+
+
+def atomic_command_exists():
+    return command_exists(
+        "atomic",
+        ["atomic", "-v"],
+        "atomic command doesn't seem to be available on your system. Usually it's available in "
+        "'atomic' package. For more info, please consult the upstream documentation "
+        "available at 'https://github.com/projectatomic/atomic'."
+    )
+
+
+def chcon_command_exists():
+    return command_exists(
+        "chcon",
+        ["chcon", "--version"],
+        "chcon command doesn't seem to be available on your system. Usually it's available in "
+        "'coreutils' package. Please consult documentation of your operating system."
+    )
+
+
+def setfacl_command_exists():
+    return command_exists(
+        "setfacl",
+        ["setfacl", "-v"],
+        "setfacl command doesn't seem to be available on your system. Usually it's available in "
+        "'acl' package. Please consult documentation of your operating system."
+    )
+
+
+def getenforce_command_exists():
+    return command_exists(
+        "getenforce",
+        ["getenforce"],
+        "getenforce command doesn't seem to be available on your system or SELinux is "
+        "misconfigured. Please consult documentation of your operating system."
+    )
+
+
+def check_docker_command_works():
+    """
+    Verify that dockerd and docker binary works fine. This is performed by calling `docker
+    version`, which also checks server API version.
+
+    :return: bool, True if all is good, otherwise ConuException or CommandDoesNotExistException
+              is thrown
+    """
+    try:
+        out = subprocess.check_output(["docker", "version"], stderr=subprocess.STDOUT)
+    except OSError:
+        logger.info("docker binary is not available")
+        raise CommandDoesNotExistException(
+            "docker command doesn't seem to be available on your system. "
+            "Please install and configure docker."
+        )
+    except subprocess.CalledProcessError as ex:
+        logger.error("exception: %s", ex)
+        logger.error("rc: %s, output: %r", ex.returncode, ex.output)
+        raise ConuException(
+            "`docker version` call failed, it seems that your docker daemon is misconfigured or "
+            "this user can't communicate with dockerd."
+        )
+    else:
+        logger.info("docker environment info: %r", out)
+    return True
