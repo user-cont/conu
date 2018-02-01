@@ -52,5 +52,13 @@ rpm: sdist
 srpm: sdist
 	rpmbuild ./*.spec -bs --define "_sourcedir ${PWD}" --define "_specdir ${PWD}" --define "_builddir ${PWD}" --define "_srcrpmdir ${PWD}" --define "_rpmdir ${PWD}"
 
-rpm-in-mock: srpm
+rpm-in-mock-f27: srpm
 	mock --rebuild -r fedora-27-x86_64 ./*.src.rpm
+
+rpm-in-mock-el7: srpm
+	mock --rebuild -r epel-7-x86_64 ./*.src.rpm
+
+install-conu-in-centos-container: rpm-in-mock-el7
+	docker run -v "/var/lib/mock/epel-7-x86_64/result:/conu" -ti centos:7 bash -c " \
+		yum install -y /conu/python2-conu-*.el7.centos.noarch.rpm && \
+		python2 -c 'import conu; print conu.version'"

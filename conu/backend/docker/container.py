@@ -36,7 +36,8 @@ class DockerRunBuilder(object):
         """
         self.binary = ["docker"]
         self.global_options = []
-        self.command = ["container", "run"]
+        # there is no `docker container` on centos (docker-1.12.6-71.git3e8e77d.el7.centos.1.x86_64)
+        self.command = ["run"]
         self.options = additional_opts or []
         self.image_name = None
         self.arguments = command or []

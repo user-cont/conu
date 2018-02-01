@@ -8,15 +8,15 @@ from conu.backend.docker.constants import CONU_ARTIFACT_TAG
 def test_dr_command_class():
     simple = DockerRunBuilder()
     simple.image_name = "voodoo"
-    assert ["docker", "container", "run", "-l", CONU_ARTIFACT_TAG, "voodoo"] == simple.build()
+    assert ["docker", "run", "-l", CONU_ARTIFACT_TAG, "voodoo"] == simple.build()
 
     complex = DockerRunBuilder(additional_opts=["-a", "--foo"])
     complex.image_name = "voodoo"
-    assert ["docker", "container", "run", "-a", "--foo", "-l", CONU_ARTIFACT_TAG, "voodoo"] == complex.build()
+    assert ["docker", "run", "-a", "--foo", "-l", CONU_ARTIFACT_TAG, "voodoo"] == complex.build()
 
     w_cmd = DockerRunBuilder(command=["x", "y"], additional_opts=["-a", "--foo"])
     w_cmd.image_name = "voodoo"
-    assert ["docker", "container", "run", "-a", "--foo", "-l", CONU_ARTIFACT_TAG, "voodoo", "x", "y"] == w_cmd.build()
+    assert ["docker", "run", "-a", "--foo", "-l", CONU_ARTIFACT_TAG, "voodoo", "x", "y"] == w_cmd.build()
 
     # test whether mutable params are not mutable across instances
     simple.options += ["spy"]
