@@ -4,19 +4,19 @@ notifications:
   email: false
 python:
 - '2.7'
-- '3.5'
 - '3.6'
 before_install:
-- sudo apt-get -y install python-pyxattr
+- sudo apt-get -y install gcc libattr1-dev
 install:
 - pip install -r requirements.txt
+script: true
 deploy:
   provider: pypi
   user: conu-pypi-releases
   password:
-    secure: nyKlDIXzy2r1835UKxipCAgpPCL60ELHX60mV9pcBB2lpTDr1W5QAqXKMuJ7+bbwh0VkbLciOIs3whmyxhi4AN+g5hJSYgfkhY8ZdpG1ggfU1EDT5zrCPjRNyIpu9ifUKF5F7Q2l6sR0DhBfIp2HvFOpl2j/4gwSjX8zEfcaVDT+/zXS2NS/4/Z30Y2yTngfzmWGOe1TAPvT8QGt6fhdyd2Jlg4cUuSgvFLLLlX72gvhcxkY6lm/CjQObWs5EGVja/kKu+Go5GHmxBcNjNK2XeshbtmHdOXvqhn2BBSSQ8oZtOpr7TGADBVYJutrpbk92ENR+HUzk1WlPQzxg68NmijaCHDLkfzoqbvl7IM1U36iAwwHxS+2XU17JJg7EONlKtUWFdcuJ85azgoG36bI798X5HKcclI66Cm6TXRJQtVWe16/vsXSXhHMI02+hrdEjcY8m6jecBBYfb2GMA0DUYSJXCPdPfUTBUxR4QPh4kwEQESPw9P75yKgKJbsuu2zzizA/oPwZsjt0gGMIstqNhUIeVOkZTYI9Hpdyib7MT9qd7dIC3SxnNA0tyRahQBN5I/2IZPfGmiaPsrGNUNjAdaq0X9C6TzCXqq2sJKezbntIirIIRF9ZOqlcTqfDbHfe+gjsslg21kqFFt2smpqhmoYrA1u8zzyuBSbs7pm+38=
+    secure: tKcBpru4FPq0Pdea2xaWzpt0jPxg46gNqZ2KvORSZaEkKX8fl7yzBDDs6QoV2kH8bxK7VZni1DspPSMRN8i873hbf0hI0V3cD37EeaowEDjYQczls7qrMhuJeC/vz+QTSqbMjfcIa6oEDWZ6CiIQZ3xiSBknHeYjGVcxYTyp+9l96Ha9qyLVOWAj4LZ+QhfiqmuMSNH5tzpjTcsJrAP1gxu1dDwE9SjMMJcoeYnYcGQ1MT5yziU++TLXouW37jcBSW2o5Bnlgg7ZwyADIXTz7PSa6i/oaCtv8GgCvlb1pcKi8fYdo//JXEy6K6sqPIq+HsF/Hp9oeQ48G9HGXzeHxP6Wt7PHnclywanxJIQJ0JvhB5suvKZC82kWU/7s27RhjyqUbGxGyPGk8uC0JrOffbn0D/3bZsRVYepLhMtZbQryO8Fd+lI7AS6044ViNqZ4Eps8UlJ7SoIYPoJqwtDiCSw3Qz/E5CRzMNXwLiJi8aU+XXwTaaxi+ByBEuK70EOBdkELHtPnzELRtVRM1llQeKfy5d7lQD8zblPHTFVVM9WQeNbiujxNZ4g2OhnFlgJuSN8ui0GpioAV5owf9n8DIyBpgYRn4OgSeMbF0hJJz5mgNTB6bhtBGl/X/399gRjCPsEk9442v7XHLkVdmg3n3zH7n+SuYv8evpbou9zBsOE=
   distributions: sdist bdist_wheel
   on:
     tags: true
 after_deploy:
-  - make check-pypi-release
+- make check-pypi-release
