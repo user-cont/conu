@@ -4,10 +4,13 @@ Utilities related to manipulate docker images.
 """
 from __future__ import print_function, unicode_literals
 
+import json
 import logging
 import os
 import subprocess
 import enum
+
+import six
 
 from conu.apidefs.backend import get_backend_tmpdir
 from conu.apidefs.filesystem import Filesystem
@@ -15,7 +18,8 @@ from conu.apidefs.image import Image, S2Image
 from conu.backend.docker.client import get_client
 from conu.backend.docker.container import DockerContainer, DockerRunBuilder
 from conu.exceptions import ConuException
-from conu.utils import run_cmd, random_tmp_filename, atomic_command_exists, s2i_command_exists
+from conu.utils import run_cmd, random_tmp_filename, atomic_command_exists, s2i_command_exists, \
+    graceful_get
 from conu.utils.probes import Probe
 
 import docker.errors
@@ -130,13 +134,22 @@ class DockerImage(Image):
 
     def pull(self):
         """
-        Pull this image from registry.
+        Pull this image from registry. Raises an exception if the image is not found in
+        the registry.
 
         :return: None
         """
-        # pull doesn't throw an exc if it fails, should we?
-        for o in self.d.pull(repository=self.name, tag=self.tag, stream=True):
-            logger.debug(o)
+        for json_s in self.d.pull(repository=self.name, tag=self.tag, stream=True):
+            logger.debug(json_s)
+            json_e = json.loads(json_s)
+            status = graceful_get(json_e, "status")
+            if status:
+                logger.info(status)
+            else:
+                error = graceful_get(json_e, "error")
+                logger.error(status)
+                raise ConuException("There was an error while pulling the image %s: %s",
+                                    self.name, error)
 
     def tag_image(self, repository=None, tag=None):
         """

@@ -223,3 +223,28 @@ def check_docker_command_works():
     else:
         logger.info("docker environment info: %r", out)
     return True
+
+
+def graceful_get(d, *args):
+    """
+    Obtain values from dicts and lists gracefully. Example:
+
+    ::
+
+        print(graceful_get({"a": [{1: 2}, {"b": "c"}]}, "a", "b"))
+        c
+
+    :param d: collection (usually a dict or list)
+    :param args: list of keys which are used as a lookup
+    :return: the value from your collection
+    """
+    if not d:
+        return d
+    value = d
+    for arg in args:
+        try:
+            value = value[arg]
+        except (IndexError, KeyError, AttributeError, TypeError) as ex:
+            logger.warning("exception while getting a value: %s", ex)
+            return None
+    return value
