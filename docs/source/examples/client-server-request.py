@@ -13,7 +13,6 @@ with DockerBackend(logging_level=logging.DEBUG) as backend:
     image = backend.ImageClass('centos/postgresql-96-centos7')
 
     # create server
-    image.pull()
     cmd = DockerRunBuilder(additional_opts=environment)
     dbcont = image.run_via_binary(cmd)
 

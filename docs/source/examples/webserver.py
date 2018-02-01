@@ -22,13 +22,8 @@ def run_container(backend, local_dir):
     image_tag = "27"
 
     # we'll run our container using docker engine
+    # the image will be pulled if it's not present locally (default behavior)
     image = backend.ImageClass(image_name, tag=image_tag)
-
-    # is the image present?
-    try:
-        image.get_metadata()
-    except Exception:
-        image.pull()
 
     # helper class to create `docker run ...` -- we want test the same experience as our users
     b = DockerRunBuilder(
