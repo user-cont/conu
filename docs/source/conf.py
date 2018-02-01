@@ -21,6 +21,11 @@
 import os
 import sys
 
+this_dir = os.path.dirname(__file__)
+parent_dir = os.path.dirname(this_dir)
+
+sys.path.append(parent_dir)
+
 try:
     import sphinx_rtd_theme
     has_rtd = True
