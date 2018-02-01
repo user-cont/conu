@@ -7,7 +7,7 @@
 %endif
 
 Name:           %{pypi_name}
-Version:        0.1.0
+Version:        0.2.0
 Release:        1%{?dist}
 Summary:        library which makes it easy to write tests for your containers
 
@@ -151,5 +151,8 @@ rm -rf html/.{doctrees,buildinfo}
 %license LICENSE
 
 %changelog
+* Thu Feb 01 2018 Tomas Tomecek <ttomecek@redhat.com> 0.2.0-1
+- 0.2.0 release
+
 * Wed Dec 06 2017 Tomas Tomecek <ttomecek@redhat.com> - 0.1.0-1
 - Initial package.
