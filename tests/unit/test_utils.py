@@ -7,6 +7,7 @@ import subprocess
 import pytest
 
 from conu import ConuException, random_str, Directory
+from conu.utils import graceful_get
 
 
 def test_random_str():
@@ -121,3 +122,7 @@ def test_ownership():
         s = os.stat(d.path)
         assert s.st_gid == 99
         assert s.st_uid == 99
+
+
+def test_graceful_get():
+    assert graceful_get({"a": [{1: 2}, {"b": "c"}]}, "a", 1, "b") == "c"

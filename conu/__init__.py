@@ -4,7 +4,9 @@ TODO: add docs here, so `help(conu)` looks good
 # docker backend
 from conu.backend.docker.backend import DockerBackend
 from conu.backend.docker.container import DockerContainer, DockerRunBuilder, DockerContainerFS
-from conu.backend.docker.image import DockerImage, S2IDockerImage, DockerImageFS
+from conu.backend.docker.image import (
+    DockerImage, S2IDockerImage, DockerImageFS, DockerImagePullPolicy
+)
 
 # utils
 from conu.utils.filesystem import Directory

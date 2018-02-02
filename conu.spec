@@ -27,6 +27,7 @@ BuildRequires:  python-docker-py
 %endif
 BuildRequires:  python%{?fedora:2}-sphinx
 BuildRequires:  pyxattr
+BuildRequires:  python%{?fedora:2}-enum34
 
 %if %{with python3}
 BuildRequires:  python3-devel
@@ -54,6 +55,7 @@ Requires:  python-docker-py
 Requires:       python%{?fedora:2}-requests
 Requires:       python%{?fedora:2}-six
 Requires:       pyxattr
+Requires:       python%{?fedora:2}-enum34
 # this is the only way to create containers right now
 Requires:       docker
 %if 0%{?fedora}

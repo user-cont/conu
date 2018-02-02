@@ -5,12 +5,14 @@ import os
 import subprocess
 import time
 
+import docker.errors
 import pytest
 
 from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, \
     FEDORA_REPOSITORY
 
-from conu import DockerRunBuilder, Probe, ConuException, DockerBackend
+from conu.backend.docker.client import get_client
+from conu import DockerRunBuilder, Probe, ConuException, DockerBackend, DockerImagePullPolicy
 
 from six import string_types
 
@@ -30,6 +32,13 @@ def test_image():
         assert isinstance(image.get_id(), string_types)
         new_image = image.tag_image(tag="test")
         new_image.rmi(via_name=True)
+
+
+def test_image_wrong_types():
+    with DockerBackend() as backend:
+        with pytest.raises(ConuException) as exc:
+            backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, DockerImagePullPolicy.NEVER)
+            assert "tag" in exc.value.message
 
 
 def test_container():
@@ -220,3 +229,33 @@ def test_nonblocking_execute():
         gen = cont.execute(["printf", "asd\nasd"], blocking=False)
         assert [b"asd\nasd"] == list(gen)
         cont.execute(["bash", "-c", "sleep 0.01; exit 110"], blocking=False)
+
+
+def test_pull_always():
+    with DockerBackend() as backend:
+        image = backend.ImageClass("docker.io/library/busybox", tag="1.25.1",
+                                   pull_policy=DockerImagePullPolicy.ALWAYS)
+        try:
+            assert image.is_present()
+        finally:
+            image.rmi(force=True)
+
+
+def test_pull_if_not_present():
+    with DockerBackend() as backend:
+        with pytest.raises(docker.errors.DockerException):
+            get_client().inspect_image("docker.io/library/busybox:1.25.1")
+        image = backend.ImageClass("docker.io/library/busybox", tag="1.25.1")
+        try:
+            assert image.is_present()
+        finally:
+            image.rmi(force=True)
+
+
+def test_pull_never():
+    with DockerBackend() as backend:
+        with pytest.raises(docker.errors.DockerException):
+            get_client().inspect_image("docker.io/library/busybox:1.25.1")
+        image = backend.ImageClass("docker.io/library/busybox", tag="1.25.1",
+                                   pull_policy=DockerImagePullPolicy.NEVER)
+        assert not image.is_present()

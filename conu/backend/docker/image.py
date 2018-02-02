@@ -4,10 +4,13 @@ Utilities related to manipulate docker images.
 """
 from __future__ import print_function, unicode_literals
 
+import json
 import logging
 import os
-import shutil
 import subprocess
+import enum
+
+import six
 
 from conu.apidefs.backend import get_backend_tmpdir
 from conu.apidefs.filesystem import Filesystem
@@ -15,8 +18,11 @@ from conu.apidefs.image import Image, S2Image
 from conu.backend.docker.client import get_client
 from conu.backend.docker.container import DockerContainer, DockerRunBuilder
 from conu.exceptions import ConuException
-from conu.utils import run_cmd, random_tmp_filename, atomic_command_exists, s2i_command_exists
+from conu.utils import run_cmd, random_tmp_filename, atomic_command_exists, s2i_command_exists, \
+    graceful_get
 from conu.utils.probes import Probe
+
+import docker.errors
 
 
 logger = logging.getLogger(__name__)
@@ -44,19 +50,51 @@ class DockerImageFS(Filesystem):
         return super(DockerImageFS, self).__exit__(exc_type, exc_val, exc_tb)
 
 
+class DockerImagePullPolicy(enum.Enum):
+    """
+    This Enum defines the policy for pulling the docker images. The pull operation happens when
+    creating an instance of a docker image. Supported values:
+
+    * NEVER - do not pull the image
+    * IF_NOT_PRESENT - pull it only if the image is not present
+    * ALWAYS - always initiate the pull process - the image is being pulled even if it's present
+      locally. It means that it may be overwritten by a remote counterpart or there may
+      be a exception being raised if no such image is present in the registry.
+    """
+    NEVER = 0
+    IF_NOT_PRESENT = 1
+    ALWAYS = 2
+
+
 class DockerImage(Image):
     """
     Utility functions for docker images.
     """
-    def __init__(self, repository, tag="latest"):
+    def __init__(self, repository, tag="latest", pull_policy=DockerImagePullPolicy.IF_NOT_PRESENT):
         """
         :param repository: str, image name, examples: "fedora", "registry.fedoraproject.org/fedora",
                             "tomastomecek/sen", "docker.io/tomastomecek/sen"
         :param tag: str, tag of the image, when not specified, "latest" is implied
+        :param pull_policy: enum, strategy to apply for pulling the image
         """
         super(DockerImage, self).__init__(repository, tag=tag)
+        if not isinstance(tag, six.string_types):
+            raise ConuException("'tag' is not a string type")
+        if not isinstance(pull_policy, DockerImagePullPolicy):
+            raise ConuException("'pull_policy' is not an instance of DockerImagePullPolicy")
         self.tag = self.tag
         self.d = get_client()
+        self.pull_policy = pull_policy
+
+        if self.pull_policy == DockerImagePullPolicy.ALWAYS:
+            logger.debug("pull policy set to 'always', pulling the image")
+            self.pull()
+        elif self.pull_policy == DockerImagePullPolicy.IF_NOT_PRESENT and not self.is_present():
+            logger.debug("pull policy set to 'if_not_present' and image is not present, "
+                         "pulling the image")
+            self.pull()
+        elif self.pull_policy == DockerImagePullPolicy.NEVER:
+            logger.debug("pull policy set to 'never'")
 
     def __repr__(self):
         return "DockerImage(repository=%s, tag=%s)" % (self.name, self.tag)
@@ -82,25 +120,36 @@ class DockerImage(Image):
             self._id = self.get_metadata(refresh=False)["Id"]
         return self._id
 
-    def pull(self, always=False):
+    def is_present(self):
         """
-        pull this image
+        Is this docker image present locally on the system?
 
-        :param always: bool, when set to false image is not pulled if
-                        it is already found on system; defaults to false
+        :return: bool, True if it is, False if it's not
+        """
+        # TODO: move this method to generic API
+        try:
+            return bool(self.get_metadata())
+        except docker.errors.DockerException:
+            return False
+
+    def pull(self):
+        """
+        Pull this image from registry. Raises an exception if the image is not found in
+        the registry.
+
         :return: None
         """
-        present = True
-        try:
-            self.get_metadata()
-        except Exception:
-            present = False
-
-        if present and not always:
-            return
-
-        for o in self.d.pull(repository=self.name, tag=self.tag, stream=True):
-            logger.debug(o)
+        for json_s in self.d.pull(repository=self.name, tag=self.tag, stream=True):
+            logger.debug(json_s)
+            json_e = json.loads(json_s)
+            status = graceful_get(json_e, "status")
+            if status:
+                logger.info(status)
+            else:
+                error = graceful_get(json_e, "error")
+                logger.error(status)
+                raise ConuException("There was an error while pulling the image %s: %s",
+                                    self.name, error)
 
     def tag_image(self, repository=None, tag=None):
         """

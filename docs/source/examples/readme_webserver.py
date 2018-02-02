@@ -13,13 +13,8 @@ image_tag = "27"
 
 # we'll run our container using docker engine
 with DockerBackend(logging_level=logging.DEBUG) as backend:
+    # the image will be pulled if it's not present
     image = backend.ImageClass(image_name, tag=image_tag)
-
-    # is the image present? if not, pull it
-    try:
-        image.get_metadata()
-    except Exception:
-        image.pull()
 
     # helper class to create `docker run ...` command -- we want to test the same
     # experience as our users

@@ -6,11 +6,14 @@ Aside from methods in API definition - :class:`conu.apidefs.image.Image`, Docker
 .. autoclass:: conu.DockerImage
    :members:
 
+.. autoclass:: conu.DockerImagePullPolicy
+   :members:
+
 .. autoclass:: conu.DockerImageFS
    :members:
 
 Aside from methods in API definition - :class:`conu.apidefs.image.S2Image`, S2IDockerImage implements following methods:
 
 .. autoclass:: conu.S2IDockerImage
-   :members: s2i_exists, usage, extend
+   :members: usage, extend
 
