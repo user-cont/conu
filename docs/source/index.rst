@@ -15,6 +15,7 @@ conu gathers utilities that come in handy when creating tests, provides nice log
    installation.rst
    examples.rst
    reference/index.rst
+   new_releases.rst
 
 Contribution
 =============
