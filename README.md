@@ -36,6 +36,7 @@ Please visit [our documentation](http://conu.readthedocs.io/en/latest/installati
 - read files inside an image
 - get selinux context of files in an image
 - extend image using [s2i](https://github.com/openshift/source-to-image)
+- check all packages in image are signed with a key
 
 ## Container
 - kill, get logs, exec a command, mount, remove, start, stop, wait, run - via api or via binary

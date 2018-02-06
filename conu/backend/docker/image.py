@@ -21,6 +21,7 @@ from conu.exceptions import ConuException
 from conu.utils import run_cmd, random_tmp_filename, atomic_command_exists, s2i_command_exists, \
     graceful_get
 from conu.utils.probes import Probe
+from conu.utils.rpms import check_signatures
 
 import docker.errors
 
@@ -283,6 +284,30 @@ class DockerImage(Image):
         container_id, popen_instance = self._run_container(run_command_instance, callback)
 
         return DockerContainer(self, container_id, popen_instance=popen_instance, name=container_name)
+
+    def has_pkgs_signed_with(self, allowed_keys):
+        """
+        Check signature of packages installed in image.
+        Raises exception when
+         * rpm binary is not installed in image
+         * parsing of rpm fails
+         * there are packages in image that are not signed with one of allowed keys
+
+        :param allowed_keys: list of allowed keys
+        :return: bool
+        """
+
+        if not allowed_keys or not isinstance(allowed_keys, list):
+            raise ConuException("allowed_keys must be a list")
+        drb = DockerRunBuilder(command=['rpm', '-qa', '--qf', '%{name} %{SIGPGP:pgpsig}\n'])
+        cont = self.run_via_binary(drb)
+        try:
+            out = cont.logs_unicode()[:-1].split('\n')
+            check_signatures(out, allowed_keys)
+        finally:
+            cont.stop()
+            cont.delete()
+        return True
 
 
 class S2IDockerImage(DockerImage, S2Image):
