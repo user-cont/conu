@@ -83,7 +83,6 @@ def run_in_container(img_name, img_tag, script):
             "container_image_tag": "7",
             "script": [
                 ["yum", "install", "-y", "epel-release"],
-                ["yum", "makecache"],
                 ["yum", "install", "-y", "python-pip"],
                 ["pip2", "install", "--user", "conu"],
                 ["python2", "-c", "import conu; conu.version == '%s'" % get_conu_version_from_git()],
@@ -169,7 +168,6 @@ def test_pypi(c):
             "script": [
                 ["curl", "-s", "-o", "/etc/yum.repos.d/ttomecek-conu.repo",
                  "https://copr.fedorainfracloud.org/coprs/ttomecek/conu/repo/epel-7/ttomecek-conu-epel-7.repo"],
-                ["yum", "makecache"],
                 ["yum", "install", "-y", "python2-conu"],
                 ["python2", "-c", "import conu; conu.version == '%s'" % get_conu_version_from_git()],
             ]
