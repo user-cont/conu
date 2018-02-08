@@ -259,3 +259,27 @@ def test_pull_never():
         image = backend.ImageClass("docker.io/library/busybox", tag="1.25.1",
                                    pull_policy=DockerImagePullPolicy.NEVER)
         assert not image.is_present()
+
+
+def test_set_name():
+    with DockerBackend() as backend:
+        test_name = 'jondoe'
+        image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG,
+                                   pull_policy=DockerImagePullPolicy.NEVER)
+        cont = image.run_via_binary()
+        assert cont.name
+        cont.delete(force=True)
+
+        cont = image.run_via_binary_in_foreground()
+        assert cont.name
+        cont.delete(force=True)
+
+        cmd = DockerRunBuilder(additional_opts=['--name', test_name])
+        cont = image.run_via_binary(cmd)
+        assert cont.name == test_name
+        cont.delete(force=True)
+
+        cmd = DockerRunBuilder(additional_opts=['--name', test_name])
+        cont = image.run_via_binary_in_foreground(cmd)
+        assert cont.name == test_name
+        cont.delete(force=True)
