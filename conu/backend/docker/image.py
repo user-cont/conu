@@ -247,7 +247,8 @@ class DockerImage(Image):
                 raise ConuException("Container exited with an error: %s" % ex.returncode)
         container_id, _ = self._run_container(run_command_instance, callback)
 
-        return DockerContainer(self, container_id)
+        container_name = self.d.inspect_container(container_id)['Name'][1:]
+        return DockerContainer(self, container_id, name=container_name)
 
     def run_via_binary_in_foreground(
             self, run_command_instance=None, popen_params=None, container_name=None):
@@ -283,6 +284,11 @@ class DockerImage(Image):
             return subprocess.Popen(run_command_instance.build(), **popen_params)
         container_id, popen_instance = self._run_container(run_command_instance, callback)
 
+        actual_name = self.d.inspect_container(container_id)['Name'][1:]
+        if container_name and container_name != actual_name:
+            raise ConuException("Unexpected container name value. Expected = " + str(container_name) + " Actual = " + str(actual_name))
+        if not container_name:
+            container_name = actual_name
         return DockerContainer(self, container_id, popen_instance=popen_instance, name=container_name)
 
     def has_pkgs_signed_with(self, allowed_keys):
