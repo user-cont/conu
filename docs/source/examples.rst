@@ -8,8 +8,8 @@ For running a container, you need to have image initialized. Image holds informa
 
 .. include:: examples/run_image.py
    :code: python
-   :start-line: 3
-   :end-line: 7
+   :start-line: 19
+   :end-line: 23
 
 Wait for service to be ready
 ----------------------------
@@ -18,8 +18,8 @@ Wait for service to be ready
 
 .. include:: examples/check_port.py
    :code: python
-   :start-line: 3
-   :end-line: 8
+   :start-line: 19
+   :end-line: 24
 
 Extend image using source-to-image
 -----------------------------------
@@ -28,5 +28,5 @@ Extends acts as s2i binary. It extends builder image in form of :class:`conu.bac
 
 .. include:: examples/s2i.py
    :code: python
-   :start-line: 3
-   :end-line: 8
+   :start-line: 19
+   :end-line: 24
