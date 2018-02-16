@@ -99,7 +99,7 @@ def run_cmd(cmd, return_output=False, **kwargs):
             please check `help(subprocess.Popen)`
     :return: None or str
     """
-    logger.debug("command: %s" % cmd)
+    logger.debug('command: "%s"' % ' '.join(cmd))
     if return_output:
         return subprocess.check_output(cmd, stderr=subprocess.STDOUT, **kwargs).decode("utf-8")
     else:
