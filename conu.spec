@@ -8,13 +8,16 @@
 
 Name:           %{pypi_name}
 Version:        0.2.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        library which makes it easy to write tests for your containers
 
 License:        GPLv3+
 URL:            https://github.com/fedora-modularity/conu
 Source0:        https://files.pythonhosted.org/packages/source/c/%{pypi_name}/%{pypi_name}-%{version}.tar.gz
 BuildArch:      noarch
+# exclude ppc64 because there is no docker package
+# https://bugzilla.redhat.com/show_bug.cgi?id=1547049
+ExcludeArch:    ppc64
 
 BuildRequires:  python2-devel
 BuildRequires:  python2-setuptools
