@@ -17,6 +17,20 @@ from requests import Session
 from six.moves.urllib.parse import urlunsplit
 
 
+def get_url(path, host, port):
+    """
+    make url from path, host and port
+
+    :param path: str, path within the request, e.g. "/api/version"
+    :param host: str
+    :param port: str or int
+    :return: str
+    """
+    return urlunsplit(
+        ("http", "%s:%s" % (host, port), path, "", "")
+    )
+
+
 class HttpClient(Session):
     """
     Utility class for easier http connection.
@@ -28,11 +42,6 @@ class HttpClient(Session):
         self.port = port
         self.session = session
 
-    def _get_url(self, path):
-        return urlunsplit(
-            ("http", "%s:%s" % (self.host, self.port), path, "", "")
-        )
-
     def prepare_request(self, request):
-        request.url = self._get_url(path=request.url)
+        request.url = get_url(path=request.url)
         return super().prepare_request(request)
