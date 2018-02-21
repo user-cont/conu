@@ -43,5 +43,7 @@ class HttpClient(Session):
         self.session = session
 
     def prepare_request(self, request):
-        request.url = get_url(path=request.url)
+        request.url = get_url(path=request.url,
+                              host=self.host,
+                              port=self.port)
         return super().prepare_request(request)
