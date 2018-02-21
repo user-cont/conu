@@ -178,6 +178,25 @@ def test_http_client():
         finally:
             c.delete(force=True)
 
+def test_http_client_context():
+    with DockerBackend() as backend:
+        image = backend.ImageClass(FEDORA_REPOSITORY)
+        c = image.run_via_binary(
+            DockerRunBuilder(command=["python3", "-m", "http.server", "--bind", "0.0.0.0 8000"])
+        )
+        try:
+            c.wait_for_port(8000)
+            with c.http_client(port=8000) as session:
+                r = session.get("/")
+                assert r.ok
+                assert "<!DOCTYPE HTML PUBLIC" in r.content.decode("utf-8")
+
+                r2 = session.get("/etc")
+                assert "<!DOCTYPE HTML PUBLIC" in r2.content.decode("utf-8")
+                assert "passwd" in r2.content.decode("utf-8")
+                assert r2.ok
+        finally:
+            c.delete(force=True)
 
 def test_wait_for_status():
     with DockerBackend() as backend:
