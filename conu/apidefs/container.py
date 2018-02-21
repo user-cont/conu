@@ -20,9 +20,12 @@ Abstract class definitions for containers.
 from __future__ import print_function, unicode_literals
 
 from conu.apidefs.image import Image
+from conu.utils.http_client import HttpClient
 
 import requests
 from six.moves.urllib.parse import urlunsplit
+from contextlib import contextmanager
+
 
 
 class Container(object):
@@ -63,6 +66,15 @@ class Container(object):
             ("http", "%s:%s" % (host, port), path, "", "")
         )
         return self.http_session.request(method, url, json=json, data=data)
+
+    @contextmanager
+    def http_client(self, host=None, port=None):
+
+        host = host or self.get_IPv4s()[0]
+        port = port or self.get_ports()[0]
+
+        yield HttpClient(host, port, self.http_session)
+
 
     def get_id(self):
         """
