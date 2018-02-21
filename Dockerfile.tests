@@ -1,6 +1,6 @@
 FROM docker.io/modularitycontainers/conu:dev
 
-ENV PYTHONDONTWRITEBYTECODE=yes-please
+ENV PYTHONDONTWRITEBYTECODE=yes
 
 RUN dnf install -y nmap-ncat make python2-pytest python3-pytest && \
     pip2 install --user -r ./test-requirements.txt && \
