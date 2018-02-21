@@ -22,6 +22,7 @@ import pytest
 
 from conu import ConuException, random_str, Directory
 from conu.utils import graceful_get
+from conu.utils.http_client import get_url
 
 
 def test_random_str():
@@ -140,3 +141,10 @@ def test_ownership():
 
 def test_graceful_get():
     assert graceful_get({"a": [{1: 2}, {"b": "c"}]}, "a", 1, "b") == "c"
+
+
+def test_http_client_get_url():
+    assert get_url(path="/", host="172.1.1.1", port=80) == "http://172.1.1.1:80/"
+    assert get_url(path="/app",
+                   host="domain.example.org",
+                   port=443) == "http://domain.example.org:443/app"
