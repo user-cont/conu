@@ -37,7 +37,7 @@ class HttpClient(Session):
     """
 
     def __init__(self, host, port, session):
-        super().__init__()
+        super(HttpClient, self).__init__()
         self.host = host
         self.port = port
         self.session = session
@@ -46,4 +46,4 @@ class HttpClient(Session):
         request.url = get_url(path=request.url,
                               host=self.host,
                               port=self.port)
-        return super().prepare_request(request)
+        return super(HttpClient, self).prepare_request(request)
