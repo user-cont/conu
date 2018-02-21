@@ -69,6 +69,19 @@ class Container(object):
 
     @contextmanager
     def http_client(self, host=None, port=None):
+        """
+        allow requests in context -- e.g.:
+
+        .. code-block:: none
+
+            with container.http_client(port="80", ...) as c:
+                assert c.get("/api/...")
+
+
+        :param host: str, if None, set self.get_IPv4s()[0]
+        :param port: str or int, if None, set to self.get_ports()[0]
+        :return: instance of :class:`conu.utils.http_client.HttpClient`
+        """
 
         host = host or self.get_IPv4s()[0]
         port = port or self.get_ports()[0]
