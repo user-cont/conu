@@ -17,17 +17,18 @@ from requests import Session
 from six.moves.urllib.parse import urlunsplit
 
 
-def get_url(path, host, port):
+def get_url(path, host, port, method="http"):
     """
     make url from path, host and port
 
+    :param method: str
     :param path: str, path within the request, e.g. "/api/version"
     :param host: str
     :param port: str or int
     :return: str
     """
     return urlunsplit(
-        ("http", "%s:%s" % (host, port), path, "", "")
+        (method, "%s:%s" % (host, port), path, "", "")
     )
 
 
