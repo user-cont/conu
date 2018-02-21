@@ -71,7 +71,7 @@ class Container(object):
         """
         allow requests in context -- e.g.:
 
-        .. code-block:: none
+        .. code-block:: python
 
             with container.http_client(port="80", ...) as c:
                 assert c.get("/api/...")
