@@ -327,8 +327,8 @@ class DockerContainer(Container):
         Let's look at an example::
 
             image = conu.DockerImage("fedora", tag="27")
-            command = conu.DockerRunBuilder(["bash", "-c", "for x in `seq 1 5`; do echo $x; sleep 1; done"])
-            container = image.run_via_binary(command)
+            command = ["bash", "-c", "for x in `seq 1 5`; do echo $x; sleep 1; done"]
+            container = image.run_via_binary(command=command)
             for line in container.logs(follow=True):
                 print(line)
 

@@ -31,14 +31,10 @@ with DockerBackend(logging_level=logging.DEBUG) as backend:
     # the image will be pulled if it's not present
     image = backend.ImageClass(image_name, tag=image_tag)
 
-    # helper class to create `docker run ...` command -- we want to test the same
-    # experience as our users
-    b = DockerRunBuilder(
-        # the command to run in a container
-        command=["python3", "-m", "http.server", "--bind", "0.0.0.0", "%d" % port],
-    )
+    # the command to run in a container
+    command = ["python3", "-m", "http.server", "--bind", "0.0.0.0", "%d" % port]
     # let's run the container (in the background)
-    container = image.run_via_binary(run_command_instance=b)
+    container = image.run_via_binary(command=command)
     try:
         # we need to wait for the webserver to start serving
         container.wait_for_port(port)

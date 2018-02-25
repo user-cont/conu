@@ -83,7 +83,7 @@ def test_copy_to(tmpdir):
     with DockerBackend() as backend:
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
         c = image.run_via_binary(
-            DockerRunBuilder(command=["cat"], additional_opts=["-i", "-t"])
+            command=["cat"], additional_opts=["-i", "-t"]
         )
         try:
             c.copy_to(str(p), "/")
@@ -96,7 +96,7 @@ def test_copy_from(tmpdir):
     with DockerBackend() as backend:
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
         c = image.run_via_binary(
-            DockerRunBuilder(command=["cat"], additional_opts=["-i", "-t"])
+            command=["cat"], additional_opts=["-i", "-t"]
         )
         try:
             c.copy_from("/etc/fedora-release", str(tmpdir))
@@ -115,7 +115,7 @@ def test_container_create_failed():
         # should raise an exc, there is no such command: waldo; we need to find waldo first
         with pytest.raises(ConuException):
             image.run_via_binary(
-                DockerRunBuilder(command=["waldo"])
+                command=["waldo"]
             )
         c = image.run_via_binary_in_foreground(
             DockerRunBuilder(command=["waldo"])
@@ -128,9 +128,11 @@ def test_interactive_container():
     with DockerBackend() as backend:
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
         command = ["bash"]
-        r = DockerRunBuilder(command=command, additional_opts=["-i"])
+        additional_opts = ["-i"]
         cont = image.run_via_binary_in_foreground(
-            r, popen_params={"stdin": subprocess.PIPE, "stdout": subprocess.PIPE})
+            command=command, additional_opts=additional_opts,
+            popen_params={"stdin": subprocess.PIPE, "stdout": subprocess.PIPE}
+        )
         try:
             assert "" == cont.logs_unicode()
             assert cont.is_running()
@@ -147,8 +149,7 @@ def test_container_logs():
     with DockerBackend() as backend:
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
         command = ["bash", "-c", "for x in `seq 1 5`; do echo $x; done"]
-        r = DockerRunBuilder(command=command)
-        cont = image.run_via_binary(r)
+        cont = image.run_via_binary(command=command)
         try:
             Probe(timeout=5, fnc=cont.get_status, expected_retval='exited').run()
             assert not cont.is_running()
@@ -163,7 +164,7 @@ def test_http_client():
     with DockerBackend() as backend:
         image = backend.ImageClass(FEDORA_REPOSITORY)
         c = image.run_via_binary(
-            DockerRunBuilder(command=["python3", "-m", "http.server", "--bind", "0.0.0.0 8000"])
+            command=["python3", "-m", "http.server", "--bind", "0.0.0.0 8000"]
         )
         try:
             c.wait_for_port(8000)
@@ -178,11 +179,12 @@ def test_http_client():
         finally:
             c.delete(force=True)
 
+
 def test_http_client_context():
     with DockerBackend() as backend:
         image = backend.ImageClass(FEDORA_REPOSITORY)
         c = image.run_via_binary(
-            DockerRunBuilder(command=["python3", "-m", "http.server", "--bind", "0.0.0.0 8000"])
+            command=["python3", "-m", "http.server", "--bind", "0.0.0.0 8000"]
         )
         try:
             c.wait_for_port(8000)
@@ -198,11 +200,12 @@ def test_http_client_context():
         finally:
             c.delete(force=True)
 
+
 def test_wait_for_status():
     with DockerBackend() as backend:
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
-        cmd = DockerRunBuilder(command=['sleep', '2'])
-        cont = image.run_via_binary(cmd)
+        cmd = ['sleep', '2']
+        cont = image.run_via_binary(command=cmd)
 
         try:
             start = time.time()
@@ -218,8 +221,8 @@ def test_wait_for_status():
 def test_exit_code():
     with DockerBackend() as backend:
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
-        cmd = DockerRunBuilder(command=['sleep', '2'])
-        cont = image.run_via_binary(cmd)
+        cmd = ['sleep', '2']
+        cont = image.run_via_binary(command=cmd)
         try:
             assert cont.is_running() and cont.exit_code() == 0
             p = Probe(timeout=5, fnc=cont.get_status, expected_retval='exited')
@@ -228,8 +231,8 @@ def test_exit_code():
         finally:
             cont.delete(force=True)
 
-        cmd = DockerRunBuilder(command=['bash', '-c', "exit 42"])
-        cont = image.run_via_binary(cmd)
+        cmd = ['bash', '-c', "exit 42"]
+        cont = image.run_via_binary(command=cmd)
         try:
             cont.wait()
             assert cont.exit_code() == 42
@@ -240,8 +243,8 @@ def test_exit_code():
 def test_blocking_execute():
     with DockerBackend() as backend:
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
-        cmd = DockerRunBuilder(command=['sleep', 'infinity'])
-        cont = image.run_via_binary(cmd)
+        cmd = ['sleep', 'infinity']
+        cont = image.run_via_binary(command=cmd)
         cont.execute(["bash", "-c", "exit 0"])
         assert [b"asd"] == cont.execute(["printf", "asd"])
         assert [b"asd\nasd"] == cont.execute(["printf", "asd\nasd"])
@@ -254,8 +257,8 @@ def test_blocking_execute():
 def test_nonblocking_execute():
     with DockerBackend() as backend:
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
-        cmd = DockerRunBuilder(command=['sleep', 'infinity'])
-        cont = image.run_via_binary(cmd)
+        cmd = ['sleep', 'infinity']
+        cont = image.run_via_binary(command=cmd)
         stream = cont.execute(["bash", "-c", "exit 0"], blocking=False)
         list(stream)
         gen = cont.execute(["printf", "asd"], blocking=False)
@@ -308,12 +311,12 @@ def test_set_name():
         assert cont.name
         cont.delete(force=True)
 
-        cmd = DockerRunBuilder(additional_opts=['--name', test_name])
-        cont = image.run_via_binary(cmd)
+        additional_opts = ['--name', test_name]
+        cont = image.run_via_binary(additional_opts=additional_opts)
         assert cont.name == test_name
         cont.delete(force=True)
 
-        cmd = DockerRunBuilder(additional_opts=['--name', test_name])
-        cont = image.run_via_binary_in_foreground(cmd)
+        additional_opts = ['--name', test_name]
+        cont = image.run_via_binary_in_foreground(additional_opts=additional_opts)
         assert cont.name == test_name
         cont.delete(force=True)

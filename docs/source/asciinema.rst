@@ -44,4 +44,3 @@ Scenario:
 
     with container.mount() as fs:
         assert fs.file_is_present('/etc/nginx/nginx.conf')
-

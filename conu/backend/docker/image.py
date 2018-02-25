@@ -40,7 +40,6 @@ from conu.utils.rpms import check_signatures
 
 import docker.errors
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -86,6 +85,7 @@ class DockerImage(Image):
     """
     Utility functions for docker images.
     """
+
     def __init__(self, repository, tag="latest", pull_policy=DockerImagePullPolicy.IF_NOT_PRESENT):
         """
         :param repository: str, image name, examples: "fedora", "registry.fedoraproject.org/fedora",
@@ -238,19 +238,39 @@ class DockerImage(Image):
             container_id = fd.read()
         return container_id, response
 
-    def run_via_binary(self, run_command_instance=None, *args, **kwargs):
+    def run_via_binary(self, run_command_instance=None, command=None, additional_opts=None, *args, **kwargs):
         """
         create a container using this image and run it in background;
         this method is useful to test real user scenarios when users invoke containers using
         binary
 
         :param run_command_instance: instance of DockerRunBuilder
+        :param command: list of str, command to run in the container, examples:
+            - ["ls", "/"]
+            - ["bash", "-c", "ls / | grep bin"]
+        :param additional_opts: list of str, additional options for `docker run`
         :return: instance of DockerContainer
         """
+
         logger.info("run container via binary in background")
-        run_command_instance = run_command_instance or DockerRunBuilder()
-        if not isinstance(run_command_instance, DockerRunBuilder):
-            raise ConuException("run_command_instance needs to be an instance of DockerRunBuilder")
+
+        if (command is not None or additional_opts is not None) and run_command_instance is not None:
+            raise ConuException("run_command_instance and command parameters cannot be passed into method at same time")
+
+        if run_command_instance is None:
+            command = command or []
+            additional_opts = additional_opts or []
+
+            if (isinstance(command, list) or isinstance(command, tuple) and
+                isinstance(additional_opts, list) or isinstance(additional_opts, tuple)):
+                run_command_instance = DockerRunBuilder(command=command, additional_opts=additional_opts)
+            else:
+                raise ConuException("command and additional_opts needs to be list of str or None")
+        else:
+            run_command_instance = run_command_instance or DockerRunBuilder()
+            if not isinstance(run_command_instance, DockerRunBuilder):
+                raise ConuException("run_command_instance needs to be an instance of DockerRunBuilder")
+
         run_command_instance.image_name = self.get_id()
         run_command_instance.options += ["-d"]
 
@@ -260,13 +280,13 @@ class DockerImage(Image):
                 run_cmd(run_command_instance.build())
             except subprocess.CalledProcessError as ex:
                 raise ConuException("Container exited with an error: %s" % ex.returncode)
+
         container_id, _ = self._run_container(run_command_instance, callback)
 
         container_name = self.d.inspect_container(container_id)['Name'][1:]
         return DockerContainer(self, container_id, name=container_name)
 
-    def run_via_binary_in_foreground(
-            self, run_command_instance=None, popen_params=None, container_name=None):
+    def run_via_binary_in_foreground(self, run_command_instance=None, command=None, additional_opts=None, popen_params=None, container_name=None):
         """
         Create a container using this image and run it in foreground;
         this method is useful to test real user scenarios when users invoke containers using
@@ -282,21 +302,42 @@ class DockerImage(Image):
         how you should work with instance of Popen
 
         :param run_command_instance: instance of DockerRunBuilder
+        :param command: list of str, command to run in the container, examples:
+            - ["ls", "/"]
+            - ["bash", "-c", "ls / | grep bin"]
+        :param additional_opts: list of str, additional options for `docker run`
         :param popen_params: dict, keyword arguments passed to Popen constructor
         :param container_name: str, pretty container identifier
         :return: instance of DockerContainer
         """
         logger.info("run container via binary in foreground")
-        run_command_instance = run_command_instance or DockerRunBuilder()
-        if not isinstance(run_command_instance, DockerRunBuilder):
-            raise ConuException("run_command_instance needs to be an instance of DockerRunBuilder")
+
+        if (command is not None or additional_opts is not None) and run_command_instance is not None:
+            raise ConuException("run_command_instance and command parameters cannot be passed into method at same time")
+
+        if run_command_instance is None:
+            command = command or []
+            additional_opts = additional_opts or []
+
+            if (isinstance(command, list) or isinstance(command, tuple) and
+                isinstance(additional_opts, list) or isinstance(additional_opts, tuple)):
+                run_command_instance = DockerRunBuilder(command=command, additional_opts=additional_opts)
+            else:
+                raise ConuException("command and additional_opts needs to be list of str or None")
+        else:
+            run_command_instance = run_command_instance or DockerRunBuilder()
+            if not isinstance(run_command_instance, DockerRunBuilder):
+                raise ConuException("run_command_instance needs to be an instance of DockerRunBuilder")
+
         popen_params = popen_params or {}
+
         run_command_instance.image_name = self.get_id()
         if container_name:
             run_command_instance.options += ["--name", container_name]
 
         def callback():
             return subprocess.Popen(run_command_instance.build(), **popen_params)
+
         container_id, popen_instance = self._run_container(run_command_instance, callback)
 
         actual_name = self.d.inspect_container(container_id)['Name'][1:]
@@ -321,8 +362,8 @@ class DockerImage(Image):
 
         if not allowed_keys or not isinstance(allowed_keys, list):
             raise ConuException("allowed_keys must be a list")
-        drb = DockerRunBuilder(command=['rpm', '-qa', '--qf', '%{name} %{SIGPGP:pgpsig}\n'])
-        cont = self.run_via_binary(drb)
+        command = ['rpm', '-qa', '--qf', '%{name} %{SIGPGP:pgpsig}\n']
+        cont = self.run_via_binary(command=command)
         try:
             out = cont.logs_unicode()[:-1].split('\n')
             check_signatures(out, allowed_keys)

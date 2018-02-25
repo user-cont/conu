@@ -41,15 +41,13 @@ def run_container(backend, local_dir):
     # the image will be pulled if it's not present locally (default behavior)
     image = backend.ImageClass(image_name, tag=image_tag)
 
-    # helper class to create `docker run ...` -- we want test the same experience as our users
-    b = DockerRunBuilder(
-        # the command to run in a container
-        command=["python3", "-m", "http.server", "--bind", "0.0.0.0", "%d" % port],
-        # additional options passed to `run` command
-        additional_opts=["-v", "%s:/webroot" % local_dir, "-w", "/webroot"]
-    )
+    # the command to run in a container
+    command = ["python3", "-m", "http.server", "--bind", "0.0.0.0", "%d" % port]
+    # additional options passed to `run` command
+    additional_opts = ["-v", "%s:/webroot" % local_dir, "-w", "/webroot"]
+
     # let's run the container (in the background)
-    container = image.run_via_binary(run_command_instance=b)
+    container = image.run_via_binary(command=command, additional_opts=additional_opts)
     return container
 
 
