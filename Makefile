@@ -1,4 +1,4 @@
-.PHONY: install-dependencies exec-test check container build-test-container test
+.PHONY: install-dependencies exec-test check container build-test-container test docs open-docs
 
 CONU_REPOSITORY := docker.io/modularitycontainers/conu
 TEST_IMAGE_NAME := conu-tests
@@ -16,6 +16,14 @@ exec-test:
 	PYTHONPATH=$(CURDIR) pytest-3 $(TEST_TARGET)
 
 check: test
+
+docs:
+	make -C docs/ html
+
+docs/build/html/index.html: docs
+
+open-docs: docs/build/html/index.html
+	xdg-open docs/build/html/index.html
 
 # jenkins doesn't seem to cope well with the docker's networing magic:
 #   dnf and `docker pull` malfunctions -- timeouts, network errors
