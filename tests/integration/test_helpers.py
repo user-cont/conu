@@ -14,13 +14,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from conu import DockerBackend
+from conu.fixtures import docker_backend
 from conu.helpers import get_container_output
+from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
 
 
-with DockerBackend() as backend:
-    # This will run the container using the supplied command, collects output and
-    # cleans the container
-    output = get_container_output(backend, "fedora", ["ls", "-1", "/etc"],
-                                  image_tag="27")
-    assert "passwd" in output
+def test_get_container_output(docker_backend):
+    output = get_container_output(docker_backend, FEDORA_MINIMAL_REPOSITORY,
+                                  ["cat", "/etc/os-release"],
+                                  image_tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+    assert FEDORA_MINIMAL_REPOSITORY_TAG in output

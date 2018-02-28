@@ -44,7 +44,6 @@ with DockerBackend(logging_level=logging.DEBUG) as backend:
         request_command,
         popen_params={"stdin": subprocess.PIPE}
     )
-    expected_output = b'Password: \n ?column? \n----------\n        1\n(1 row)'
 
     # send requests
     clientcont.write_to_stdin(b'pass\n')
@@ -53,8 +52,11 @@ with DockerBackend(logging_level=logging.DEBUG) as backend:
     clientcont.write_to_stdin(b'SELECT 1;\n')
     # give postgres time to process
     time.sleep(0.2)
+    logs_bytes = clientcont.logs_in_bytes()
+    expected_output = b'Password: \n ?column? \n----------\n        1\n(1 row)'
     try:
-        assert clientcont.logs_in_bytes() == expected_output + b'\n'
+        assert b'Password: ' in logs_bytes
+        assert b'(1 row)' in logs_bytes
         assert clientcont.is_running()
     finally:
         dbcont.delete(force=True)

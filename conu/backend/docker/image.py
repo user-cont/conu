@@ -310,9 +310,10 @@ class DockerImage(Image):
         """
         Check signature of packages installed in image.
         Raises exception when
-         * rpm binary is not installed in image
-         * parsing of rpm fails
-         * there are packages in image that are not signed with one of allowed keys
+
+        * rpm binary is not installed in image
+        * parsing of rpm fails
+        * there are packages in image that are not signed with one of allowed keys
 
         :param allowed_keys: list of allowed keys
         :return: bool

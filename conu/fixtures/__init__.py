@@ -13,14 +13,32 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+"""
+This submodule contains `pytest <https://docs.pytest.org/en/latest/>`_ fixtures
+which can be utilized when writing tests for your containers while using conu
+and pytest.
+"""
+
+import logging
 
 from conu import DockerBackend
-from conu.helpers import get_container_output
+
+import pytest
 
 
-with DockerBackend() as backend:
-    # This will run the container using the supplied command, collects output and
-    # cleans the container
-    output = get_container_output(backend, "fedora", ["ls", "-1", "/etc"],
-                                  image_tag="27")
-    assert "passwd" in output
+@pytest.fixture()
+def docker_backend():
+    """
+    pytest fixture which mimics context manager: it provides new instance of DockerBackend and
+    cleans after it once it's used; sample usage:
+
+    ::
+
+        def test_my_container(docker_backend):
+            image = docker_backend.ImageClass("fedora", tag="27")
+
+    :return: instance of DockerBackend
+    """
+    backend = DockerBackend(logging_level=logging.DEBUG).__enter__()
+    yield backend
+    backend._clean()

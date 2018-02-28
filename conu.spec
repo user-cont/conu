@@ -78,6 +78,15 @@ and is handy when playing with containers inside your code.
 It defines an API to access and manipulate containers,
 images and provides more, very helpful functions.
 
+%package -n     python2-%{pypi_name}-pytest
+Summary:        fixtures which can be utilized via pytest
+%{?python_provide:%python_provide python2-%{pypi_name}-pytest}
+Requires:       python2-pytest
+Requires:       python2-%{pypi_name}
+
+%description -n python2-%{pypi_name}-pytest
+fixtures which can be utilized via pytest
+
 %if %{with python3}
 %package -n     python3-%{pypi_name}
 Summary:        %{summary}
@@ -101,6 +110,15 @@ Recommends:     libselinux-utils
 and is handy when playing with containers inside your code.
 It defines an API to access and manipulate containers,
 images and provides more, very helpful functions.
+
+%package -n     python3-%{pypi_name}-pytest
+Summary:        fixtures which can be utilized via pytest
+%{?python_provide:%python_provide python3-%{pypi_name}-pytest}
+Requires:       python3-pytest
+Requires:       python3-%{pypi_name}
+
+%description -n python3-%{pypi_name}-pytest
+fixtures which can be utilized via pytest
 %endif
 
 %package -n %{pypi_name}-doc
@@ -137,6 +155,11 @@ rm -rf html/.{doctrees,buildinfo}
 %{python2_sitelib}/%{pypi_name}/
 %{python2_sitelib}/%{pypi_name}-*.egg-info/
 %exclude %{python2_sitelib}/tests
+%exclude %{python3_sitelib}/fixtures
+
+%files -n python2-%{pypi_name}-pytest
+%license LICENSE
+%{python2_sitelib}/%{pypi_name}/fixtures/
 
 %if %{with python3}
 %files -n python3-%{pypi_name}
@@ -145,6 +168,11 @@ rm -rf html/.{doctrees,buildinfo}
 %{python3_sitelib}/%{pypi_name}/
 %{python3_sitelib}/%{pypi_name}-*.egg-info/
 %exclude %{python3_sitelib}/tests
+%exclude %{python3_sitelib}/fixtures
+
+%files -n python3-%{pypi_name}-pytest
+%license LICENSE
+%{python3_sitelib}/%{pypi_name}/fixtures/
 %endif
 
 %files -n %{pypi_name}-doc

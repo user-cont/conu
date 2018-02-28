@@ -21,3 +21,10 @@ Contribution
 =============
 
 In case of issues, questions and suggestions, please, file an issue or pull request on https://github.com/fedora-modularity/conu where conu is stored and maintained.
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Upstream development:
+
+   new_releases.rst
+   asciinema.rst
