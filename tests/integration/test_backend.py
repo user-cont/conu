@@ -20,6 +20,7 @@ from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
 
 from conu import DockerImage, DockerRunBuilder, DockerBackend
 from conu.backend.docker.client import get_client
+from conu.fixtures import docker_backend
 
 
 def test_cleanup_containers():
@@ -68,3 +69,8 @@ def test_non_cm_backend_tmpdir():
         assert b_tmp == t
 
     assert not os.path.isdir(t)
+
+
+def test_backend_fixture(docker_backend):
+    assert isinstance(docker_backend, DockerBackend)
+    

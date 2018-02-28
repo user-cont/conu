@@ -13,14 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+"""
+You can find some high-level functions defined in this submodule.
+"""
 
-from conu import DockerBackend
-from conu.helpers import get_container_output
-
-
-with DockerBackend() as backend:
-    # This will run the container using the supplied command, collects output and
-    # cleans the container
-    output = get_container_output(backend, "fedora", ["ls", "-1", "/etc"],
-                                  image_tag="27")
-    assert "passwd" in output
+from conu.helpers.docker_backend import get_container_output
