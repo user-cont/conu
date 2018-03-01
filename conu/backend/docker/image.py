@@ -35,6 +35,7 @@ from conu.backend.docker.container import DockerContainer, DockerRunBuilder
 from conu.exceptions import ConuException
 from conu.utils import run_cmd, random_tmp_filename, atomic_command_exists, s2i_command_exists, \
     graceful_get
+from conu.utils.filesystem import Volume
 from conu.utils.probes import Probe
 from conu.utils.rpms import check_signatures
 
@@ -238,12 +239,13 @@ class DockerImage(Image):
             container_id = fd.read()
         return container_id, response
 
-    def run_via_binary(self, run_command_instance=None, command=None, additional_opts=None, *args, **kwargs):
+    def run_via_binary(self, run_command_instance=None, command=None, volume=None, additional_opts=None, *args, **kwargs):
         """
         create a container using this image and run it in background;
         this method is useful to test real user scenarios when users invoke containers using
         binary
 
+        :param volume: tuple or list of tuples inform: target | source,target | source,target,mode
         :param run_command_instance: instance of DockerRunBuilder
         :param command: list of str, command to run in the container, examples:
             - ["ls", "/"]
@@ -273,6 +275,13 @@ class DockerImage(Image):
 
         run_command_instance.image_name = self.get_id()
         run_command_instance.options += ["-d"]
+
+        if volume:
+            if not isinstance(volume, list):
+                volume = [volume]
+            volumes = [Volume.create_from_tuple(v) for v in volume]
+            for v in volumes:
+                run_command_instance.options += ["-v", v.cmd_option]
 
         def callback():
             try:
