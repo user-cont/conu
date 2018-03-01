@@ -28,6 +28,41 @@ $ dnf install python{2,3}-conu conu-doc
 
 Please visit [our documentation](http://conu.readthedocs.io/en/latest/installation.html) for more info on installation.
 
+## Docker container
+
+You can try conu also in the container, but you have to:
+- mount docker socket
+- use `--cap-add SYS_ADMIN` for mounting containers/images
+- set `--privileged` option or turn off the selinux to allow access to docker inside the container:
+
+```
+docker run -it --rm \
+-v /var/run/docker.sock:/var/run/docker.sock:z \
+--cap-add SYS_ADMIN \
+--privileged \
+modularitycontainers/conu:0.2.0 python3
+```
+
+```python
+>>> from conu import DockerBackend
+>>> backend = DockerBackend()
+11:52:13.022 backend.py        INFO   conu has initiated, welcome to the party!
+>>> image = backend.ImageClass('docker.io/library/nginx')
+11:52:32.562 __init__.py       INFO   docker environment info: ...
+>>> container = image.run_via_binary()
+11:52:51.910 image.py          INFO   run container via binary in background
+```
+
+If you want to run custom source file, mount it to the container in the following way:
+
+```
+docker run -it --rm \
+-v /var/run/docker.sock:/var/run/docker.sock:z \
+-v $PWD/my_source.py:/app/my_source.py:z \
+--cap-add SYS_ADMIN \
+--privileged \
+modularitycontainers/conu:0.2.0 python3 /app/my_source.py
+```
 
 # Features
 
