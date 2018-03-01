@@ -222,3 +222,48 @@ class Directory(object):
     def __str__(self):
         # we could be possible initialize here, but... it's tricky
         return str(self.path)
+
+
+class Volume(object):
+    """
+    The representation of container volume.
+    """
+
+    def __init__(self, target, source=None, mode=None):
+        if source and not isinstance(source, Directory):
+            self.source = Directory(path=source)
+        else:
+            self.source = source
+        self.target = target
+        self.mode = mode
+
+    def __str__(self):
+        """
+        Cmd option representing the volume
+        :return:
+        """
+        result = self.target
+        if self.source:
+            result = "{}:{}".format(self.source.path, result)
+        if self.mode:
+            result = "{}:{}".format(result, self.mode)
+        return result
+
+    @classmethod
+    def create_from_tuple(cls, volume):
+        """
+        Create instance from tuple.
+        :param volume: tuple in one one of the following forms: target | source,target | source,target,mode
+        :return: instance of Volume
+        """
+        if isinstance(volume, six.string_types):
+            return Volume(target=volume)
+        elif len(volume) == 2:
+            return Volume(source=volume[0],
+                          target=volume[1])
+        elif len(volume) == 3:
+            return Volume(source=volume[0],
+                          target=volume[1],
+                          mode=volume[2])
+        else:
+            raise ConuException("Cannot create volume instance.")
