@@ -24,7 +24,7 @@ from conu.fixtures import docker_backend
 
 
 def test_cleanup_containers():
-    with DockerBackend(logging_level=logging.DEBUG) as backend:
+    with DockerBackend(logging_level=logging.DEBUG, cleanup=True) as backend:
         # cleaning up from previous runs
         backend.cleanup_containers()
 
@@ -38,8 +38,8 @@ def test_cleanup_containers():
             image.run_via_binary(command=command, additional_opts=additional_opts)
 
         assert container_sum+3 == len(client.containers(all=True))
-        backend.cleanup_containers()
-        assert container_sum == len(client.containers(all=True))
+
+    assert container_sum == len(client.containers(all=True))
 
 
 def test_standard_cleanup_tmpdir():

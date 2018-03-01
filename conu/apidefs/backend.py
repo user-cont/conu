@@ -99,13 +99,14 @@ class Backend(object):
     ContainerClass = Container
     ImageClass = Image
 
-    def __init__(self, logging_level=logging.INFO, logging_kwargs=None):
+    def __init__(self, logging_level=logging.INFO, logging_kwargs=None, cleanup=True):
         """
         This method serves as a configuration interface for conu.
 
         :param logging_level: int, control logger verbosity: see logging.{DEBUG,INFO,ERROR}
         :param logging_kwargs: dict, additional keyword arguments for logger set up, for more info
                                 see docstring of set_logging function
+        :param cleanup: bool, cleanup containers on exit
         """
         self.tmpdir = None
 
@@ -114,6 +115,8 @@ class Backend(object):
         self.logger = set_logging(level=self.logging_level, **logging_kwargs)
         self.logger.info("conu has initiated, welcome to the party!")
         self.logger.debug("conu version: %s", version.__version__)
+
+        self.cleanup = cleanup
 
     def _clean(self):
         """
