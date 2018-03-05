@@ -245,7 +245,10 @@ class DockerImage(Image):
         this method is useful to test real user scenarios when users invoke containers using
         binary
 
-        :param volume: tuple or list of tuples inform: target | source,target | source,target,mode
+        :param volume: tuple or list of tuples in the form: target | source,target | source,target,mode
+
+            e.g.: run_via_binary(volume=[(conu.Directory('/usr/bin'), "/mountpoint", "Z"), ("/source", "/target")])
+
         :param run_command_instance: instance of DockerRunBuilder
         :param command: list of str, command to run in the container, examples:
             - ["ls", "/"]
