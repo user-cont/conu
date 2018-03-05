@@ -281,7 +281,7 @@ class DockerImage(Image):
                 volume = [volume]
             volumes = [Volume.create_from_tuple(v) for v in volume]
             for v in volumes:
-                run_command_instance.options += ["-v", v.cmd_option]
+                run_command_instance.options += ["-v", str(v)]
 
         def callback():
             try:
