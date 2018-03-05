@@ -18,7 +18,7 @@ import os
 
 from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
 
-from conu import DockerImage, DockerRunBuilder, DockerBackend
+from conu import DockerImage, DockerBackend
 from conu.backend.docker.client import get_client
 from conu.fixtures import docker_backend
 
@@ -31,10 +31,11 @@ def test_cleanup_containers():
         client = get_client()
         container_sum = len(client.containers(all=True))
         image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
-        command = DockerRunBuilder(command=["ls"], additional_opts=["-i", "-t"])
+        command = ["ls"]
+        additional_opts = ["-i", "-t"]
 
         for i in range(3):
-            image.run_via_binary(command)
+            image.run_via_binary(command=command, additional_opts=additional_opts)
 
         assert container_sum+3 == len(client.containers(all=True))
         backend.cleanup_containers()

@@ -29,8 +29,8 @@ with DockerBackend(logging_level=logging.DEBUG) as backend:
     image = backend.ImageClass('centos/postgresql-96-centos7')
 
     # create server
-    cmd = DockerRunBuilder(additional_opts=environment)
-    dbcont = image.run_via_binary(cmd)
+    additional_opts = environment
+    dbcont = image.run_via_binary(additional_opts=additional_opts)
 
     # wait for server port to be ready
     dbcont.wait_for_port(5432)

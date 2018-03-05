@@ -45,9 +45,7 @@ def run_in_container(img_name, img_tag, script):
         i.inspect()
     except Exception:
         i.pull()
-    c = i.run_via_binary(
-        conu.DockerRunBuilder(
-            command=["sleep", "infinity"], additional_opts=["--rm"]))
+    c = i.run_via_binary(command=["sleep", "infinity"], additional_opts=["--rm"])
     try:
         for s in script:
             c.execute(s)

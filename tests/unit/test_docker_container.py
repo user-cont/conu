@@ -42,9 +42,9 @@ def test_get_port_mappings():
     image = DockerImage(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
 
     # the container needs to be running in order to get port mappings
-    command = DockerRunBuilder(additional_opts=["-p", "321:123", "-i"])
+    additional_opts = ["-p", "321:123", "-i"]
 
-    container = image.run_via_binary(command)
+    container = image.run_via_binary(additional_opts=additional_opts)
     try:
         mappings = container.get_port_mappings(123)
 
@@ -57,8 +57,7 @@ def test_get_port_mappings():
     finally:
         container.delete(force=True)
 
-    command = DockerRunBuilder()
-    container = image.run_via_binary(command)
+    container = image.run_via_binary()
     try:
         mappings = container.get_port_mappings(123)
 

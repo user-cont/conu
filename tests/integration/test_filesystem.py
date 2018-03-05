@@ -19,9 +19,8 @@ import pytest
 import six
 
 from conu.backend.docker.backend import DockerBackend
-from conu.backend.docker.container import (
-    DockerRunBuilder, ConuException
-)
+from conu.backend.docker.container import ConuException
+
 from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
 
 
@@ -36,7 +35,7 @@ class TestDockerContainerFilesystem(object):
         cls.image = cls.backend.ImageClass(
             FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
         cls.container = cls.image.run_via_binary(
-            DockerRunBuilder(command=["sleep", "infinity"])
+            command=["sleep", "infinity"]
         )
 
     @classmethod

@@ -21,9 +21,9 @@ from conu import DockerBackend, DockerRunBuilder
 
 with DockerBackend() as backend:
     image = backend.ImageClass('fedora')
-    cmd = DockerRunBuilder(additional_opts=['-i', '-e', 'KEY=space'])
+    additional_opts = ['-i', '-e', 'KEY=space']
 
-    cont = image.run_via_binary_in_foreground(cmd, popen_params={"stdin": subprocess.PIPE})
+    cont = image.run_via_binary_in_foreground(additional_opts=additional_opts, popen_params={"stdin": subprocess.PIPE})
     try:
         assert cont.is_running()
         assert cont.logs_unicode() == ""
