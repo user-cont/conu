@@ -22,6 +22,7 @@ import pytest
 
 from conu import ConuException, random_str, Directory
 from conu.utils import graceful_get
+from conu.utils.filesystem import Volume
 from conu.utils.http_client import get_url
 
 
@@ -148,3 +149,38 @@ def test_http_client_get_url():
     assert get_url(path="/app",
                    host="domain.example.org",
                    port=443) == "http://domain.example.org:443/app"
+
+
+@pytest.mark.parametrize("input_parameter,result", [
+    ("/target/path", "/target/path"),
+    (("/source/path", "/target/path"), "/source/path:/target/path"),
+    (("/source/path", "/target/path", "mode"), "/source/path:/target/path:mode"),
+    ((Directory("/source/path"), "/target/path"), "/source/path:/target/path"),
+    ((Directory("/source/path"), "/target/path", "mode"), "/source/path:/target/path:mode"),
+])
+def test_volume_create_from_tuple(input_parameter, result):
+    assert str(Volume.create_from_tuple(input_parameter)) == result
+
+
+@pytest.mark.parametrize("source,target,mode,result", [
+    (None, "/target/path", None, "/target/path"),
+    ("/source/path", "/target/path", None, "/source/path:/target/path"),
+    ("/source/path", "/target/path", "mode", "/source/path:/target/path:mode"),
+    (Directory("/source/path"), "/target/path", None, "/source/path:/target/path"),
+    (Directory("/source/path"), "/target/path", "mode", "/source/path:/target/path:mode"),
+])
+def test_volume_init(source, target, mode, result):
+    assert str(Volume(source=source,
+                      target=target,
+                      mode=mode)) == result
+
+
+@pytest.mark.parametrize("instance,result", [
+    (Volume("/target/path"), "/target/path"),
+    (Volume("/target/path", "/source/path"), "/source/path:/target/path"),
+    (Volume("/target/path", "/source/path", "mode"), "/source/path:/target/path:mode"),
+    (Volume("/target/path", Directory("/source/path")), "/source/path:/target/path"),
+    (Volume("/target/path", Directory("/source/path"), "mode"), "/source/path:/target/path:mode"),
+])
+def test_volume_init_raw(instance, result):
+    assert str(instance) == result
