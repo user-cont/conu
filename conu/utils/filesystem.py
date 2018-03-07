@@ -266,4 +266,6 @@ class Volume(object):
                           target=volume[1],
                           mode=volume[2])
         else:
+            logger.debug("Cannot create volume instance from {}."
+                         "It has to be tuple of form target x source,target x source,target,mode.".format(volume))
             raise ConuException("Cannot create volume instance.")
