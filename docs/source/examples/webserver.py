@@ -44,10 +44,12 @@ def run_container(backend, local_dir):
     # the command to run in a container
     command = ["python3", "-m", "http.server", "--bind", "0.0.0.0", "%d" % port]
     # additional options passed to `run` command
-    additional_opts = ["-v", "%s:/webroot" % local_dir, "-w", "/webroot"]
+    additional_opts = ["-w", "/webroot"]
 
     # let's run the container (in the background)
-    container = image.run_via_binary(command=command, additional_opts=additional_opts)
+    container = image.run_via_binary(command=command,
+                                     volumes=(local_dir, "/webroot"),
+                                     additional_opts=additional_opts)
     return container
 
 
