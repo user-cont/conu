@@ -395,6 +395,12 @@ class DockerImage(Image):
 
     @staticmethod
     def get_volume_options(volumes):
+        """
+        Generates volume options to run methods.
+
+        :param volumes: tuple or list of tuples in form target x source,target x source,target,mode.
+        :return: list of the form ["-v", "/source:/target", "-v", "/other/source:/destination:z", ...]
+        """
         if not isinstance(volumes, list):
             volumes = [volumes]
         volumes = [Volume.create_from_tuple(v) for v in volumes]
