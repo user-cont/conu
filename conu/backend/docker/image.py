@@ -283,11 +283,7 @@ class DockerImage(Image):
         run_command_instance.options += ["-d"]
 
         if volumes:
-            if not isinstance(volumes, list):
-                volumes = [volumes]
-            volumes = [Volume.create_from_tuple(v) for v in volumes]
-            for v in volumes:
-                run_command_instance.options += ["-v", str(v)]
+            run_command_instance.options += self.get_volume_options(volumes=volumes)
 
         def callback():
             try:
@@ -301,7 +297,7 @@ class DockerImage(Image):
         container_name = self.d.inspect_container(container_id)['Name'][1:]
         return DockerContainer(self, container_id, name=container_name)
 
-    def run_via_binary_in_foreground(self, run_command_instance=None, command=None, additional_opts=None, popen_params=None, container_name=None):
+    def run_via_binary_in_foreground(self, run_command_instance=None, command=None, volumes=None, additional_opts=None, popen_params=None, container_name=None):
         """
         Create a container using this image and run it in foreground;
         this method is useful to test real user scenarios when users invoke containers using
@@ -320,6 +316,13 @@ class DockerImage(Image):
         :param command: list of str, command to run in the container, examples:
             - ["ls", "/"]
             - ["bash", "-c", "ls / | grep bin"]
+        :param volumes: tuple or list of tuples in the form:
+
+            * `("/path/to/directory", )`
+            * `("/host/path", "/container/path")`
+            * `("/host/path", "/container/path", "mode")`
+            * `(conu.Directory('/host/path'), "/container/path")` (source can be also Directory instance)
+
         :param additional_opts: list of str, additional options for `docker run`
         :param popen_params: dict, keyword arguments passed to Popen constructor
         :param container_name: str, pretty container identifier
@@ -349,6 +352,9 @@ class DockerImage(Image):
         run_command_instance.image_name = self.get_id()
         if container_name:
             run_command_instance.options += ["--name", container_name]
+
+        if volumes:
+            run_command_instance.options += self.get_volume_options(volumes=volumes)
 
         def callback():
             return subprocess.Popen(run_command_instance.build(), **popen_params)
@@ -386,6 +392,16 @@ class DockerImage(Image):
             cont.stop()
             cont.delete()
         return True
+
+    @staticmethod
+    def get_volume_options(volumes):
+        if not isinstance(volumes, list):
+            volumes = [volumes]
+        volumes = [Volume.create_from_tuple(v) for v in volumes]
+        result = []
+        for v in volumes:
+            result += ["-v", str(v)]
+        return result
 
 
 class S2IDockerImage(DockerImage, S2Image):
