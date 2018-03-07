@@ -27,7 +27,7 @@ from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
     FEDORA_REPOSITORY
 
 from conu.backend.docker.client import get_client
-from conu import DockerRunBuilder, Probe, ConuException, DockerBackend, DockerImagePullPolicy
+from conu import DockerRunBuilder, Probe, ConuException, DockerBackend, DockerImagePullPolicy, Directory
 
 from six import string_types
 
@@ -320,3 +320,21 @@ def test_set_name():
         cont = image.run_via_binary_in_foreground(additional_opts=additional_opts)
         assert cont.name == test_name
         cont.delete(force=True)
+
+
+def test_run_with_volumes_metadata_check():
+    with DockerBackend() as backend:
+        image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG,
+                                   pull_policy=DockerImagePullPolicy.NEVER)
+        container = image.run_via_binary(volumes=(Directory('/usr/bin'), "/mountpoint", "Z"))
+
+        binds = container.get_metadata()["HostConfig"]["Binds"]
+        assert "/usr/bin:/mountpoint:Z" in binds
+
+        mount = container.get_metadata()["Mounts"][0]
+        print(mount)
+        assert mount["Source"] == "/usr/bin"
+        assert mount["Destination"] == "/mountpoint"
+        assert mount["Mode"] == "Z"
+
+        container.delete(force=True)
