@@ -99,7 +99,7 @@ class Backend(object):
     ContainerClass = Container
     ImageClass = Image
 
-    def __init__(self, logging_level=logging.INFO, logging_kwargs=None, cleanup=True):
+    def __init__(self, logging_level=logging.INFO, logging_kwargs=None, cleanup=False):
         """
         This method serves as a configuration interface for conu.
 
