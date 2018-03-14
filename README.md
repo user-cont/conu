@@ -218,5 +218,14 @@ $ python3 ./example.py
 The test passed! The logs should be easy to read, so you should have pretty good overview of what happened.
 
 
+# Real examples
+
+- [postgresql image](https://github.com/container-images/postgresql/tree/master/test)
+- [ruby image](https://github.com/container-images/ruby/blob/master/test/test_s2i.py)
+- [memcached image](https://github.com/container-images/memcached/blob/master/tests/memcached_conu.py)
+- [php image](https://github.com/sclorg/s2i-php-container/pull/198)
+- [tools image](https://github.com/container-images/tools/pull/5)
+
+
 # Documentation
 For more info see our documentation at [conu.readthedocs.io](http://conu.readthedocs.io/en/latest/).
