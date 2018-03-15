@@ -47,3 +47,8 @@ class DockerBackend(Backend):
             logger.debug("Removing container %s created by conu", id)
             client.stop(id)
             client.remove_container(id)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        super(DockerBackend, self).__exit__(exc_type, exc_val, exc_tb)
+        if self.cleanup:
+            DockerBackend.cleanup_containers()
