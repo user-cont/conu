@@ -92,15 +92,16 @@ class DockerContainerFS(Filesystem):
 class DockerContainer(Container):
     def __init__(self, image, container_id, name=None, popen_instance=None):
         """
-        :param image: DockerImage instance
+        :param image: DockerImage instance (if None, it will be found from the container itself)
         :param container_id: str, unique identifier of this container
         :param name: str, pretty container name
         :param popen_instance: instance of Popen (if container was created using method
             `via_binary`, this is the docker client process)
         """
+        self.d = get_client()
         super(DockerContainer, self).__init__(image, container_id, name)
         self.popen_instance = popen_instance
-        self.d = get_client()
+
 
     def __repr__(self):
         return "DockerContainer(image=%s, id=%s)" % (self.image, self.get_id())
@@ -223,6 +224,14 @@ class DockerContainer(Container):
         for p in port_mappings:
             if p.split("/")[0] == str(port):
                 return port_mappings[p]
+
+    def get_image_name(self):
+        """
+        return name of the container image
+
+        :return: str
+        """
+        return self.get_metadata()["Config"]["Image"]
 
     def wait_for_port(self, port, timeout=10, **probe_kwargs):
         """

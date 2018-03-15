@@ -39,12 +39,19 @@ class Container(object):
         :param container_id: str, unique identifier of this container
         :param container_id: str, pretty container name
         """
+        self.name = name
+        self._id = container_id
+
+        if not image:
+            image_name = self.get_image_name()
+            if image_name:
+                image = Image(image_name)
+
         if not isinstance(image, Image):
             raise RuntimeError("image argument is not an instance of Image class")
         self.image = image
-        self._id = container_id
         self._metadata = None
-        self.name = name
+
         # provides HTTP client (requests.Session)
         self.http_session = requests.Session()
 
@@ -104,6 +111,14 @@ class Container(object):
         :return: dict
         """
         raise NotImplementedError("get_metadata method is not implemented")
+
+    def get_image_name(self):
+        """
+        return name of the container image
+
+        :return: str
+        """
+        raise NotImplementedError("get_image_name method is not implemented")
 
     def is_running(self):
         """
