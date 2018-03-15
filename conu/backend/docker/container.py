@@ -231,7 +231,10 @@ class DockerContainer(Container):
 
         :return: str
         """
-        return self.get_metadata()["Config"]["Image"]
+        metadata = self.get_metadata()
+        if "Config" in metadata:
+            return metadata["Config"].get("Image", None)
+        return None
 
     def wait_for_port(self, port, timeout=10, **probe_kwargs):
         """

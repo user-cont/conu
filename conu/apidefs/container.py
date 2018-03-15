@@ -47,7 +47,7 @@ class Container(object):
             if image_name:
                 image = Image(image_name)
 
-        if not isinstance(image, Image):
+        elif not isinstance(image, Image):
             raise RuntimeError("image argument is not an instance of Image class")
         self.image = image
         self._metadata = None
