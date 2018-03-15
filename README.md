@@ -115,7 +115,6 @@ $ cat examples/readme_webserver.py
 ```
 ```python
 #!/usr/bin/python3
-# -*- coding: utf-8 -*-
 
 import logging
 
