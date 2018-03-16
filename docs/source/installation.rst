@@ -13,7 +13,6 @@ At the moment we only support Fedora:
     dnf copr enable ttomecek/conu
     dnf install python{2,3}-conu conu-doc
 
-It's not possible to install conu on CentOS right now due to `these dependency issues <https://github.com/fedora-modularity/conu/issues/106>`_.
 
 
 From PyPI
