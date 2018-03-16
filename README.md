@@ -111,76 +111,48 @@ modularitycontainers/conu:0.2.0 python3 /app/my_source.py
 Let's look at a practical example:
 
 ```bash
-$ cat ./example.py
+$ cat examples/readme_webserver.py
 ```
 ```python
-#!/usr.bin/python3
+#!/usr/bin/python3
+
 import logging
-import os
 
-from conu import DockerRunBuilder, DockerBackend, random_str, Directory
+from conu import DockerRunBuilder, DockerBackend
 
-
-# this is the port where we can access our app
+# our webserver will be accessible on this port
 port = 8765
 
+# we'll utilize this container image
+image_name = "registry.fedoraproject.org/fedora"
+image_tag = "27"
 
-# convenience function to run our application - webserver
-def run_container(backend, local_dir):
-    """
-    serve path `local_dir` using the python http webserver in a docker container
-
-    :param backend: DockerBackend instance
-    :param local_dir: str, path to the directory, it should exist
-    :return: instance of DockerContainer
-    """
-    image_name = "registry.fedoraproject.org/fedora"
-    image_tag = "27"
-
-    # we'll run our container using docker engine
-    # the image will be pulled if it's not present locally (default behavior)
+# we'll run our container using docker engine
+with DockerBackend(logging_level=logging.DEBUG) as backend:
+    # the image will be pulled if it's not present
     image = backend.ImageClass(image_name, tag=image_tag)
 
-    # helper class to create `docker run ...` -- we want test the same experience as our users
-
     # the command to run in a container
-    command=["python3", "-m", "http.server", "--bind", "0.0.0.0", "%d" % port],
-    # additional options passed to `run` command
-    additional_opts=["-v", "%s:/webroot" % local_dir, "-w", "/webroot"]
-
+    command = ["python3", "-m", "http.server", "--bind", "0.0.0.0", "%d" % port]
     # let's run the container (in the background)
-    container = image.run_via_binary(command=command, additional_opts=additional_opts)
-    return container
-
-
-def test_webserver():
-    # let's setup the directory to serve first
-    temp_dir_name = "shiny-%s" % random_str()
-    temp_dir_path = os.path.join("/tmp", temp_dir_name)
-    with DockerBackend(logging_level=logging.DEBUG) as backend:
-        # helper class to create and initialize the dir -- will be removed once we
-        # leave the context manager
-        with Directory(temp_dir_path, mode=0o0700):
-            # let's put some file in it
-            with open(os.path.join(temp_dir_path, "candle"), "w") as fd:
-                fd.write("You no take candle!")
-            container = run_container(backend, temp_dir_path)
-            try:
-                # we need to wait for the webserver to start serving
-                container.wait_for_port(port)
-                # GET on /
-                http_response = container.http_request(path="/", port=port)
-                assert http_response.ok
-                assert '<a href="candle">candle</a>' in http_response.content.decode("utf-8")
-                # now GETting the file
-                assert 'You no take candle!' in container.http_request(
-                    path="/candle", port=port).content.decode("utf-8")
-            finally:
-                container.kill()
-                container.delete()
-
-
-test_webserver()
+    container = image.run_via_binary(command=command)
+    try:
+        # we need to wait for the webserver to start serving
+        container.wait_for_port(port)
+        # GET on /
+        # this is standard `requests.Response`
+        http_response = container.http_request(path="/", port=port)
+        assert http_response.ok
+        assert '<a href="etc/">etc/</a>' in http_response.content.decode("utf-8")
+        # let's access /etc/passwd
+        etc_passwd = container.http_request(path="/etc/passwd", port=port).content.decode("utf-8")
+        assert 'root:x:0:0:root:/root:' in etc_passwd
+        # we can also access it directly on disk and compare
+        with container.mount() as fs:
+            assert etc_passwd == fs.read_file("/etc/passwd")
+    finally:
+        container.kill()
+        container.delete()
 ```
 
 Let's run it! Please make sure that you run the provided example as root, since
@@ -189,7 +161,7 @@ be root.
 
 Let's run it and look at the logs:
 ```bash
-$ python3 ./example.py
+$ python3 examples/readme_webserver.py
 ```
 ```
 13:32:17.668 backend.py        INFO   conu has initiated, welcome to the party!
