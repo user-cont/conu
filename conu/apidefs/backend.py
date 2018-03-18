@@ -21,9 +21,10 @@ from __future__ import print_function, unicode_literals
 
 import logging
 import shutil
+import enum
 
 from conu.apidefs.container import Container
-from conu.apidefs.image import Image, ImageCleanupPolicy
+from conu.apidefs.image import Image
 from conu import version
 from conu.utils import mkdtemp
 from conu.exceptions import ConuException
@@ -108,9 +109,9 @@ class Backend(object):
         :param logging_kwargs: dict, additional keyword arguments for logger set up, for more info
                                 see docstring of set_logging function
         :param cleanup: list, list of cleanup policy values, examples:
-            - [ImageCleanupPolicy.EVERYTHING]
-            - [ImageCleanupPolicy.VOLUMES, ImageCleanupPolicy.TMP_DIRS]
-            - [ImageCleanupPolicy.NOTHING]
+            - [CleanupPolicy.EVERYTHING]
+            - [CleanupPolicy.VOLUMES, CleanupPolicy.TMP_DIRS]
+            - [CleanupPolicy.NOTHING]
         """
         self.tmpdir = None
 
@@ -120,7 +121,7 @@ class Backend(object):
         self.logger.info("conu has initiated, welcome to the party!")
         self.logger.debug("conu version: %s", version.__version__)
 
-        self.cleanup = cleanup or [ImageCleanupPolicy.NOTHING]
+        self.cleanup = cleanup or [CleanupPolicy.NOTHING]
 
     def _clean_tmp_dirs(self):
         """
@@ -164,21 +165,21 @@ class Backend(object):
 
     def _clean(self):
 
-        if ImageCleanupPolicy.NOTHING in self.cleanup and len(self.cleanup) != 1:
-            raise ConuException("Image cleanup policy NOTHING cannot be combined with other values")
-        elif ImageCleanupPolicy.EVERYTHING in self.cleanup:
+        if CleanupPolicy.NOTHING in self.cleanup and len(self.cleanup) != 1:
+            raise ConuException("Cleanup policy NOTHING cannot be combined with other values")
+        elif CleanupPolicy.EVERYTHING in self.cleanup:
                 self.cleanup_containers()
                 self.cleanup_volumes()
                 self.cleanup_images()
                 self._clean_tmp_dirs()
         else:
-            if ImageCleanupPolicy.CONTAINERS in self.cleanup:
+            if CleanupPolicy.CONTAINERS in self.cleanup:
                 self.cleanup_containers()
-            if ImageCleanupPolicy.VOLUMES in self.cleanup:
+            if CleanupPolicy.VOLUMES in self.cleanup:
                 self.cleanup_volumes()
-            if ImageCleanupPolicy.IMAGES in self.cleanup:
+            if CleanupPolicy.IMAGES in self.cleanup:
                 self.cleanup_images()
-            if ImageCleanupPolicy.TMP_DIRS in self.cleanup:
+            if CleanupPolicy.TMP_DIRS in self.cleanup:
                 self._clean_tmp_dirs()
 
     def __enter__(self):
@@ -187,3 +188,22 @@ class Backend(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._clean()
+
+
+class CleanupPolicy(enum.Enum):
+    """
+    This Enum defines the policy for cleanup.
+
+    * NOTHING - clean nothing when container exits
+    * EVERYTHING - clean everything when container exits (containers, volumes, images, temporary directories)
+    * CONTAINERS - remove containers
+    * VOLUMES - remove all volumes
+    * IMAGES - remove the image
+    * TMP_DIRS - remove temporary directories
+    """
+    NOTHING = 0
+    EVERYTHING = 1
+    CONTAINERS = 2
+    VOLUMES = 3
+    IMAGES = 4
+    TMP_DIRS = 5

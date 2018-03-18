@@ -19,8 +19,6 @@ Abstract definition for an Image
 """
 from __future__ import print_function, unicode_literals
 
-import enum
-
 
 class Image(object):
     """
@@ -163,25 +161,6 @@ class Image(object):
         :return: instance of Container
         """
         raise NotImplementedError("create_container method is not implemented")
-
-
-class ImageCleanupPolicy(enum.Enum):
-    """
-    This Enum defines the policy for cleanup.
-
-    * NOTHING - clean nothing when container exits
-    * EVERYTHING - clean everything when container exits (containers, volumes, images, temporary directories)
-    * CONTAINERS - remove containers
-    * VOLUMES - remove all volumes
-    * IMAGES - remove the image
-    * TMP_DIRS - remove temporary directories
-    """
-    NOTHING = 0
-    EVERYTHING = 1
-    CONTAINERS = 2
-    VOLUMES = 3
-    IMAGES = 4
-    TMP_DIRS = 5
 
 
 class S2Image:
