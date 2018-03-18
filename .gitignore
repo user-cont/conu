@@ -1,8 +1,20 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+
+# Distribution / packaging
 *.src.rpm
 *.tar.gz
 build/
 dist/
-docs/build/
 noarch/
+*.egg-info/
+
+# Unit test / coverage reports
+.cache
+
+# Sphinx documentation
+docs/build/
+
+# PyCharm
+.idea/
