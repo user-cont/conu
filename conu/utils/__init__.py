@@ -30,6 +30,25 @@ from conu.exceptions import ConuException
 logger = logging.getLogger(__name__)
 
 
+def convert_kv_to_dict(data):
+    """
+    convert text values in format:
+    key1=value1
+    key2=value2
+    to dict {'key1':'value1', 'key2':'value2'}
+
+    :param data: string containing lines with these values
+    :return: dict
+    """
+    output = {}
+    for line in data.split("\n"):
+        stripped = line.strip()
+        if stripped:
+            key, value = stripped.split("=", 1)
+            output[key] = value
+    return output
+
+
 def check_port(port, host, timeout=10):
     """
     connect to port on host and return True on success
@@ -88,22 +107,32 @@ def random_str(size=10):
     return ''.join(random.choice(string.ascii_lowercase) for _ in range(size))
 
 
-def run_cmd(cmd, return_output=False, **kwargs):
+def run_cmd(cmd, return_output=False, ignore_status=False, **kwargs):
     """
     run provided command on host system using the same user as you invoked this code, raises
     subprocess.CalledProcessError if it fails
 
     :param cmd: list of str
     :param return_output: bool, return output of the command
+    :param ignore_status: bool, do not fail in case nonzero return code
     :param kwargs: pass keyword arguments to subprocess.check_* functions; for more info,
             please check `help(subprocess.Popen)`
     :return: None or str
     """
     logger.debug('command: "%s"' % ' '.join(cmd))
-    if return_output:
-        return subprocess.check_output(cmd, stderr=subprocess.STDOUT, **kwargs).decode("utf-8")
-    else:
-        subprocess.check_call(cmd, **kwargs)
+    try:
+        if return_output:
+            return subprocess.check_output(cmd, stderr=subprocess.STDOUT, **kwargs).decode("utf-8")
+        else:
+            subprocess.check_call(cmd, **kwargs)
+    except subprocess.CalledProcessError as cpe:
+        if ignore_status:
+            if return_output:
+                return cpe.output
+            else:
+                return cpe.returncode
+        else:
+            raise cpe
 
 
 def mkstemp(dir=None):
