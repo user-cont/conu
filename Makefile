@@ -79,3 +79,17 @@ release:
 
 encrypt-password-in-travis-yml:
 	docker run -ti --rm -v $(CURDIR):/src -w /src docker.io/tianon/travis-cli travis encrypt --add deploy.password -r fedora-modularity/conu $(THE_PASSWORD)
+
+clean:
+	git clean -dfx
+
+install: clean install-dependencies
+	pip install --user .
+
+uninstall:
+	pip uninstall .
+	rm /usr/lib/python*/site-packages/conu\* -rf
+
+test-nspawn-vagrant:
+	vagrant up
+	vagrant destroy
