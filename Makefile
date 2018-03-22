@@ -83,8 +83,8 @@ encrypt-password-in-travis-yml:
 clean:
 	git clean -dfx
 
-install: uninstall clean install-dependencies
-	pip install .
+install: clean install-dependencies
+	pip install --user .
 
 uninstall:
 	pip uninstall .
