@@ -162,6 +162,7 @@ class Image(object):
         """
         raise NotImplementedError("create_container method is not implemented")
 
+
 class S2Image:
     """
     Additional functionality related to s2i-enabled container images

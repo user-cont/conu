@@ -19,12 +19,13 @@ import os
 from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
 
 from conu import DockerImage, DockerBackend
+from conu.apidefs.backend import CleanupPolicy
 from conu.backend.docker.client import get_client
 from conu.fixtures import docker_backend
 
 
 def test_cleanup_containers():
-    with DockerBackend(logging_level=logging.DEBUG, cleanup=True) as backend:
+    with DockerBackend(logging_level=logging.DEBUG, cleanup=[CleanupPolicy.CONTAINERS]) as backend:
         # cleaning up from previous runs
         backend.cleanup_containers()
 
@@ -43,7 +44,7 @@ def test_cleanup_containers():
 
 
 def test_standard_cleanup_tmpdir():
-    with DockerBackend() as backend:
+    with DockerBackend(cleanup=[CleanupPolicy.TMP_DIRS]) as backend:
         t = backend.tmpdir
         assert os.path.isdir(t)
     assert not os.path.isdir(t)
@@ -64,7 +65,7 @@ def test_non_cm_backend_tmpdir():
     b_tmp = get_backend_tmpdir()
 
     # test reinitialization
-    with DockerBackend(logging_level=logging.DEBUG) as b:
+    with DockerBackend(logging_level=logging.DEBUG, cleanup=[CleanupPolicy.TMP_DIRS]) as b:
         t = b.tmpdir
         assert os.path.isdir(t)
         assert b_tmp == t
@@ -74,4 +75,3 @@ def test_non_cm_backend_tmpdir():
 
 def test_backend_fixture(docker_backend):
     assert isinstance(docker_backend, DockerBackend)
-    

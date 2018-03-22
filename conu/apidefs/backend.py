@@ -21,11 +21,13 @@ from __future__ import print_function, unicode_literals
 
 import logging
 import shutil
+import enum
 
 from conu.apidefs.container import Container
 from conu.apidefs.image import Image
 from conu import version
 from conu.utils import mkdtemp
+from conu.exceptions import ConuException
 
 
 _backend_tmpdir = None
@@ -99,14 +101,17 @@ class Backend(object):
     ContainerClass = Container
     ImageClass = Image
 
-    def __init__(self, logging_level=logging.INFO, logging_kwargs=None, cleanup=False):
+    def __init__(self, logging_level=logging.INFO, logging_kwargs=None, cleanup=None):
         """
         This method serves as a configuration interface for conu.
 
         :param logging_level: int, control logger verbosity: see logging.{DEBUG,INFO,ERROR}
         :param logging_kwargs: dict, additional keyword arguments for logger set up, for more info
                                 see docstring of set_logging function
-        :param cleanup: bool, cleanup containers on exit
+        :param cleanup: list, list of cleanup policy values, examples:
+            - [CleanupPolicy.EVERYTHING]
+            - [CleanupPolicy.VOLUMES, CleanupPolicy.TMP_DIRS]
+            - [CleanupPolicy.NOTHING]
         """
         self.tmpdir = None
 
@@ -116,21 +121,66 @@ class Backend(object):
         self.logger.info("conu has initiated, welcome to the party!")
         self.logger.debug("conu version: %s", version.__version__)
 
-        self.cleanup = cleanup
+        self.cleanup = cleanup or [CleanupPolicy.NOTHING]
 
-    def _clean(self):
+    def _clean_tmp_dirs(self):
         """
         Remove temporary dir associated with this backend instance.
 
         :return: None
         """
+
         def onerror(fnc, path, excinfo):
             # we might not have rights to do this, the files could be owned by root
             self.logger.info("we were not able to remove temporary file %s: %s", path, excinfo[1])
+
         shutil.rmtree(self.tmpdir, onerror=onerror)
         self.tmpdir = None
         global _backend_tmpdir
         _backend_tmpdir = None
+
+    def cleanup_containers(self):
+        """
+        Remove containers associated with this backend instance
+
+        :return: None
+        """
+        raise NotImplementedError("cleanup_containers method is not implemented")
+
+    def cleanup_volumes(self):
+        """
+        Remove volumes associated with this backend instance
+
+        :return: None
+        """
+        raise NotImplementedError("cleanup_volumes method is not implemented")
+
+    def cleanup_images(self):
+        """
+        Remove images associated with this backend instance
+
+        :return: None
+        """
+        raise NotImplementedError("cleanup_images method is not implemented")
+
+    def _clean(self):
+
+        if CleanupPolicy.NOTHING in self.cleanup and len(self.cleanup) != 1:
+            raise ConuException("Cleanup policy NOTHING cannot be combined with other values")
+        elif CleanupPolicy.EVERYTHING in self.cleanup:
+                self.cleanup_containers()
+                self.cleanup_volumes()
+                self.cleanup_images()
+                self._clean_tmp_dirs()
+        else:
+            if CleanupPolicy.CONTAINERS in self.cleanup:
+                self.cleanup_containers()
+            if CleanupPolicy.VOLUMES in self.cleanup:
+                self.cleanup_volumes()
+            if CleanupPolicy.IMAGES in self.cleanup:
+                self.cleanup_images()
+            if CleanupPolicy.TMP_DIRS in self.cleanup:
+                self._clean_tmp_dirs()
 
     def __enter__(self):
         self.tmpdir = get_backend_tmpdir()
@@ -138,3 +188,22 @@ class Backend(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._clean()
+
+
+class CleanupPolicy(enum.Enum):
+    """
+    This Enum defines the policy for cleanup.
+
+    * NOTHING - clean nothing when container exits
+    * EVERYTHING - clean everything when container exits (containers, volumes, images, temporary directories)
+    * CONTAINERS - remove containers
+    * VOLUMES - remove all volumes
+    * IMAGES - remove the image
+    * TMP_DIRS - remove temporary directories
+    """
+    NOTHING = 0
+    EVERYTHING = 1
+    CONTAINERS = 2
+    VOLUMES = 3
+    IMAGES = 4
+    TMP_DIRS = 5

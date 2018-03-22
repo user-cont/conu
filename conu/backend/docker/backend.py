@@ -38,8 +38,7 @@ class DockerBackend(Backend):
     ContainerClass = DockerContainer
     ImageClass = DockerImage
 
-    @staticmethod
-    def cleanup_containers():
+    def cleanup_containers(self):
         client = get_client()
         conu_containers = client.containers(filters={'label': CONU_ARTIFACT_TAG}, all=True)
         for c in conu_containers:
@@ -48,7 +47,10 @@ class DockerBackend(Backend):
             client.stop(id)
             client.remove_container(id)
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        super(DockerBackend, self).__exit__(exc_type, exc_val, exc_tb)
-        if self.cleanup:
-            DockerBackend.cleanup_containers()
+    def cleanup_volumes(self):
+        # TODO implement cleaning of docker volumes
+        pass
+
+    def cleanup_images(self):
+        # TODO implement cleaning of docker images
+        pass
