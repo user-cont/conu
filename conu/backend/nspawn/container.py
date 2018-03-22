@@ -25,7 +25,7 @@ from copy import deepcopy
 
 from conu.apidefs.container import Container
 from conu.exceptions import ConuException
-from conu.utils import run_cmd, random_str, convert_kv_to_dict
+from conu.utils import run_cmd, random_str, convert_kv_to_dict, command_exists
 import constants
 
 
@@ -43,11 +43,14 @@ class NspawnContainer(Container):
         :param container_id: id of running container (created by Image.run method)
         :param name: optional name of container
         :param popen_instance: not used anyhow now
-        :param start_process: not used ahyhow now
+        :param start_process: subporocess instance with start process
+        :param start_action: set with 4 parameters for starting container
         """
         # This is important to indentify if systemd supports --wait option,
         # RHEL7 does not support --wait
         self.systemd_wait_support = None
+        # TODO: this is example how it can be named, and it could be used as callback method from parent class
+        self.system_requirements()
         # TODO: find way how to find image for already running container, it is
         # not simple, not shown by list, status, or other commands
         super(NspawnContainer, self).__init__(image, container_id, name)
@@ -56,6 +59,23 @@ class NspawnContainer(Container):
         self.popen_instance = popen_instance
         self.start_process = start_process
         self.start_action = start_action
+
+    @staticmethod
+    def system_requirements():
+        """
+        Check if all necessary packages are installed on system
+
+        :return: None or raise exception if some tooling is missing
+        """
+        command_exists("systemd-run",
+            ["systemd-run", "--help"],
+            "Command systemd-run does not seems to be present on your system"
+            "Do you have system with systemd")
+        command_exists(
+            "machinectl",
+            ["machinectl", "--help"],
+            "Command machinectl does not seems to be present on your system"
+            "Do you have system with systemd")
 
     def __repr__(self):
         # TODO: very similar to Docker method, move to API, this is the proper

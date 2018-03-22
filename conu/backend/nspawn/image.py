@@ -32,7 +32,7 @@ from container import NspawnContainer
 from conu.apidefs.filesystem import Filesystem
 from conu.apidefs.image import Image
 from conu.exceptions import ConuException
-from conu.utils import run_cmd, random_str, convert_kv_to_dict, mkstemp, mkdtemp
+from conu.utils import run_cmd, random_str, convert_kv_to_dict, mkstemp, mkdtemp, command_exists
 from conu.utils.filesystem import Volume
 
 logger = logging.getLogger(__name__)
@@ -47,9 +47,29 @@ class NspawnImageFS(Filesystem):
         :param image: instance of NspawnImage
         :param mount_point: str, directory where the filesystem will be mounted
         """
+        self.system_requirements()
         self.mount_point_exists = False
         super(NspawnImageFS, self).__init__(image, mount_point=mount_point)
         self.image = image
+
+    @staticmethod
+    def system_requirements():
+        """
+        Check if all necessary packages are installed on system
+
+        :return: None or raise exception if some tooling is missing
+        """
+        command_exists("losetup",
+            ["losetup", "-V"],
+            "losetup is not present on your system")
+        command_exists(
+            "partprobe",
+            ["partprobe", "-v"],
+            "partprobe is not present on your system")
+        command_exists(
+            "mount",
+            ["mount", "-V"],
+            "mount is not present on your system")
 
     def __enter__(self):
         # TODO RFE: use libguestfs if possible
@@ -105,7 +125,7 @@ class NspawnImage(Image):
         :param tag: str, tag of the image, when not specified, "latest" is implied
         :param pull_policy: enum, strategy to apply for pulling the image
         """
-
+        self.system_requirements()
         self.container_process = None
 
         super(NspawnImage, self).__init__(repository, tag=tag)
@@ -130,6 +150,26 @@ class NspawnImage(Image):
             self.pull()
         elif self.pull_policy == ImagePullPolicy.NEVER:
             logger.debug("pull policy set to 'never'")
+
+    @staticmethod
+    def system_requirements():
+        """
+        Check if all necessary packages are installed on system
+
+        :return: None or raise exception if some tooling is missing
+        """
+        command_exists("systemd-nspawn",
+            ["systemd-nspawn", "--version"],
+            "Command systemd-nspawn does not seems to be present on your system"
+            "Do you have system with systemd")
+        command_exists(
+            "machinectl",
+            ["machinectl", "--help"],
+            "Command machinectl does not seems to be present on your system"
+            "Do you have system with systemd")
+        if "Enforcing" in run_cmd(["getenforce"], return_output=True, ignore_status=True):
+            logger.error("Please disable selinux (setenforce 0), selinux blocks some nspawn operations"
+                         "This may lead to strange behaviour")
 
     def __repr__(self):
         # TODO: move this method to api somehow? similar to docker
