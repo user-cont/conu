@@ -51,7 +51,7 @@ class NspawnBackend(Backend):
                 # there container.stop() method
                 run_cmd(["machinectl", "terminate", cont])
             except Exception as e:
-                logger.log("unable to remove container: {}".format(cont))
+                logger.error("unable to remove container %s: %r", cont, e)
 
     @staticmethod
     def cleanup_images():
