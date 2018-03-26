@@ -23,6 +23,7 @@ import time
 import docker.errors
 import pytest
 
+from conu.backend.docker.backend import parse_reference
 from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, \
     FEDORA_REPOSITORY
 
@@ -30,6 +31,16 @@ from conu.backend.docker.client import get_client
 from conu import DockerRunBuilder, Probe, ConuException, DockerBackend, DockerImagePullPolicy, Directory
 
 from six import string_types
+
+
+@pytest.mark.parametrize("reference,result", [
+    ("registry.fedoraproject.org/fedora:27", ("registry.fedoraproject.org/fedora", "27")),
+    ("registry.fedoraproject.org/fedora", ("registry.fedoraproject.org/fedora", "latest")),
+    ("registry.fedoraproject.org:7890/fedora",
+     ("registry.fedoraproject.org:7890/fedora", "latest")),
+])
+def test_parse_reference(reference, result):
+    assert parse_reference(reference) == result
 
 
 def test_image():
@@ -338,3 +349,22 @@ def test_run_with_volumes_metadata_check():
         assert mount["Mode"] == "Z"
 
         container.delete(force=True)
+
+
+def test_list_containers():
+    with DockerBackend() as backend:
+        l = len(backend.list_containers())
+        assert l >= 0
+        image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG,
+                                   pull_policy=DockerImagePullPolicy.NEVER)
+        container = image.run_via_binary(command=["sleep", "1"])
+        try:
+            l = len(backend.list_containers())
+            assert l >= 1
+        finally:
+            container.delete(force=True)
+
+
+def test_list_images():
+    with DockerBackend() as backend:
+        assert len(backend.list_images()) > 0

@@ -21,12 +21,31 @@ import logging
 
 from conu.apidefs.backend import Backend
 from conu.backend.docker.container import DockerContainer
-from conu.backend.docker.image import DockerImage
+from conu.backend.docker.image import DockerImage, DockerImagePullPolicy
 from conu.backend.docker.client import get_client
 from conu.backend.docker.constants import CONU_ARTIFACT_TAG
 
 
 logger = logging.getLogger(__name__)
+
+
+def parse_reference(reference):
+    """
+    parse provided image reference into <image_repository>:<tag>
+
+    :param reference: str, e.g. (registry.fedoraproject.org/fedora:27)
+    :return: collection (tuple or list), ("registry.fedoraproject.org/fedora", "27")
+    """
+    if ":" in reference:
+        im, tag = reference.rsplit(":", 1)
+        if "/" in tag:
+            # this is case when there is port in the registry URI
+            return (reference, "latest")
+        else:
+            return (im, tag)
+
+    else:
+        return (reference, "latest")
 
 
 # let this class inherit docstring from its parent
@@ -38,14 +57,54 @@ class DockerBackend(Backend):
     ContainerClass = DockerContainer
     ImageClass = DockerImage
 
+    def __init__(self, logging_level=logging.INFO, logging_kwargs=None, cleanup=None):
+        """
+        This method serves as a configuration interface for conu.
+
+        :param logging_level: int, control logger verbosity: see logging.{DEBUG,INFO,ERROR}
+        :param logging_kwargs: dict, additional keyword arguments for logger set up, for more info
+                                see docstring of set_logging function
+        :param cleanup: list, list of cleanup policy values, examples:
+            - [CleanupPolicy.EVERYTHING]
+            - [CleanupPolicy.VOLUMES, CleanupPolicy.TMP_DIRS]
+            - [CleanupPolicy.NOTHING]
+        """
+        super(DockerBackend, self).__init__(
+            logging_level=logging_level, logging_kwargs=logging_kwargs, cleanup=cleanup)
+        self.d = get_client()
+
     def cleanup_containers(self):
-        client = get_client()
-        conu_containers = client.containers(filters={'label': CONU_ARTIFACT_TAG}, all=True)
+        conu_containers = self.d.containers(filters={'label': CONU_ARTIFACT_TAG}, all=True)
         for c in conu_containers:
             id = c['Id']
             logger.debug("Removing container %s created by conu", id)
-            client.stop(id)
-            client.remove_container(id)
+            self.d.stop(id)
+            self.d.remove_container(id)
+
+    def list_containers(self):
+        """
+        list all available docker containers
+
+        :return: collection of instances of :class:`conu.DockerContainer`
+        """
+        return [DockerContainer(None, c["Id"]) for c in self.d.containers(all=True)]
+
+    def list_images(self):
+        """
+        list all available docker images
+
+        :return: collection of instances of :class:`conu.DockerImage`
+        """
+        response = []
+        for im in self.d.images():
+            try:
+                i_name, tag = parse_reference(im["RepoTags"][0])
+            except (IndexError, TypeError):
+                i_name, tag = None, None
+            d_im = DockerImage(i_name, tag=tag, identifier=im["Id"],
+                               pull_policy=DockerImagePullPolicy.NEVER)
+            response.append(d_im)
+        return response
 
     def cleanup_volumes(self):
         # TODO implement cleaning of docker volumes
