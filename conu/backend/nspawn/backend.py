@@ -37,8 +37,44 @@ class NspawnBackend(Backend):
     ImageClass = NspawnImage
     ContainerClass = NspawnContainer
 
-    @staticmethod
-    def cleanup_containers():
+    def list_containers(self):
+        """
+        list all available nspawn containers
+
+        :return: collection of instances of :class:`conu.backend.nspawn.container.NspawnContainer`
+        """
+        data = run_cmd(["machinectl", "list"], return_output=True)
+        output = []
+        for line in data.split("\n"):
+            stripped = line.strip()
+            if not stripped or stripped.startswith(
+                    "MACHINE") or "No machines" in line or "machines listed" in line:
+                continue
+            if " systemd-nspawn " in line and constants.CONU_ARTIFACT_TAG in line:
+                output.append(stripped.split(" ", 1))
+        return output
+
+    def list_images(self):
+        """
+        list all available nspawn images
+
+        :return: collection of instances of :class:`conu.backend.nspawn.image.NspawnImage`
+        """
+        # images tagged with ARTIFACT TAG
+        data = run_cmd(["machinectl", "list-images"], return_output=True)
+        output = []
+        for line in data.split("\n"):
+            stripped = line.strip()
+            if not stripped or stripped.startswith(
+                    "NAME") or "No images" in line or "images listed" in line:
+                continue
+            splitted = stripped.split(" ", 1)
+            if "raw" in splitted[
+                1] and constants.CONU_ARTIFACT_TAG in splitted[0]:
+                output.append(splitted[0])
+        return output
+
+    def cleanup_containers(self):
         """
         stop all container created by conu
 
@@ -53,8 +89,7 @@ class NspawnBackend(Backend):
             except Exception as e:
                 logger.error("unable to remove container %s: %r", cont, e)
 
-    @staticmethod
-    def cleanup_images():
+    def cleanup_images(self):
         """
         Remove all images created by CONU and remove all hidden images (cached dowloads)
 

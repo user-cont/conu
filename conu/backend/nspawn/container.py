@@ -370,25 +370,6 @@ class NspawnContainer(Container):
         return self.image.mount(mount_point=mount_point)
 
     @staticmethod
-    def list_all():
-        """
-        list all artifacts created by CONU
-
-        :return: dict of names
-        """
-        # TODO: method could be part of API
-        data = run_cmd(["machinectl", "list"], return_output=True)
-        output = []
-        for line in data.split("\n"):
-            stripped = line.strip()
-            if not stripped or stripped.startswith(
-                    "MACHINE") or "No machines" in line or "machines listed" in line:
-                continue
-            if " systemd-nspawn " in line and constants.CONU_ARTIFACT_TAG in line:
-                output.append(stripped.split(" ", 1))
-        return output
-
-    @staticmethod
     def get_backend_image(cont):
         """
         return backend image for running container

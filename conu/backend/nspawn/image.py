@@ -256,28 +256,6 @@ class NspawnImage(Image):
                 self.name,
                 error)
 
-    @staticmethod
-    def list_all():
-        """
-        list all artifacts created via CONU
-
-        :return: dict of image names
-        """
-        # TODO: would be good to have this Method in API, list all cotaniners,
-        # images tagged with ARTIFACT TAG
-        data = run_cmd(["machinectl", "list-images"], return_output=True)
-        output = []
-        for line in data.split("\n"):
-            stripped = line.strip()
-            if not stripped or stripped.startswith(
-                    "NAME") or "No images" in line or "images listed" in line:
-                continue
-            splitted = stripped.split(" ", 1)
-            if "raw" in splitted[
-                    1] and constants.CONU_ARTIFACT_TAG in splitted[0]:
-                output.append(splitted[0])
-        return output
-
     def create_snapshot(self, name, tag):
         """
         Create new instance of image with snaphot image (it is copied inside class constructuor)
