@@ -15,7 +15,7 @@
 #
 
 """
-This is backend for nspawn engine
+This is backend for null engine - it is fake engine, what runs everything locally,
 """
 import logging
 

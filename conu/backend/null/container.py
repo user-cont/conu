@@ -15,7 +15,7 @@
 #
 
 """
-Implementation of a nspawn container
+Implementation of a fake container. Runs commands on localhost
 """
 
 import logging
@@ -166,8 +166,7 @@ class NullContainer(Container):
 
     def selfcheck(self):
         """
-        Test if default command will pass, it is more important for nspawn, because it happens that
-        it does not returns anything
+        It is true, because host is running
 
         :return: bool
         """

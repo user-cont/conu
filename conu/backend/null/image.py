@@ -15,7 +15,7 @@
 #
 
 """
-Utilities related to manipulate nspawn images.
+Utilities related to manipulate fake images, it uses local machine as image.
 """
 
 import logging
@@ -82,7 +82,8 @@ class NullImage(Image):
         """
 
         if self._id is None:
-            self._id = run_cmd(["uname", "-a"], return_output=True).split("\n")[0].strip()
+            with open("/etc/machine-id") as machineidfile:
+                self._id = machineidfile.read().strip()
         return self._id
 
     def is_present(self):
