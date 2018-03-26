@@ -41,3 +41,11 @@ class VariousBackends(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+    # call like:
+    # Null:
+    #   python tests/integration/test_more_backends.py
+    # Nspawn:
+    #   sudo REPOSITORY=https://download.fedoraproject.org/pub/fedora/linux/development/28/CloudImages/x86_64/images/Fedora-Cloud-Base-28-20180310.n.0.x86_64.raw.xz BACKEND=NspawnBackend python tests/integration/test_more_backends.py
+    # Docker
+    #   REPOSITORY=fedora BACKEND=DockerBackend python tests/integration/test_more_backends.py
+
