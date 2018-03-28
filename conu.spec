@@ -7,7 +7,7 @@
 %endif
 
 Name:           %{pypi_name}
-Version:        0.2.0
+Version:        0.3.0rc0
 Release:        2%{?dist}
 Summary:        library which makes it easy to write tests for your containers
 
