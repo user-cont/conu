@@ -49,7 +49,7 @@ def test_backend():
 
 def test_container_basic():
     im = NullImage()
-    cont = im.run(command=["sleep", "10"])
+    cont = im.run_via_binary(command=["sleep", "10"])
     logger.debug(im.get_metadata())
     logger.debug(cont.get_metadata())
     assert cont.is_running()

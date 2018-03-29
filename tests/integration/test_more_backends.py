@@ -35,7 +35,7 @@ class VariousBackends(unittest.TestCase):
         logger.debug(self.image)
         logger.debug(self.image.get_metadata())
         self.assertTrue(self.image.get_metadata())
-        self.cont = self.image.run(command=["sleep", "10"])
+        self.cont = self.image.run_via_binary(command=["sleep", "10"])
         self.cont.stop()
 
 

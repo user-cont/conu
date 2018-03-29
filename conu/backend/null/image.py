@@ -141,7 +141,7 @@ class NullImage(Image):
         """
         return NullImageFS(self, mount_point=mount_point)
 
-    def run(self, command=None, foreground=False, *args, **kwargs):
+    def run_via_binary(self, command=None, foreground=False, *args, **kwargs):
         command = deepcopy(command) or []
         machine_name = " ".join(command)
         callback_method = (subprocess.Popen, command, args, kwargs)
@@ -161,4 +161,4 @@ class NullImage(Image):
         :param kwargs: pass args to run command
         :return:  process or NullContianer instance
         """
-        return self.run(foreground=True, *args, **kwargs)
+        return self.run_via_binary(foreground=True, *args, **kwargs)
