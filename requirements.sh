@@ -9,4 +9,5 @@ dnf install -y acl atomic docker libselinux-utils \
   python3-docker python2-docker \
   python3-six python2-six \
   python3-pip python2-pip \
-  python2-enum34
+  python2-enum34 \
+  lshw
