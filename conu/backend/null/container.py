@@ -20,11 +20,10 @@ Implementation of a fake container. Runs commands on localhost
 
 import logging
 import subprocess
-import xmltodict
 import time
 
 from conu.apidefs.container import Container
-from conu.utils import run_cmd
+from conu.utils import run_cmd, convert_kv_to_dict
 
 
 logger = logging.getLogger(__name__)
@@ -90,12 +89,8 @@ class NullContainer(Container):
         :return: dict
         """
         if refresh or not self._metadata:
-            output = run_cmd(["gdbus", "introspect",
-                              "--system", "-x",
-                              "--dest", "org.freedesktop.systemd1",
-                              "--object-path", "/org/freedesktop/systemd1"],
-                             return_output=True)
-            self._metadata = xmltodict.parse(output)
+            output = run_cmd(["machinectl", "show", ".host"], return_output=True)
+            self._metadata = convert_kv_to_dict(output)
         return self._metadata
 
     def is_running(self):
