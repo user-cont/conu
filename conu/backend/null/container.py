@@ -94,9 +94,8 @@ class NullContainer(Container):
                 output = run_cmd(["machinectl", "show", ".host"], return_output=True)
                 self._metadata = convert_kv_to_dict(output)
             except subprocess.CalledProcessError:
-                try:
-                    output = run_cmd(["lshw", "-json"], return_output=True)
-                    self._metadata = json.loads(output)
+                output = run_cmd(["lshw", "-json"], return_output=True)
+                self._metadata = json.loads(output)
         return self._metadata
 
     def is_running(self):
