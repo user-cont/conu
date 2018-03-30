@@ -18,17 +18,19 @@
 This is backend for nspawn engine
 """
 import logging
+import re
+import subprocess
 
 from conu.apidefs.backend import Backend
-from conu.backend.nspawn.image import NspawnImage
 from conu.backend.nspawn.container import NspawnContainer
+from conu.backend.nspawn.image import NspawnImage, ImagePullPolicy
+from conu.backend.nspawn.constants import CONU_ARTIFACT_TAG
 from conu.utils import run_cmd
 
 
 logger = logging.getLogger(__name__)
 
 
-# let this class inherit docstring from its parent
 class NspawnBackend(Backend):
     """
     For more info on using the Backend classes, see documentation of
@@ -43,15 +45,16 @@ class NspawnBackend(Backend):
 
         :return: collection of instances of :class:`conu.backend.nspawn.container.NspawnContainer`
         """
-        data = run_cmd(["machinectl", "list"], return_output=True)
+        data = run_cmd(["machinectl", "list", "--no-legend", "--no-pager"],
+                       return_output=True)
         output = []
+        reg = re.compile(r"\s+")
         for line in data.split("\n"):
             stripped = line.strip()
-            if not stripped or stripped.startswith(
-                    "MACHINE") or "No machines" in line or "machines listed" in line:
-                continue
-            if " systemd-nspawn " in line and constants.CONU_ARTIFACT_TAG in line:
-                output.append(stripped.split(" ", 1))
+            if stripped:
+                parts = reg.split(stripped)
+                name = parts[0]
+                output.append(self.ContainerClass(None, None, name=name))
         return output
 
     def list_images(self):
@@ -60,18 +63,18 @@ class NspawnBackend(Backend):
 
         :return: collection of instances of :class:`conu.backend.nspawn.image.NspawnImage`
         """
-        # images tagged with ARTIFACT TAG
-        data = run_cmd(["machinectl", "list-images"], return_output=True)
+        # Fedora-Cloud-Base-27-1.6.x86_64 raw  no  601.7M Sun 2017-11-05 08:30:10 CET \
+        #   Sun 2017-11-05 08:30:10 CET
+        data = run_cmd(["machinectl", "list-images", "--no-legend", "--no-pager"],
+                       return_output=True)
         output = []
+        reg = re.compile(r"\s+")
         for line in data.split("\n"):
             stripped = line.strip()
-            if not stripped or stripped.startswith(
-                    "NAME") or "No images" in line or "images listed" in line:
-                continue
-            splitted = stripped.split(" ", 1)
-            if "raw" in splitted[
-                1] and constants.CONU_ARTIFACT_TAG in splitted[0]:
-                output.append(splitted[0])
+            if stripped:
+                parts = reg.split(stripped)
+                name = parts[0]
+                output.append(self.ImageClass(name, pull_policy=ImagePullPolicy.NEVER))
         return output
 
     def cleanup_containers(self):
@@ -80,14 +83,14 @@ class NspawnBackend(Backend):
 
         :return: None
         """
-        for cont in NspawnContainer.list_all():
-            try:
-                logger.debug("Removing container %s created by conu", cont)
-                # TODO: find way, how to initialize image for container to use
-                # there container.stop() method
-                run_cmd(["machinectl", "terminate", cont])
-            except Exception as e:
-                logger.error("unable to remove container %s: %r", cont, e)
+        for cont in self.list_containers():
+            if CONU_ARTIFACT_TAG in cont.name:
+                try:
+                    logger.debug("removing container %s created by conu", cont)
+                    # TODO: move this functionality to container.delete
+                    run_cmd(["machinectl", "terminate", cont])
+                except subprocess.CalledProcessError as e:
+                    logger.error("unable to remove container %s: %r", cont, e)
 
     def cleanup_images(self):
         """
@@ -95,8 +98,8 @@ class NspawnBackend(Backend):
 
         :return: None
         """
-        for imname in NspawnImage.list_all():
-            im = NspawnImage(repository=imname)
-            im.rmi()
-        # remove all hidden images -> causes troubles when pull image again
+        for image in self.list_images():
+            if CONU_ARTIFACT_TAG in image.name:
+                image.rmi()
+        # remove all hidden images -> causes trouble when pulling the image again
         run_cmd(["machinectl", "clean"])

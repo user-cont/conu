@@ -118,26 +118,24 @@ class NspawnImage(Image):
     """
     special_separator = "_"
 
-    def __init__(self, repository, tag="latest",
-                 pull_policy=ImagePullPolicy.IF_NOT_PRESENT):
+    def __init__(self, repository, tag=None, pull_policy=ImagePullPolicy.IF_NOT_PRESENT,
+                 location=None):
         """
-        :param repository: str, image URL name: url to raw.xz image or to file on local file system
-        :param tag: str, tag of the image, when not specified, "latest" is implied
+        :param repository: str, expected name of this image
+        :param tag: not used, nspawn doesn't utilize the concept of tags
         :param pull_policy: enum, strategy to apply for pulling the image
+        :param location: str, location from which we can obtain the image, it can be local (a
+                path) or remote (URL)
         """
         self.system_requirements()
         self.container_process = None
 
-        super(NspawnImage, self).__init__(repository, tag=tag)
+        super(NspawnImage, self).__init__(repository, tag=None)
         if not isinstance(pull_policy, ImagePullPolicy):
             raise ConuException(
-                "'pull_policy' is not an instance of DockerImagePullPolicy")
-        self.tag = self.tag
+                "'pull_policy' is not an instance of ImagePullPolicy")
         self.pull_policy = pull_policy
-        if repository in NspawnImage.list_all():
-            self._id = repository
-            self.tag = None
-        self.image_name = self.get_id()
+        self.location = location
         # TODO: move this code to API __init__, will be same for various
         # backends or maybe add there some callback method
         if self.pull_policy == ImagePullPolicy.ALWAYS:
@@ -173,7 +171,7 @@ class NspawnImage(Image):
 
     def __repr__(self):
         # TODO: move this method to api somehow? similar to docker
-        return "NspawnImage(repository=%s, tag=%s)" % (self.name, self.tag)
+        return "NspawnImage(repository=%s, location=%s)" % (self.name, self.location)
 
     def __str__(self):
         # TODO: move to API it is same
@@ -186,7 +184,7 @@ class NspawnImage(Image):
 
         :return: str
         """
-        return " ".join([self.name, self.tag])
+        return self.name
 
     def _is_local(self):
         """
@@ -203,25 +201,21 @@ class NspawnImage(Image):
 
         :return: str
         """
+        return self.name
 
-        if self._id is None:
-            tags = ""
-            name = self.name.encode("ascii")
-            if self._is_local():
-                basename = os.path.basename(name)
-                if basename.endswith(".raw"):
-                    basename = basename[0:-4]
-                if self.special_separator in basename:
-                    name, tags = basename.split(self.special_separator, 1)
-                else:
-                    name = basename
-            if tags:
-                self.tag = self.special_separator.join([tags, self.tag])
-            self._id = "{PREFIX}{HASH}{SEP}{TAGS}".format(
-                PREFIX=constants.CONU_ARTIFACT_TAG,
-                HASH=hashlib.sha512(name).hexdigest()[: 10],
-                SEP=self.special_separator, TAGS=self.tag)
-        return self._id
+    def _generate_id(self):
+        """ create new unique identifier """
+        name = self.name.replace(self.special_separator, "-").replace(".", "-")
+        loc = "\/"
+        if self.location:
+            loc = self.location
+        _id = "{PREFIX}{SEP}{NAME}{HASH}{SEP}".format(
+            PREFIX=constants.CONU_ARTIFACT_TAG,
+            NAME=name,
+            HASH=hashlib.sha512(loc).hexdigest()[: 10],
+            SEP=self.special_separator
+        )
+        return _id
 
     def is_present(self):
         """
@@ -229,7 +223,14 @@ class NspawnImage(Image):
 
         :return: bool
         """
-        return self.get_id() in NspawnImage.list_all()
+        cmd = ["machinectl", "image-status", self.name]
+        try:
+            run_cmd(cmd, return_output=True)  # ditch output
+            return True
+        except subprocess.CalledProcessError as ex:
+            logger.info("nspawn image %s is not present probably: %s",
+                        self.name, ex.stderr)
+            return False
 
     def pull(self):
         """
@@ -249,7 +250,7 @@ class NspawnImage(Image):
                 logger.debug(
                     "Try to pull URL: {} -> {}".format(self.name, ident))
                 run_cmd(["machinectl", "--verify=no",
-                         "pull-raw", self.name, ident])
+                         "pull-raw", self.url, ident])
         except ValueError as error:
             raise ConuException(
                 "There was an error while pulling the image %s: %s",
@@ -266,6 +267,7 @@ class NspawnImage(Image):
         """
         source = self.get_metadata()["Path"]
         logger.debug("Create Snapshot: %s -> %s" % (source, name))
+        # FIXME: actually create the snapshot via clone command
         if name and tag:
             output_tag = "{}:{}".format(name, tag)
         else:
@@ -305,7 +307,7 @@ class NspawnImage(Image):
                     "This image does not have a valid identifier.")
             self._metadata = convert_kv_to_dict(
                 run_cmd(
-                    ["machinectl", "--output=json", "show-image", ident],
+                    ["machinectl", "--output=export", "show-image", ident],
                     return_output=True))
         return self._metadata
 
@@ -396,13 +398,15 @@ class NspawnImage(Image):
             self.get_metadata()["Path"]] + additional_opts + command
         logger.debug("Start command: %s" % " ".join(systemd_command))
         callback_method = (subprocess.Popen, systemd_command, inernalargs, internalkw)
-        self.container_process = NspawnContainer.internal_run_container(name=machine_name,
-                                                                     callback_method=callback_method,
-                                                                     foreground=foreground)
+        self.container_process = NspawnContainer.internal_run_container(
+            name=machine_name,
+            callback_method=callback_method,
+            foreground=foreground
+        )
         if foreground:
             return self.container_process
         else:
-            return NspawnContainer(self, container_id=machine_name,
+            return NspawnContainer(self, None, name=machine_name,
                                    start_process=self.container_process, start_action=callback_method)
 
     def run_foreground(self, *args, **kwargs):

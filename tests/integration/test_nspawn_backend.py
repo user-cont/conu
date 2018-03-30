@@ -13,73 +13,77 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
+"""
+nspawn is really challenging; if you are not on btrfs, it would create a file /var/lib/machines.raw
+ and mount it as /var/lib/machines; it's possible that you'll have odd limit set there, you can
+ change that with `machinectl set-limit 4G`
+"""
 import subprocess
 import logging
 import os
 
 import pytest
 
-from conu.backend.nspawn.image import NspawnImage
+from conu.backend.nspawn.image import NspawnImage, ImagePullPolicy
 from conu.backend.nspawn.backend import NspawnBackend
 from conu.utils import mkdtemp, run_cmd
 
+
 logger = logging.getLogger(__name__)
-repository = "https://download.fedoraproject.org/pub/fedora/linux/development/28/CloudImages/x86_64/images/Fedora-Cloud-Base-28-20180310.n.0.x86_64.raw.xz"
-tag = "abc"
+image_name = "Fedora-Cloud-Base-27-1.6.x86_64"
+url = "https://download.fedoraproject.org/pub/fedora/linux/development/28/CloudImages/" \
+    "x86_64/images/Fedora-Cloud-Base-28-20180310.n.0.x86_64.raw.xz"
 bootstrap_repos = [
-    "http://ftp.fi.muni.cz/pub/linux/fedora/linux/releases/27/Workstation/x86_64/os/"]
+    "https://download.fedoraproject.org/pub/linux/fedora/linux/releases/27/Workstation/x86_64/os/"
+]
 
 
 @pytest.mark.nspawn
 class TestNspawnBackend(object):
     def test_image(self):
-        im1 = NspawnImage(repository=repository, tag=tag)
-        logger.debug(im1)
-        logger.debug(im1.get_metadata())
-        assert "/var/lib/machines" in im1.get_metadata()["Path"]
-        logger.debug(im1.get_id())
-        assert tag in im1.get_id()
-        logger.debug(im1.get_full_name())
-        assert repository in im1.get_full_name()
-        im2 = im1.tag_image("sometag")
-        assert "_sometag" in im2.get_id()
-        im2.rmi()
-        assert im2.get_id() not in im2.list_all()
-        im2.pull()
-        assert im2.get_id() in im2.list_all()
-        im2.rmi()
-        assert im2.get_id() not in im2.list_all()
+        im1 = NspawnImage(repository=image_name, pull_policy=ImagePullPolicy.IF_NOT_PRESENT,
+                          location=url)
+        logger.debug("%s", im1)
+        logger.debug("%s", im1.get_metadata())
+        logger.debug("%s", im1.get_id())
+        logger.debug("%s", im1.get_full_name())
 
     def test_mounts(self):
-        im = NspawnImage(repository=repository, tag=tag)
+        im = NspawnImage(repository=image_name, pull_policy=ImagePullPolicy.IF_NOT_PRESENT,
+                         location=url)
         with im.mount() as fs:
             logger.debug(fs.mount_point)
             assert fs.directory_is_present("/lost+found")
 
     def test_image_run_foreground(self):
-        im = NspawnImage(repository=repository, tag=tag)
+        im = NspawnImage(repository=image_name, pull_policy=ImagePullPolicy.IF_NOT_PRESENT,
+                         location=url)
         cmd = im.run_foreground(["ls", "/"]).communicate()
         out = cmd
         assert not out[0]
 
         out = im.run_foreground(["ls", "/"], stdout=subprocess.PIPE).communicate()
-        assert "sbin" in out[0]
+        stdout = out[0].decode("utf-8")
+        assert "sbin" in stdout
         # TODO: find way how to catch stderr (not possible by nspawn, everything
         # goes to stdout)
+        #   nsenter could be the answer
 
     def test_backend(self):
-        back = NspawnBackend
-        im = back.ImageClass(repository=repository, tag=tag)
-        out = im.run_foreground(["ls", "/"], stdout=subprocess.PIPE).communicate()
-        logger.debug(out)
-        assert "sbin" in out[0]
-        back.cleanup_containers()
-        back.cleanup_images()
+        with NspawnBackend() as backend:
+            im = backend.ImageClass(repository=image_name, pull_policy=ImagePullPolicy.IF_NOT_PRESENT,
+                                    location=url)
+            out = im.run_foreground(["ls", "/"], stdout=subprocess.PIPE).communicate()
+            logger.debug(out)
+            stdout = out[0].decode("utf-8")
+            assert "sbin" in stdout
+            backend.cleanup_containers()
+            backend.cleanup_images()
 
     def test_image_bootstrapping(self):
-        NspawnBackend.cleanup_containers()
-        NspawnBackend.cleanup_images()
+        with NspawnBackend() as backend:
+            backend.cleanup_containers()
+            backend.cleanup_images()
 
         im = NspawnImage.bootstrap(
             repositories=bootstrap_repos,
@@ -98,7 +102,8 @@ class TestNspawnBackend(object):
         im.rmi()
 
     def test_container_basic(self):
-        im = NspawnImage(repository=repository, tag=tag)
+        im = NspawnImage(repository=image_name, pull_policy=ImagePullPolicy.IF_NOT_PRESENT,
+                         location=url)
         cont = im.run()
         logger.debug(im.get_metadata())
         logger.debug(cont.get_metadata())
@@ -112,7 +117,8 @@ class TestNspawnBackend(object):
         assert not cont.selfcheck()
 
     def test_container_exit_states(self):
-        im = NspawnImage(repository=repository, tag=tag)
+        im = NspawnImage(repository=image_name, pull_policy=ImagePullPolicy.IF_NOT_PRESENT,
+                         location=url)
         cont = im.run()
         try:
             cont.execute(["exit", "1"])
@@ -131,7 +137,8 @@ class TestNspawnBackend(object):
         cont.stop()
 
     def test_volumes(self):
-        im = NspawnImage(repository=repository, tag=tag)
+        im = NspawnImage(repository=image_name, pull_policy=ImagePullPolicy.IF_NOT_PRESENT,
+                         location=url)
         dirname = mkdtemp()
         filename = "somefile"
         host_fn = os.path.join(dirname, filename)
