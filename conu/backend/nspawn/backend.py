@@ -20,8 +20,8 @@ This is backend for nspawn engine
 import logging
 
 from conu.apidefs.backend import Backend
-from container import NspawnContainer
-from image import NspawnImage
+from conu.backend.nspawn.image import NspawnImage
+from conu.backend.nspawn.container import NspawnContainer
 from conu.utils import run_cmd
 
 

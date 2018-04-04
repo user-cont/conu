@@ -26,7 +26,7 @@ from copy import deepcopy
 from conu.apidefs.container import Container
 from conu.exceptions import ConuException
 from conu.utils import run_cmd, random_str, convert_kv_to_dict, command_exists
-import constants
+from conu.backend.nspawn import constants
 
 
 logger = logging.getLogger(__name__)
