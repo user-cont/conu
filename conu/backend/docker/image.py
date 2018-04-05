@@ -87,19 +87,23 @@ class DockerImage(Image):
     Utility functions for docker images.
     """
 
-    def __init__(self, repository, tag="latest", pull_policy=DockerImagePullPolicy.IF_NOT_PRESENT):
+    def __init__(self, repository, tag="latest", identifier=None,
+                 pull_policy=DockerImagePullPolicy.IF_NOT_PRESENT):
         """
         :param repository: str, image name, examples: "fedora", "registry.fedoraproject.org/fedora",
                             "tomastomecek/sen", "docker.io/tomastomecek/sen"
         :param tag: str, tag of the image, when not specified, "latest" is implied
+        :param identifier: str, unique identifier for this image
         :param pull_policy: enum, strategy to apply for pulling the image
         """
         super(DockerImage, self).__init__(repository, tag=tag)
-        if not isinstance(tag, six.string_types):
+        if not isinstance(tag, (six.string_types, None.__class__)):
             raise ConuException("'tag' is not a string type")
         if not isinstance(pull_policy, DockerImagePullPolicy):
             raise ConuException("'pull_policy' is not an instance of DockerImagePullPolicy")
         self.tag = self.tag
+        if identifier:
+            self._id = identifier
         self.d = get_client()
         self.pull_policy = pull_policy
 

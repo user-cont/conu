@@ -27,8 +27,8 @@ import subprocess
 import time
 from copy import deepcopy
 
-import constants
-from container import NspawnContainer
+from conu.backend.nspawn import constants
+from conu.backend.nspawn.container import NspawnContainer
 from conu.apidefs.filesystem import Filesystem
 from conu.apidefs.image import Image
 from conu.exceptions import ConuException

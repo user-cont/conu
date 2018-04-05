@@ -123,6 +123,22 @@ class Backend(object):
 
         self.cleanup = cleanup or [CleanupPolicy.NOTHING]
 
+    def list_containers(self):
+        """
+        list all available containers for this backend
+
+        :return: collection of instances of :class:`conu.apidefs.container.Container`
+        """
+        raise NotImplementedError("list_images method is not implemented")
+
+    def list_images(self):
+        """
+        list all available images for this backend
+
+        :return: collection of instances of :class:`conu.apidefs.image.Image`
+        """
+        raise NotImplementedError("list_images method is not implemented")
+
     def _clean_tmp_dirs(self):
         """
         Remove temporary dir associated with this backend instance.
