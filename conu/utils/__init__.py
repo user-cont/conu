@@ -122,7 +122,10 @@ def run_cmd(cmd, return_output=False, ignore_status=False, **kwargs):
     logger.debug('command: "%s"' % ' '.join(cmd))
     try:
         if return_output:
-            return subprocess.check_output(cmd, stderr=subprocess.STDOUT, **kwargs).decode("utf-8")
+            return subprocess.check_output(cmd,
+                                           stderr=subprocess.STDOUT,
+                                           universal_newlines=True,
+                                           **kwargs)
         else:
             subprocess.check_call(cmd, **kwargs)
     except subprocess.CalledProcessError as cpe:
@@ -250,7 +253,9 @@ def check_docker_command_works():
               is thrown
     """
     try:
-        out = subprocess.check_output(["docker", "version"], stderr=subprocess.STDOUT)
+        out = subprocess.check_output(["docker", "version"],
+                                      stderr=subprocess.STDOUT,
+                                      universal_newlines=True)
     except OSError:
         logger.info("docker binary is not available")
         raise CommandDoesNotExistException(
