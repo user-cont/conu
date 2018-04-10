@@ -52,6 +52,21 @@ check-pypi-release:
 check-copr-release:
 	PYTHONPATH=$(CURDIR) pytest -m "release_copr" ./tests/release/test_release.py
 
+check-install-pip2:
+	docker run --net=host --rm -v /dev:/dev:ro -v /var/lib/docker:/var/lib/docker:ro --security-opt label=disable --cap-add SYS_ADMIN -ti -v $(CURDIR):/src:Z registry.fedoraproject.org/fedora:27 make install-with-pip2
+
+install-with-pip2:
+	pip2 install --user .
+
+check-install-pip3:
+	docker run --net=host --rm -v /dev:/dev:ro -v /var/lib/docker:/var/lib/docker:ro --security-opt label=disable --cap-add SYS_ADMIN -ti -v $(CURDIR):/src:Z registry.fedoraproject.org/fedora:28 make install-with-pip3
+
+install-with-pip3:
+	pip3 install --user .
+
+check-packaging: rpm-in-mock-f27 rpm-in-mock-el7 rpm-in-mock-rawhide check-install-pip2 check-install-pip3
+
+
 sdist:
 	./setup.py sdist -d .
 
