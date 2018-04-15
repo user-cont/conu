@@ -90,18 +90,20 @@ class DockerContainerFS(Filesystem):
 
 
 class DockerContainer(Container):
-    def __init__(self, image, container_id, name=None, popen_instance=None):
+    def __init__(self, image, container_id, name=None, popen_instance=None, short_metadata=None):
         """
         :param image: DockerImage instance (if None, it will be found from the container itself)
         :param container_id: str, unique identifier of this container
         :param name: str, pretty container name
         :param popen_instance: instance of Popen (if container was created using method
             `via_binary`, this is the docker client process)
+        :param short_metadata: dict, metadata obtained from `docker.APIClient.containers()`
         """
         self.d = get_client()
         super(DockerContainer, self).__init__(image, container_id, name)
         self.popen_instance = popen_instance
-
+        # metadata obtained when doing `docker.APIClient().containers()`
+        self.short_metadata = short_metadata
 
     def __repr__(self):
         return "DockerContainer(image=%s, id=%s)" % (self.image, self.get_id())
