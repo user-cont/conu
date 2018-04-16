@@ -98,6 +98,7 @@ class Backend(object):
     context manager, the temporary directory isn't removed and therefore lingers.
     """
 
+    name = "<abstract_backend>"
     ContainerClass = Container
     ImageClass = Image
 

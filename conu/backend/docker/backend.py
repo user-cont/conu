@@ -54,6 +54,7 @@ class DockerBackend(Backend):
     For more info on using the Backend classes, see documentation of
     the parent :class:`conu.apidefs.backend.Backend` class.
     """
+    name = "docker"
     ContainerClass = DockerContainer
     ImageClass = DockerImage
 
