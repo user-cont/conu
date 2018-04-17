@@ -229,7 +229,7 @@ class NspawnImage(Image):
             return True
         except subprocess.CalledProcessError as ex:
             logger.info("nspawn image %s is not present probably: %s",
-                        self.name, ex.stderr)
+                        self.name, ex.output)
             return False
 
     def pull(self):
@@ -245,12 +245,12 @@ class NspawnImage(Image):
                 logger.debug(
                     "Try to pull local file: {} -> {}".format(self.name, ident))
                 run_cmd(["machinectl", "--verify=no",
-                         "import-raw", self.name, ident])
+                         "import-raw", self.location, ident])
             else:
                 logger.debug(
                     "Try to pull URL: {} -> {}".format(self.name, ident))
                 run_cmd(["machinectl", "--verify=no",
-                         "pull-raw", self.url, ident])
+                         "pull-raw", self.location, ident])
         except ValueError as error:
             raise ConuException(
                 "There was an error while pulling the image %s: %s",
