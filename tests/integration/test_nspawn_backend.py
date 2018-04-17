@@ -34,7 +34,7 @@ image_name = "Fedora-Cloud-Base-27-1.6.x86_64"
 url = "https://download.fedoraproject.org/pub/fedora/linux/development/28/CloudImages/" \
     "x86_64/images/Fedora-Cloud-Base-28-20180310.n.0.x86_64.raw.xz"
 bootstrap_repos = [
-    "https://download.fedoraproject.org/pub/linux/fedora/linux/releases/27/Workstation/x86_64/os/"
+    "https://download.fedoraproject.org/pub/fedora/linux/releases/27/Workstation/x86_64/os/"
 ]
 
 
@@ -87,6 +87,7 @@ class TestNspawnBackend(object):
 
         im = NspawnImage.bootstrap(
             repositories=bootstrap_repos,
+            name="bootstrapped",
             additional_packages=["fedora-release"])
         logger.debug(im.get_metadata())
         out = im.run_foreground(["ls", "/"], stdout=subprocess.PIPE).communicate()

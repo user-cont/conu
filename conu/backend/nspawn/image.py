@@ -193,7 +193,7 @@ class NspawnImage(Image):
 
         :return: bool
         """
-        return os.path.exists(self.name)
+        return os.path.exists(self.location)
 
     def get_id(self):
         """
@@ -436,7 +436,7 @@ class NspawnImage(Image):
 
     @staticmethod
     def bootstrap(
-            repositories, packages=None, additional_packages=None,
+            repositories, name, packages=None, additional_packages=None,
             tag="latest", prefix=constants.CONU_ARTIFACT_TAG, packager=None):
         """
         bootstrap Image from scratch. It creates new image based on giver dnf repositories and package setts
@@ -510,7 +510,7 @@ gpgcheck=0
             f.write(repo_file_content)
         run_cmd(["umount", mounted_dir])
         time.sleep(constants.DEFAULT_SLEEP)
-        nspawnimage = NspawnImage(repository=tempimagefile, tag=tag)
+        nspawnimage = NspawnImage(repository=name, location=tempimagefile, tag=tag)
         os.remove(tempimagefile)
         os.rmdir(mounted_dir)
         return nspawnimage
