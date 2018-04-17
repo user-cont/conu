@@ -162,7 +162,7 @@ class NspawnImage(Image):
             "Do you have system with systemd")
         command_exists(
             "machinectl",
-            ["machinectl", "--help"],
+            ["machinectl", "--no-pager", "--help"],
             "Command machinectl does not seems to be present on your system"
             "Do you have system with systemd")
         if "Enforcing" in run_cmd(["getenforce"], return_output=True, ignore_status=True):
@@ -223,7 +223,7 @@ class NspawnImage(Image):
 
         :return: bool
         """
-        cmd = ["machinectl", "image-status", self.name]
+        cmd = ["machinectl", "--no-pager", "image-status", self.name]
         try:
             run_cmd(cmd, return_output=True)  # ditch output
             return True
@@ -244,12 +244,12 @@ class NspawnImage(Image):
             if self._is_local():
                 logger.debug(
                     "Try to pull local file: {} -> {}".format(self.name, ident))
-                run_cmd(["machinectl", "--verify=no",
+                run_cmd(["machinectl", "--no-pager", "--verify=no",
                          "import-raw", self.location, ident])
             else:
                 logger.debug(
                     "Try to pull URL: {} -> {}".format(self.name, ident))
-                run_cmd(["machinectl", "--verify=no",
+                run_cmd(["machinectl", "--no-pager", "--verify=no",
                          "pull-raw", self.location, ident])
         except ValueError as error:
             raise ConuException(
@@ -307,7 +307,7 @@ class NspawnImage(Image):
                     "This image does not have a valid identifier.")
             self._metadata = convert_kv_to_dict(
                 run_cmd(
-                    ["machinectl", "--output=export", "show-image", ident],
+                    ["machinectl", "--no-pager", "--output=export", "show-image", ident],
                     return_output=True))
         return self._metadata
 
@@ -319,7 +319,7 @@ class NspawnImage(Image):
         :param via_name: bool, refer to the image via name, if false, refer via ID, not used now
         :return: None
         """
-        return run_cmd(["machinectl", "remove", self.get_id()])
+        return run_cmd(["machinectl", "--no-pager", "remove", self.get_id()])
 
     def mount(self, mount_point=None):
         """
@@ -341,7 +341,7 @@ class NspawnImage(Image):
         for foo in range(constants.DEFAULT_RETRYTIMEOUT):
             time.sleep(constants.DEFAULT_SLEEP)
             out = run_cmd(
-                ["machinectl", "status", name],
+                ["machinectl", "--no-pager", "status", name],
                 ignore_status=True, return_output=True)
             if out != 0:
                 return True

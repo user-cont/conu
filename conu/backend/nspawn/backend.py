@@ -102,4 +102,4 @@ class NspawnBackend(Backend):
             if CONU_ARTIFACT_TAG in image.name:
                 image.rmi()
         # remove all hidden images -> causes trouble when pulling the image again
-        run_cmd(["machinectl", "clean"])
+        run_cmd(["machinectl", "--no-pager", "clean"])

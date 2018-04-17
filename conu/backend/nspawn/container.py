@@ -71,7 +71,7 @@ class NspawnContainer(Container):
             "Do you have system with systemd?")
         command_exists(
             "machinectl",
-            ["machinectl", "--help"],
+            ["machinectl", "--no-pager", "--help"],
             "Command machinectl does not seems to be present on your system. "
             "Do you have system with systemd?")
 
@@ -119,7 +119,7 @@ class NspawnContainer(Container):
             if not ident:
                 raise ConuException(
                     "This container does not have a valid identifier.")
-            out = run_cmd(["machinectl", "show", ident], return_output=True, ignore_status=True)
+            out = run_cmd(["machinectl", "--no-pager", "show", ident], return_output=True, ignore_status=True)
             if "Could not get path to machine" in out:
                 self._metadata = {}
             else:
@@ -132,7 +132,7 @@ class NspawnContainer(Container):
 
         :return: bool
         """
-        cmd = ["machinectl", "status", self.name]
+        cmd = ["machinectl", "--no-pager", "status", self.name]
         try:
             subprocess.check_call(cmd)
             return True
@@ -150,7 +150,7 @@ class NspawnContainer(Container):
         :return: None
         """
         logger.debug("copying %s from host to container at %s", src, dest)
-        cmd = ["machinectl", "copy-to", self.name, src, dest]
+        cmd = ["machinectl", "--no-pager", "copy-to", self.name, src, dest]
         run_cmd(cmd)
 
     def copy_from(self, src, dest):
@@ -162,7 +162,7 @@ class NspawnContainer(Container):
         :return: None
         """
         logger.debug("copying %s from host to container at %s", src, dest)
-        cmd = ["machinectl", "copy-from", self.name, src, dest]
+        cmd = ["machinectl", "--no-pager", "copy-from", self.name, src, dest]
         run_cmd(cmd)
 
     def stop(self):
@@ -171,7 +171,7 @@ class NspawnContainer(Container):
 
         :return: None
         """
-        run_cmd(["machinectl", "poweroff", self.name])
+        run_cmd(["machinectl", "--no-pager", "poweroff", self.name])
         self._wait_until_machine_finish()
 
     def kill(self, signal=None):
@@ -182,7 +182,7 @@ class NspawnContainer(Container):
         :param signal: not used now
         :return:
         """
-        run_cmd(["machinectl", "terminate", self.name])
+        run_cmd(["machinectl", "--no-pager", "terminate", self.name])
         self._wait_until_machine_finish()
 
     def _wait_until_machine_finish(self):
@@ -276,13 +276,13 @@ class NspawnContainer(Container):
         while True:
             metadata = convert_kv_to_dict(
                 run_cmd(
-                    ["systemctl", "show", "-M", machine, unit],
+                    ["systemctl", "--no-pager", "show", "-M", machine, unit],
                     return_output=True))
             if not metadata["SubState"] in ["exited", "failed"]:
                 time.sleep(0.1)
             else:
                 break
-        run_cmd(["systemctl", "-M", machine, "stop", unit], ignore_status=True)
+        run_cmd(["systemctl", "--no-pager", "-M", machine, "stop", unit], ignore_status=True)
         return metadata["ExecMainStatus"]
 
     def run_systemdrun(
@@ -402,7 +402,7 @@ class NspawnContainer(Container):
         for foo in range(constants.DEFAULT_RETRYTIMEOUT):
             time.sleep(constants.DEFAULT_SLEEP)
             out = run_cmd(
-                ["machinectl", "status", name],
+                ["machinectl", "--no-pager", "status", name],
                 ignore_status=True, return_output=True)
             for restr in suffictinet_texts:
                 if restr in out:
