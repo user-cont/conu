@@ -43,10 +43,10 @@ class NspawnContainer(Container):
         :param container_id: id of running container (created by Image.run method)
         :param name: optional name of container
         :param popen_instance: not used anyhow now
-        :param start_process: subporocess instance with start process
+        :param start_process: subprocess instance with start process
         :param start_action: set with 4 parameters for starting container
         """
-        # This is important to indentify if systemd supports --wait option,
+        # This is important to identify if systemd supports --wait option,
         # RHEL7 does not support --wait
         self.systemd_wait_support = None
         # TODO: this is example how it can be named, and it could be used as callback method from parent class
@@ -54,8 +54,6 @@ class NspawnContainer(Container):
         # TODO: find way how to find image for already running container, it is
         # not simple, not shown by list, status, or other commands
         super(NspawnContainer, self).__init__(image, container_id, name)
-        if not name:
-            self.name = self._id
         self.popen_instance = popen_instance
         self.start_process = start_process
         self.start_action = start_action
@@ -69,26 +67,27 @@ class NspawnContainer(Container):
         """
         command_exists("systemd-run",
             ["systemd-run", "--help"],
-            "Command systemd-run does not seems to be present on your system"
-            "Do you have system with systemd")
+            "Command systemd-run does not seems to be present on your system. "
+            "Do you have system with systemd?")
         command_exists(
             "machinectl",
-            ["machinectl", "--help"],
-            "Command machinectl does not seems to be present on your system"
-            "Do you have system with systemd")
+            ["machinectl", "--no-pager", "--help"],
+            "Command machinectl does not seems to be present on your system. "
+            "Do you have system with systemd?")
 
     def __repr__(self):
         # TODO: very similar to Docker method, move to API, this is the proper
         # way
-        return "%s(image=%s, id=%s)" % (
-            self.__class__, self.image, self.get_id())
+        return "%s(image=%s, name=%s)" % (
+            self.__class__, self.image, self.name)
 
     def __str__(self):
         # TODO: move to API
-        return self.get_id()
+        return self.name
 
     def start(self):
-        self.start_process = NspawnContainer.internal_run_container(name=self.name, callback_method=self.start_action)
+        self.start_process = NspawnContainer.internal_run_container(
+            name=self.name, callback_method=self.start_action)
         return self.start_process
 
     def get_id(self):
@@ -120,7 +119,7 @@ class NspawnContainer(Container):
             if not ident:
                 raise ConuException(
                     "This container does not have a valid identifier.")
-            out = run_cmd(["machinectl", "show", ident], return_output=True, ignore_status=True)
+            out = run_cmd(["machinectl", "--no-pager", "show", ident], return_output=True, ignore_status=True)
             if "Could not get path to machine" in out:
                 self._metadata = {}
             else:
@@ -129,11 +128,18 @@ class NspawnContainer(Container):
 
     def is_running(self):
         """
-        return bool in case container is running
+        return True when container is running, otherwise return False
 
         :return: bool
         """
-        return "running" == self.get_metadata(refresh=True).get("State")
+        cmd = ["machinectl", "--no-pager", "status", self.name]
+        try:
+            subprocess.check_call(cmd)
+            return True
+        except subprocess.CalledProcessError as ex:
+            logger.info("nspawn container %s is not running probably: %s",
+                        self.name, ex.output)
+            return False
 
     def copy_to(self, src, dest):
         """
@@ -144,7 +150,7 @@ class NspawnContainer(Container):
         :return: None
         """
         logger.debug("copying %s from host to container at %s", src, dest)
-        cmd = ["machinectl", "copy-to", self.get_id(), src, dest]
+        cmd = ["machinectl", "--no-pager", "copy-to", self.name, src, dest]
         run_cmd(cmd)
 
     def copy_from(self, src, dest):
@@ -156,7 +162,7 @@ class NspawnContainer(Container):
         :return: None
         """
         logger.debug("copying %s from host to container at %s", src, dest)
-        cmd = ["machinectl", "copy-from", self.get_id(), src, dest]
+        cmd = ["machinectl", "--no-pager", "copy-from", self.name, src, dest]
         run_cmd(cmd)
 
     def stop(self):
@@ -165,7 +171,7 @@ class NspawnContainer(Container):
 
         :return: None
         """
-        run_cmd(["machinectl", "poweroff", self.get_id()])
+        run_cmd(["machinectl", "--no-pager", "poweroff", self.name])
         self._wait_until_machine_finish()
 
     def kill(self, signal=None):
@@ -176,7 +182,7 @@ class NspawnContainer(Container):
         :param signal: not used now
         :return:
         """
-        run_cmd(["machinectl", "terminate", self.get_id()])
+        run_cmd(["machinectl", "--no-pager", "terminate", self.name])
         self._wait_until_machine_finish()
 
     def _wait_until_machine_finish(self):
@@ -186,7 +192,7 @@ class NspawnContainer(Container):
 
         :return: None
         """
-        self.image._wait_for_machine_finish(self.get_id())
+        self.image._wait_for_machine_finish(self.name)
         # kill main run process
         self.start_process.kill()
         # TODO: there are some backgroud processes, dbus async events or something similar, there is better to wait
@@ -270,13 +276,13 @@ class NspawnContainer(Container):
         while True:
             metadata = convert_kv_to_dict(
                 run_cmd(
-                    ["systemctl", "show", "-M", machine, unit],
+                    ["systemctl", "--no-pager", "show", "-M", machine, unit],
                     return_output=True))
             if not metadata["SubState"] in ["exited", "failed"]:
                 time.sleep(0.1)
             else:
                 break
-        run_cmd(["systemctl", "-M", machine, "stop", unit], ignore_status=True)
+        run_cmd(["systemctl", "--no-pager", "-M", machine, "stop", unit], ignore_status=True)
         return metadata["ExecMainStatus"]
 
     def run_systemdrun(
@@ -296,7 +302,7 @@ class NspawnContainer(Container):
         internalkw["ignore_status"] = True
         internalkw["return_output"] = False
         unit_name = constants.CONU_ARTIFACT_TAG + "unit_" + random_str()
-        opts = ["-M", self.get_id(), "--unit", unit_name]
+        opts = ["-M", self.name, "--unit", unit_name]
         lpath = "/var/tmp/{}".format(unit_name)
         comout = {}
         if self._run_systemdrun_decide():
@@ -370,25 +376,6 @@ class NspawnContainer(Container):
         return self.image.mount(mount_point=mount_point)
 
     @staticmethod
-    def list_all():
-        """
-        list all artifacts created by CONU
-
-        :return: dict of names
-        """
-        # TODO: method could be part of API
-        data = run_cmd(["machinectl", "list"], return_output=True)
-        output = []
-        for line in data.split("\n"):
-            stripped = line.strip()
-            if not stripped or stripped.startswith(
-                    "MACHINE") or "No machines" in line or "machines listed" in line:
-                continue
-            if " systemd-nspawn " in line and constants.CONU_ARTIFACT_TAG in line:
-                output.append(stripped.split(" ", 1))
-        return output
-
-    @staticmethod
     def get_backend_image(cont):
         """
         return backend image for running container
@@ -415,7 +402,7 @@ class NspawnContainer(Container):
         for foo in range(constants.DEFAULT_RETRYTIMEOUT):
             time.sleep(constants.DEFAULT_SLEEP)
             out = run_cmd(
-                ["machinectl", "status", name],
+                ["machinectl", "--no-pager", "status", name],
                 ignore_status=True, return_output=True)
             for restr in suffictinet_texts:
                 if restr in out:
