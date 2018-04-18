@@ -58,7 +58,8 @@ class DockerImageFS(Filesystem):
 
     def __enter__(self):
         # FIXME: I'm not sure about this, is doing docker save/export better?
-        run_cmd(["atomic", "mount", self.image.get_full_name(), self.mount_point])
+        output = run_cmd(["atomic", "mount", self.image.get_full_name(), self.mount_point], return_output=True)
+        logger.debug(output)
         return super(DockerImageFS, self).__enter__()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
