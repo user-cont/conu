@@ -80,8 +80,8 @@ class DockerContainerFS(Filesystem):
 
     def __enter__(self):
         cmd = ["atomic", "mount", self.container.get_id(), self.mount_point]
-        logger.debug(cmd)
-        run_cmd(cmd)
+        output = run_cmd(cmd, return_output=True)
+        logger.debug(output)
         return super(DockerContainerFS, self).__enter__()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
