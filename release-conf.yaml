@@ -1,0 +1,10 @@
+# list of major python versions that release-bot will build separate wheels for
+python_versions:
+  - 3
+  - 2
+# whether to release on fedora
+fedora: true
+# list of fedora branches bot should release on. Master is always implied
+fedora_branches:
+  - f28
+  - f27
