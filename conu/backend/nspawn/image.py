@@ -251,6 +251,8 @@ class NspawnImage(Image):
                     "Try to pull URL: {} -> {}".format(self.name, ident))
                 run_cmd(["machinectl", "--no-pager", "--verify=no",
                          "pull-raw", self.location, ident])
+                # add sleep after pull-raw to ensure, kernel finished all file ops, and original file is not blocked
+                time.sleep(constants.DEFAULT_SLEEP)
         except ValueError as error:
             raise ConuException(
                 "There was an error while pulling the image %s: %s",
@@ -349,7 +351,7 @@ class NspawnImage(Image):
             "Unable to stop machine %s within %d" %
             (name, constants.DEFAULT_RETRYTIMEOUT))
 
-    def run(self, command=None, foreground=False, volumes=None,
+    def run_via_binary(self, command=None, foreground=False, volumes=None,
             additional_opts=None, default_options=None, name=None, *args, **kwargs):
         """
         Create new instance NspawnContianer in case of not running at foreground, in case foreground run, return process
@@ -416,7 +418,7 @@ class NspawnImage(Image):
         :param kwargs: pass args to run command
         :return:  process or NspawnContianer instance
         """
-        return self.run(foreground=True, default_options=[], *args, **kwargs)
+        return self.run_via_binary(foreground=True, default_options=[], *args, **kwargs)
 
     @staticmethod
     def get_volume_options(volumes):
@@ -509,6 +511,7 @@ gpgcheck=0
         with open(insiderepopath, 'w') as f:
             f.write(repo_file_content)
         run_cmd(["umount", mounted_dir])
+        # add sleep before umount, to ensure, that kernel finish ops
         time.sleep(constants.DEFAULT_SLEEP)
         nspawnimage = NspawnImage(repository=name, location=tempimagefile, tag=tag)
         os.remove(tempimagefile)
