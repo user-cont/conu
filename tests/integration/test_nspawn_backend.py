@@ -105,7 +105,7 @@ class TestNspawnBackend(object):
     def test_container_basic(self):
         im = NspawnImage(repository=image_name, pull_policy=ImagePullPolicy.IF_NOT_PRESENT,
                          location=url)
-        cont = im.run()
+        cont = im.run_via_binary()
         logger.debug(im.get_metadata())
         logger.debug(cont.get_metadata())
         assert cont.is_running()
@@ -120,7 +120,7 @@ class TestNspawnBackend(object):
     def test_container_exit_states(self):
         im = NspawnImage(repository=image_name, pull_policy=ImagePullPolicy.IF_NOT_PRESENT,
                          location=url)
-        cont = im.run()
+        cont = im.run_via_binary()
         try:
             cont.execute(["exit", "1"])
         except subprocess.CalledProcessError:
@@ -144,7 +144,7 @@ class TestNspawnBackend(object):
         filename = "somefile"
         host_fn = os.path.join(dirname, filename)
         run_cmd(["touch", host_fn])
-        cont = im.run(volumes=["{}:/opt".format(dirname)])
+        cont = im.run_via_binary(volumes=["{}:/opt".format(dirname)])
         cont.execute(["ls", os.path.join("/opt", filename)])
         assert os.path.exists(host_fn)
         cont.execute(["rm", "-f", os.path.join("/opt", filename)])

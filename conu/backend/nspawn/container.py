@@ -59,6 +59,16 @@ class NspawnContainer(Container):
         self.start_action = start_action
 
     @staticmethod
+    def machined_restart():
+        """
+        Workaround for systemd when machined is blocked on D-bus
+
+        :return: int: return code
+        """
+        logger.debug("restart systemd-machined")
+        return run_cmd("systemctl restart systemd-machined", ignore_status=True)
+
+    @staticmethod
     def system_requirements():
         """
         Check if all necessary packages are installed on system
