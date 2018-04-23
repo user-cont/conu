@@ -38,20 +38,21 @@ class Filesystem(object):
         """
         self.obj = object_instance
         self._mount_point = mount_point
-        self.mount_point_provided = False
+        # was mount_point provided? yes = don't touch it, no = remove it
+        self.mount_point_provided = bool(mount_point)
 
     @property
     def mount_point(self):
         if self._mount_point is None:
             self._mount_point = mkdtemp(prefix="conu")
-            self.mount_point_provided = True
+            self.mount_point_provided = False
         return self._mount_point
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if self.mount_point_provided:
+        if not self.mount_point_provided:
             os.rmdir(self.mount_point)
 
     def p(self, path):

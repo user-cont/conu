@@ -22,9 +22,12 @@ from __future__ import print_function, unicode_literals
 import json
 import logging
 import os
+import shutil
 import subprocess
 import enum
+from tempfile import mkdtemp
 
+import errno
 import six
 
 from conu.apidefs.backend import get_backend_tmpdir
@@ -33,7 +36,7 @@ from conu.apidefs.image import Image, S2Image
 from conu.backend.docker.client import get_client
 from conu.backend.docker.container import DockerContainer, DockerRunBuilder
 from conu.exceptions import ConuException
-from conu.utils import run_cmd, random_tmp_filename, atomic_command_exists, s2i_command_exists, \
+from conu.utils import run_cmd, random_tmp_filename, s2i_command_exists, \
     graceful_get
 from conu.utils.filesystem import Volume
 from conu.utils.probes import Probe
@@ -44,27 +47,66 @@ import docker.errors
 logger = logging.getLogger(__name__)
 
 
-class DockerImageFS(Filesystem):
+class DockerImageViaArchiveFS(Filesystem):
     def __init__(self, image, mount_point=None):
         """
-        Raises CommandDoesNotExistException if the command is not present on the system.
+        Provide image as an archive
 
         :param image: instance of DockerImage
-        :param mount_point: str, directory where the filesystem will be mounted
+        :param mount_point: str, directory where the filesystem will be made available
         """
-        atomic_command_exists()
-        super(DockerImageFS, self).__init__(image, mount_point=mount_point)
+        super(DockerImageViaArchiveFS, self).__init__(image, mount_point=mount_point)
         self.image = image
 
+    @property
+    def mount_point(self):
+        if self._mount_point is None:
+            # we pick /var/tmp b/c it's not on tmpfs
+            self._mount_point = mkdtemp(prefix="conu", dir="/var/tmp")
+            self.mount_point_provided = False
+        return self._mount_point
+
     def __enter__(self):
-        # FIXME: I'm not sure about this, is doing docker save/export better?
-        output = run_cmd(["atomic", "mount", self.image.get_full_name(), self.mount_point], return_output=True)
-        logger.debug(output)
-        return super(DockerImageFS, self).__enter__()
+        client = get_client()
+        c = client.create_container(self.image.get_id())
+        try:
+            stream, _ = client.get_archive(c, "/")
+
+            try:
+                os.mkdir(self.mount_point, 0o0700)
+            except OSError as ex:
+                if ex.errno == errno.EEXIST:
+                    logger.debug("mount point %s exists already", self.mount_point)
+                    pass
+                else:
+                    logger.error("mount point %s can't be created: %s", self.mount_point, ex)
+                    raise
+            logger.debug("about to untar the image")
+            # we can't use tarfile because of --no-same-owner: files in containers are owned
+            # by root and tarfile is trying to `chown 0 file` when running as an unpriv user
+            p = subprocess.Popen(
+                ["tar", "--no-same-owner", "-C", self.mount_point, "-x"],
+                stdin=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            for x in stream:
+                p.stdin.write(x)
+            p.stdin.close()
+            p.wait()
+            if p.returncode:
+                logger.error(p.stderr.read())
+                raise ConuException("Failed to unpack the archive.")
+
+            logger.debug("image is unpacked")
+        finally:
+            client.remove_container(c, force=True)
+        return super(DockerImageViaArchiveFS, self).__enter__()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        run_cmd(["atomic", "umount", self.mount_point])
-        return super(DockerImageFS, self).__exit__(exc_type, exc_val, exc_tb)
+        if not self.mount_point_provided:
+            # some dirs are 0400
+            run_cmd(["chmod", "-R", "u+w", self.mount_point])
+            shutil.rmtree(self.mount_point)
 
 
 class DockerImagePullPolicy(enum.Enum):
@@ -227,12 +269,13 @@ class DockerImage(Image):
 
     def mount(self, mount_point=None):
         """
-        mount image filesystem
+        Provide access to filesystem of this docker image.
 
-        :param mount_point: str, directory where the filesystem will be mounted
-        :return: instance of DockerImageFS
+        :param mount_point: str, directory where the filesystem will be mounted; if not
+                             provided, mkdtemp(dir="/var/tmp") is used
+        :return: instance of :class:`conu.apidefs.filesystem.Filesystem`
         """
-        return DockerImageFS(self, mount_point=mount_point)
+        return DockerImageViaArchiveFS(self, mount_point=mount_point)
 
     def _run_container(self, run_command_instance, callback):
         """ this is internal method """
