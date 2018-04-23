@@ -54,6 +54,7 @@ class DockerBackend(Backend):
     For more info on using the Backend classes, see documentation of
     the parent :class:`conu.apidefs.backend.Backend` class.
     """
+    name = "docker"
     ContainerClass = DockerContainer
     ImageClass = DockerImage
 
@@ -83,15 +84,23 @@ class DockerBackend(Backend):
 
     def list_containers(self):
         """
-        list all available docker containers
+        List all available docker containers.
+
+        Container objects returned from this methods will contain a limited
+        amount of metadata in property `short_metadata`. These are just a subset
+        of `.get_metadata()`, but don't require an API call against dockerd.
 
         :return: collection of instances of :class:`conu.DockerContainer`
         """
-        return [DockerContainer(None, c["Id"]) for c in self.d.containers(all=True)]
+        return [DockerContainer(None, c["Id"], short_metadata=c) for c in self.d.containers(all=True)]
 
     def list_images(self):
         """
-        list all available docker images
+        List all available docker images.
+
+        Image objects returned from this methods will contain a limited
+        amount of metadata in property `short_metadata`. These are just a subset
+        of `.get_metadata()`, but don't require an API call against dockerd.
 
         :return: collection of instances of :class:`conu.DockerImage`
         """
@@ -102,7 +111,8 @@ class DockerBackend(Backend):
             except (IndexError, TypeError):
                 i_name, tag = None, None
             d_im = DockerImage(i_name, tag=tag, identifier=im["Id"],
-                               pull_policy=DockerImagePullPolicy.NEVER)
+                               pull_policy=DockerImagePullPolicy.NEVER,
+                               short_metadata=im)
             response.append(d_im)
         return response
 

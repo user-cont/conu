@@ -359,12 +359,18 @@ def test_list_containers():
                                    pull_policy=DockerImagePullPolicy.NEVER)
         container = image.run_via_binary(command=["sleep", "1"])
         try:
-            l = len(backend.list_containers())
-            assert l >= 1
+            container_list = backend.list_containers()
         finally:
             container.delete(force=True)
+        l = len(container_list)
+        assert l >= 1
+        assert container_list[0].short_metadata
+        assert container_list[0].short_metadata["Id"]
 
 
 def test_list_images():
     with DockerBackend() as backend:
-        assert len(backend.list_images()) > 0
+        image_list = backend.list_images()
+        assert len(image_list) > 0
+        assert image_list[0].short_metadata
+        assert image_list[0].short_metadata["Id"]

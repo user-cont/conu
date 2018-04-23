@@ -89,13 +89,15 @@ class DockerImage(Image):
     """
 
     def __init__(self, repository, tag="latest", identifier=None,
-                 pull_policy=DockerImagePullPolicy.IF_NOT_PRESENT):
+                 pull_policy=DockerImagePullPolicy.IF_NOT_PRESENT,
+                 short_metadata=None):
         """
         :param repository: str, image name, examples: "fedora", "registry.fedoraproject.org/fedora",
                             "tomastomecek/sen", "docker.io/tomastomecek/sen"
         :param tag: str, tag of the image, when not specified, "latest" is implied
         :param identifier: str, unique identifier for this image
         :param pull_policy: enum, strategy to apply for pulling the image
+        :param short_metadata: dict, metadata obtained from `docker.APIClient.images()`
         """
         super(DockerImage, self).__init__(repository, tag=tag)
         if not isinstance(tag, (six.string_types, None.__class__)):
@@ -107,6 +109,8 @@ class DockerImage(Image):
             self._id = identifier
         self.d = get_client()
         self.pull_policy = pull_policy
+        # metadata obtained when doing `docker.APIClient().images()`
+        self.short_metadata = short_metadata
 
         if self.pull_policy == DockerImagePullPolicy.ALWAYS:
             logger.debug("pull policy set to 'always', pulling the image")
