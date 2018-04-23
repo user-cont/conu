@@ -95,10 +95,12 @@ class TestNspawnBackend(object):
         out = im.run_foreground(
             ["ls", "/etc"],
             stdout=subprocess.PIPE).communicate()
+        logger.info(out)
         assert "os-release" in out[0]
         out = im.run_foreground(
             ["cat", "/etc/os-release"],
             stdout=subprocess.PIPE).communicate()
+        logger.info(out)
         assert "VERSION_ID=27" in out[0]
         im.rmi()
 

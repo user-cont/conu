@@ -419,8 +419,29 @@ class NspawnContainer(Container):
                     time.sleep(constants.DEFAULT_SLEEP)
                     return True
         raise ConuException(
-            "Unable to start machine %s within %d" %
-            (name, constants.DEFAULT_RETRYTIMEOUT))
+            "Unable to start machine %s within %d (machinectl status command dos not contain %s)" %
+            (name, constants.DEFAULT_RETRYTIMEOUT, suffictinet_texts))
+
+    @staticmethod
+    def _internal_reschedule(callback, retry=3, sleep_time=constants.DEFAULT_SLEEP):
+        """
+        workaround method for internal_run_container method
+        It sometimes fails because of Dbus or whatever, so try to start it moretimes
+
+        :param callback: callback method list
+        :param retry: how many times try to invoke command
+        :param sleep_time: how long wait before subprocess.poll() to find if it failed
+        :return: subprocess object
+        """
+        for foo in range(retry):
+            container_process = callback[0](callback[1], *callback[2], **callback[3])
+            time.sleep(sleep_time)
+            container_process.poll()
+            rcode = container_process.returncode
+            if rcode is None:
+                return container_process
+        raise ConuException("Unable to start nspawn container - process failed for {}-times".format(retry))
+
 
     @staticmethod
     def internal_run_container(name, callback_method, foreground=False):
@@ -432,11 +453,14 @@ class NspawnContainer(Container):
         :param foreground: bool run in background by default
         :return: suprocess instance
         """
-        logger.info("Stating machine {}".format(name))
-        container_process = callback_method[0](callback_method[1], *callback_method[2], **callback_method[3])
         if not foreground:
+            logger.info("Stating machine (boot nspawn container) {}".format(name))
             # wait until machine is booted when running at background, unable to execute commands without logind
             # in running container
+            nspawn_process = NspawnContainer._internal_reschedule(callback_method)
             NspawnContainer._wait_for_machine_booted(name)
-        logger.info("machine: %s starting finished" % name)
-        return container_process
+            logger.info("machine: %s starting finished" % name)
+            return nspawn_process
+        else:
+            logger.info("Stating machine (return process) {}".format(name))
+            return callback_method[0](callback_method[1], *callback_method[2], **callback_method[3])
