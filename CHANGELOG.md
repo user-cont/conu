@@ -1,3 +1,8 @@
+# 0.3.0
+
+TBD
+
+
 # 0.2.0
 
 Please note, that our API is still not marked stable yet.
