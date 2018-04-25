@@ -9,7 +9,7 @@ Aside from methods in API definition - :class:`conu.apidefs.image.Image`, Docker
 .. autoclass:: conu.DockerImagePullPolicy
    :members:
 
-.. autoclass:: conu.DockerImageFS
+.. autoclass:: conu.DockerImageViaArchiveFS
    :members:
 
 Aside from methods in API definition - :class:`conu.apidefs.image.S2Image`, S2IDockerImage implements following methods:
