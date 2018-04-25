@@ -374,3 +374,15 @@ def test_list_images():
         assert len(image_list) > 0
         assert image_list[0].short_metadata
         assert image_list[0].short_metadata["Id"]
+
+
+def test_build_image():
+    with DockerBackend() as backend:
+        name = 'conu-test-image'
+        integration_tests_dir = os.path.abspath(os.path.dirname(__file__))
+        image_dir = os.path.join(integration_tests_dir, "data/greeter")
+
+        image = backend.ImageClass.build(os.path.join(image_dir), tag=name)
+        assert image.inspect()['RepoTags'][0] == name + ':latest'
+        container = image.run_via_binary()
+        assert container.logs_unicode() == 'Hello!\n'

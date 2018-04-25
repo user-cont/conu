@@ -418,6 +418,38 @@ class DockerImage(Image):
             result += ["-v", str(v)]
         return result
 
+    @classmethod
+    def build(cls, path, tag=None, dockerfile=None):
+        """
+        Build the image from the provided dockerfile in path
+
+        :param path : str, path to the directory containing the Dockerfile
+        :param tag: str, A tag to add to the final image
+        :param dockerfile: str, path within the build context to the Dockerfile
+        :return: instance of DockerImage
+        """
+        if not path:
+            raise ConuException('Please specify path to the directory containing the Dockerfile')
+        client = get_client()
+        response = [line for line in client.build(path,
+                                                  rm=True, tag=tag,
+                                                  dockerfile=dockerfile,
+                                                  quiet=True)]
+        if not response:
+            raise ConuException('Failed to get ID of image')
+
+        # The expected output is just one line with image ID
+        if len(response) > 1:
+            raise ConuException('Build failed: ' + str(response))
+
+        # get ID from output
+        # b'{"stream":"sha256:39c7bac4e2da37983203df4fcf612a02de9e6f6456a7f3434d1fccbc9ad639a5\\n"}\r\n'
+        response_utf = response[0].decode('utf-8')
+        if response_utf[:11] != '{"stream":"' or response_utf[-6:] != '\\n"}\r\n':
+            raise ConuException('Failed to parse ID from ' + response_utf)
+        image_id = response_utf[11:-6]
+
+        return cls(None, identifier=image_id)
 
 class S2IDockerImage(DockerImage, S2Image):
     def __init__(self, repository, tag="latest"):
