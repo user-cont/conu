@@ -3,7 +3,7 @@
 CONU_REPOSITORY := docker.io/modularitycontainers/conu
 TEST_IMAGE_NAME := conu-tests
 DOC_EXAMPLE_PATH := "docs/source/examples"
-VERSION := 0.3.0
+VERSION := 0.3.1
 
 install-dependencies:
 	./requirements.sh
@@ -71,11 +71,6 @@ install-conu-in-centos-container: rpm-in-mock-el7
 	docker run -v "/var/lib/mock/epel-7-x86_64/result:/conu" -ti centos:7 bash -c " \
 		yum install -y /conu/python2-conu-*.el7.centos.noarch.rpm && \
 		python2 -c 'import conu; print conu.version'"
-
-release:
-	@echo 'Make sure that conu/version.py is correct'
-	tito tag --use-version=$(VERSION)
-	@echo 'Proceed to https://copr.fedorainfracloud.org/coprs/ttomecek/conu/add_build/'
 
 encrypt-password-in-travis-yml:
 	docker run -ti --rm -v $(CURDIR):/src -w /src docker.io/tianon/travis-cli travis encrypt --add deploy.password -r fedora-modularity/conu $(THE_PASSWORD)
