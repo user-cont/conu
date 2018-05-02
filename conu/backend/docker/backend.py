@@ -92,7 +92,16 @@ class DockerBackend(Backend):
 
         :return: collection of instances of :class:`conu.DockerContainer`
         """
-        return [DockerContainer(None, c["Id"], short_metadata=c) for c in self.d.containers(all=True)]
+        result = []
+        # TODO: list images as well to get their names -- just 2 API calls
+        for c in self.d.containers(all=True):
+            name = None
+            names = c.get("Names", None)
+            if names:
+                name = names[0]
+            i = DockerImage(None, identifier=c["ImageID"])
+            result.append(DockerContainer(i, c["Id"], short_metadata=c, name=name))
+        return result
 
     def list_images(self):
         """
@@ -111,8 +120,9 @@ class DockerBackend(Backend):
             except (IndexError, TypeError):
                 i_name, tag = None, None
             d_im = DockerImage(i_name, tag=tag, identifier=im["Id"],
-                               pull_policy=DockerImagePullPolicy.NEVER,
-                               short_metadata=im)
+                               pull_policy=DockerImagePullPolicy.NEVER)
+            d_im.load_metadata(im)
+
             response.append(d_im)
         return response
 

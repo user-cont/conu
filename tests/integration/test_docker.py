@@ -379,8 +379,10 @@ def test_list_images():
     with DockerBackend() as backend:
         image_list = backend.list_images()
         assert len(image_list) > 0
-        assert image_list[0].short_metadata
-        assert image_list[0].short_metadata["Id"]
+        the_id = "756d8881fb18271a1d55f6ee7e355aaf38fb2973f5fbb0416cf5de628624318b"
+        image_under_test = [x for x in image_list if x.metadata.identifier == the_id][0]
+        assert image_under_test.metadata.digest
+        assert image_under_test.metadata.repo_digests
 
 
 def test_build_image():

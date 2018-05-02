@@ -75,7 +75,8 @@ class ImageMetadata(Metadata):
     """
 
     def __init__(self, name=None, identifier=None, labels=None, command=None,
-                 creation_timestamp=None, env_variables=None, exposed_ports=None, image_names=None):
+                 creation_timestamp=None, env_variables=None, exposed_ports=None, image_names=None,
+                 digest=None, repo_digests=None):
         """
         :param name: str, name of image
         :param identifier: str, id of image
@@ -90,13 +91,16 @@ class ImageMetadata(Metadata):
         :param exposed_ports: list, list of exposed ports
         :param image_names: list of str, image names, examples:
             - [fedora, docker.io/library/fedora:latest]
+        :param digest: str, hash of the image
+        :param repo_digests: str, unique pull specification based on digest
         """
-
         super(ImageMetadata, self).__init__(
             name=name, identifier=identifier, labels=labels, command=command,
             creation_timestamp=creation_timestamp, env_variables=env_variables)
         self.exposed_ports = exposed_ports
         self.image_names = image_names
+        self.digest = digest
+        self.repo_digests = repo_digests
 
 
 class ContainerStatus(enum.Enum):
