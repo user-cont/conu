@@ -1,4 +1,4 @@
-# 0.3.0
+# 0.3.1
 
 ## New Features
 
@@ -13,6 +13,7 @@
 * It is possible to build image from Dockerfile using `DockerImage.build()`.
 * There is a new method to check GPG signatures of RPMs in images.
 * Documentation is updated, there is also asciinema demo in README.md.
+
 
 # 0.2.0
 
