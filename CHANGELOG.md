@@ -1,3 +1,19 @@
+# 0.3.0
+
+## New Features
+
+* Introduced fixtures and helper functions to simplify container testing.
+* Support was added for another backend - nspawn.
+* It is possible to decide cleanup policy when initializing backend.
+* Methods for listing containers and images were added to both supported backends.
+* Image mounting is possible also without superuser privileges.
+* To represent and work with docker volumes, there is a new class `Volume`.
+* `run_via_binary` accepts commands in form of list of strings
+  to make running images more intuitively.
+* It is possible to build image from Dockerfile using `DockerImage.build()`.
+* There is a new method to check GPG signatures of RPMs in images.
+* Documentation is updated, there is also asciinema demo in README.md.
+
 # 0.2.0
 
 Please note, that our API is still not marked stable yet.
