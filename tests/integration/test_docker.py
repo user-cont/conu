@@ -28,7 +28,14 @@ from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
     FEDORA_REPOSITORY
 
 from conu.backend.docker.client import get_client
-from conu import DockerRunBuilder, Probe, ConuException, DockerBackend, DockerImagePullPolicy, Directory
+from conu import \
+    DockerRunBuilder, \
+    Probe, \
+    ConuException, \
+    DockerBackend, \
+    DockerImagePullPolicy, \
+    DockerImage, \
+    Directory
 
 from six import string_types
 
@@ -386,3 +393,26 @@ def test_build_image():
         assert image.inspect()['RepoTags'][0] == name + ':latest'
         container = image.run_via_binary()
         assert container.logs_unicode() == 'Hello!\n'
+
+
+def test_layers():
+    with DockerBackend() as backend:
+        image = backend.ImageClass('punchbag')
+        layer_ids = image.get_layer_ids()
+        layers = image.layers()
+
+        assert len(layer_ids) == len(layers)
+        for l in layers:
+            assert l.inspect()["Id"] in layer_ids
+
+        punchbag_cmd = [
+                "/bin/sh",
+                "-c",
+                "#(nop) ",
+                "CMD [\"usage\"]"
+        ]
+        assert layers[0].inspect()['ContainerConfig']['Cmd'] == punchbag_cmd
+        reversed = image.layers(reversed=False)
+        assert reversed[-1].inspect()['ContainerConfig']['Cmd'] == punchbag_cmd
+
+    
