@@ -494,6 +494,34 @@ class DockerImage(Image):
 
         return cls(None, identifier=image_id)
 
+    def get_layer_ids(self, reversed=True):
+        """
+        Get IDs of image layers
+
+        :param reversed: get layers reversed
+        :return: list of strings
+        """
+        layers = [x['Id'] for x in self.d.history(self.get_id())]
+        if not reversed:
+            l = layers.reverse()
+        return layers
+
+    def layers(self, reversed=True):
+        """
+        Get list of DockerImage for every layer in image
+
+        :param reversed: get layers reversed
+        :return: list of DockerImages
+        """
+        image_layers = [
+            DockerImage(None, identifier=x, pull_policy=DockerImagePullPolicy.NEVER)
+            for x in self.get_layer_ids()
+        ]
+        if not reversed:
+            image_layers.reverse()
+        return image_layers
+
+
 class S2IDockerImage(DockerImage, S2Image):
     def __init__(self, repository, tag="latest"):
         """
