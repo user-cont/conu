@@ -415,4 +415,3 @@ def test_layers():
         reversed = image.layers(reversed=False)
         assert reversed[-1].inspect()['ContainerConfig']['Cmd'] == punchbag_cmd
 
-    

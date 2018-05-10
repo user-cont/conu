@@ -21,7 +21,9 @@ from __future__ import print_function, unicode_literals
 
 import functools
 import logging
+import shutil
 import subprocess
+from tempfile import mkdtemp
 
 from docker.errors import NotFound
 
@@ -29,7 +31,7 @@ from conu.apidefs.container import Container
 from conu.apidefs.filesystem import Filesystem
 from conu.backend.docker.client import get_client
 from conu.exceptions import ConuException
-from conu.utils import check_port, run_cmd, atomic_command_exists
+from conu.utils import check_port, run_cmd, export_docker_container_to_directory
 from conu.utils.probes import Probe
 from conu.backend.docker.constants import CONU_ARTIFACT_TAG
 
@@ -66,27 +68,35 @@ class DockerRunBuilder(object):
             ["-l", CONU_ARTIFACT_TAG] + [self.image_name] + self.arguments
 
 
-class DockerContainerFS(Filesystem):
+class DockerContainerViaExportFS(Filesystem):
     def __init__(self, container, mount_point=None):
         """
-        Raises CommandDoesNotExistException if the command is not present on the system.
+        Provide container as an archive
 
         :param container: instance of DockerContainer
-        :param mount_point: str, directory where the filesystem will be mounted
+        :param mount_point: str, directory where the filesystem will be made available
         """
-        atomic_command_exists()
-        super(DockerContainerFS, self).__init__(container, mount_point=mount_point)
-        self.container = container  # convenience
+        super(DockerContainerViaExportFS, self).__init__(container, mount_point=mount_point)
+        self.container = container
+
+    @property
+    def mount_point(self):
+        if self._mount_point is None:
+            # we pick /var/tmp b/c it's not on tmpfs
+            self._mount_point = mkdtemp(prefix="conu", dir="/var/tmp")
+            self.mount_point_provided = False
+        return self._mount_point
 
     def __enter__(self):
-        cmd = ["atomic", "mount", self.container.get_id(), self.mount_point]
-        output = run_cmd(cmd, return_output=True)
-        logger.debug(output)
-        return super(DockerContainerFS, self).__enter__()
+        client = get_client()
+        export_docker_container_to_directory(client, self.container, self.mount_point)
+        return super(DockerContainerViaExportFS, self).__enter__()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        run_cmd(["atomic", "umount", self.mount_point])
-        return super(DockerContainerFS, self).__exit__(exc_type, exc_val, exc_tb)
+        if not self.mount_point_provided:
+            # some dirs are 0400
+            run_cmd(["chmod", "-R", "u+w", self.mount_point])
+            shutil.rmtree(self.mount_point)
 
 
 class DockerContainer(Container):
@@ -415,7 +425,7 @@ class DockerContainer(Container):
         :param mount_point: str, directory where the filesystem will be mounted
         :return: instance of DockerContainerFS
         """
-        return DockerContainerFS(self, mount_point=mount_point)
+        return DockerContainerViaExportFS(self, mount_point=mount_point)
 
     def get_status(self):
         """

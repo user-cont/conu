@@ -16,7 +16,9 @@
 
 from __future__ import print_function, unicode_literals
 
+import errno
 import logging
+import os
 import random
 import shutil
 import socket
@@ -207,16 +209,6 @@ def s2i_command_exists():
     )
 
 
-def atomic_command_exists():
-    return command_exists(
-        "atomic",
-        ["atomic", "-v"],
-        "atomic command doesn't seem to be available on your system. Usually it's available in "
-        "'atomic' package. For more info, please consult the upstream documentation "
-        "available at 'https://github.com/projectatomic/atomic'."
-    )
-
-
 def chcon_command_exists():
     return command_exists(
         "chcon",
@@ -297,3 +289,57 @@ def graceful_get(d, *args):
             logger.warning("exception while getting a value: %s", ex)
             return None
     return value
+
+
+def export_docker_container_to_directory(client, container, path):
+    """
+    take selected docker container, create an archive out of it and
+    unpack it to a selected location
+
+    :param client: instance of docker.APIClient
+    :param container: instance of DockerContainer
+    :param path: str, path to a directory, doesn't need to exist
+    :return: None
+    """
+    # we don't do this because of a bug in docker:
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1570828
+    # stream, _ = client.get_archive(container.get_id(), "/")
+    check_docker_command_works()
+    export_p = subprocess.Popen(
+        ["docker", "export", container.get_id()],
+        stderr=subprocess.PIPE,
+        stdout=subprocess.PIPE
+    )
+
+    try:
+        os.mkdir(path, 0o0700)
+    except OSError as ex:
+        if ex.errno == errno.EEXIST:
+            logger.debug("mount point %s exists already", path)
+        else:
+            logger.error("mount point %s can't be created: %s", path, ex)
+            raise
+    logger.debug("about to untar the image")
+    # we can't use tarfile because of --no-same-owner: files in containers are owned
+    # by root and tarfile is trying to `chown 0 file` when running as an unpriv user
+    p = subprocess.Popen(
+        ["tar", "--no-same-owner", "-C", path, "-x"],
+        stdin=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    while True:
+        data = export_p.stdout.read(1048576)
+        if not data:
+            break
+        p.stdin.write(data)
+    p.stdin.close()
+    p.wait()
+    export_p.wait()
+    if export_p.returncode:
+        logger.error(export_p.stderr.read())
+        raise ConuException("Failed to get rootfs of %s from docker." % container)
+    if p.returncode:
+        logger.error(p.stderr.read())
+        raise ConuException("Failed to unpack the archive.")
+
+    logger.debug("image is unpacked")

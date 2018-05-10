@@ -27,7 +27,6 @@ import subprocess
 import enum
 from tempfile import mkdtemp
 
-import errno
 import six
 
 from conu.apidefs.backend import get_backend_tmpdir
@@ -37,7 +36,7 @@ from conu.backend.docker.client import get_client
 from conu.backend.docker.container import DockerContainer, DockerRunBuilder
 from conu.exceptions import ConuException
 from conu.utils import run_cmd, random_tmp_filename, s2i_command_exists, \
-    graceful_get
+    graceful_get, export_docker_container_to_directory
 from conu.utils.filesystem import Volume
 from conu.utils.probes import Probe
 from conu.utils.rpms import check_signatures
@@ -69,37 +68,11 @@ class DockerImageViaArchiveFS(Filesystem):
     def __enter__(self):
         client = get_client()
         c = client.create_container(self.image.get_id())
+        container = DockerContainer(self.image, c["Id"])
         try:
-            stream, _ = client.get_archive(c, "/")
-
-            try:
-                os.mkdir(self.mount_point, 0o0700)
-            except OSError as ex:
-                if ex.errno == errno.EEXIST:
-                    logger.debug("mount point %s exists already", self.mount_point)
-                    pass
-                else:
-                    logger.error("mount point %s can't be created: %s", self.mount_point, ex)
-                    raise
-            logger.debug("about to untar the image")
-            # we can't use tarfile because of --no-same-owner: files in containers are owned
-            # by root and tarfile is trying to `chown 0 file` when running as an unpriv user
-            p = subprocess.Popen(
-                ["tar", "--no-same-owner", "-C", self.mount_point, "-x"],
-                stdin=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            for x in stream:
-                p.stdin.write(x)
-            p.stdin.close()
-            p.wait()
-            if p.returncode:
-                logger.error(p.stderr.read())
-                raise ConuException("Failed to unpack the archive.")
-
-            logger.debug("image is unpacked")
+            export_docker_container_to_directory(client, container, self.mount_point)
         finally:
-            client.remove_container(c, force=True)
+            container.delete(force=True)
         return super(DockerImageViaArchiveFS, self).__enter__()
 
     def __exit__(self, exc_type, exc_val, exc_tb):

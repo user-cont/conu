@@ -155,10 +155,6 @@ with DockerBackend(logging_level=logging.DEBUG) as backend:
         container.delete()
 ```
 
-Let's run it! Please make sure that you run the provided example as root, since
-`conu` utilizes [`atomic`](https://github.com/projectatomic/atomic) tool and its `mount` command, which requires you to
-be root.
-
 Let's run it and look at the logs:
 ```bash
 $ python3 examples/readme_webserver.py
