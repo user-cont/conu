@@ -27,8 +27,11 @@ open-docs: docs/build/html/index.html
 
 # jenkins doesn't seem to cope well with the docker's networing magic:
 #   dnf and `docker pull` malfunctions -- timeouts, network errors
-container:
+container-image:
 	docker build --network host --tag=$(CONU_REPOSITORY) .
+
+container:
+	docker run --rm -ti -v /run/docker.sock:/run/docker.sock $(CONU_REPOSITORY) bash
 
 build-test-container:
 	docker build --network host --tag=$(TEST_IMAGE_NAME) -f ./Dockerfile.tests .
