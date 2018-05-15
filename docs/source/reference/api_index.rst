@@ -7,6 +7,7 @@ API definition
    image.rst
    container.rst
    filesystem_api.rst
+   metadata.rst
 
 
 .. autoclass:: conu.apidefs.backend.Backend
