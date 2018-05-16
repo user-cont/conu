@@ -28,7 +28,10 @@ from tempfile import mkdtemp
 from docker.errors import NotFound
 
 from conu.apidefs.container import Container
+from conu.apidefs.image import Image
+from conu.apidefs.metadata import ContainerStatus
 from conu.apidefs.filesystem import Filesystem
+from conu.apidefs.metadata import ContainerMetadata
 from conu.backend.docker.client import get_client
 from conu.exceptions import ConuException
 from conu.utils import check_port, run_cmd, export_docker_container_to_directory
@@ -183,6 +186,18 @@ class DockerContainer(Container):
         """
         # FIXME: be graceful in obtaining values from dict: the keys might not be set
         return [x["IPAddress"]
+                for x in self.get_metadata(refresh=True)["NetworkSettings"]["Networks"].values()]
+
+    def get_IPv6s(self):
+        """
+        Return all known IPv6 addresses of this container. It may be possible
+        that the container has disabled networking: in that case, the list is
+        empty
+
+        :return: list of str
+        """
+        # FIXME: be graceful in obtaining values from dict: the keys might not be set
+        return [x["GlobalIPv6Address"]
                 for x in self.get_metadata(refresh=True)["NetworkSettings"]["Networks"].values()]
 
     def get_ports(self):
@@ -485,3 +500,69 @@ class DockerContainer(Container):
             self.popen_instance.stdin.flush()
         except subprocess.CalledProcessError as e:
             raise ConuException(e)
+
+    def get_container_metadata(self):
+        """
+        Convert dictionary returned after docker inspect command into instance of ContainerMetadata class
+        :return: ContainerMetadata, container metadata instance
+        """
+
+        docker_metadata = self.get_metadata(refresh=True)
+
+        print(docker_metadata)
+
+        # format of Environment Variables from docker inspect:
+        # ['DISTTAG=f26container', 'FGC=f26']
+        env_variables = dict()
+        for env_variable in docker_metadata['Config']['Env']:
+            env_variables.update({env_variable.split('=')[0]: env_variable.split('=')[1]})
+
+        # format of image name from docker inspect:
+        # sha256:8f0e66c924c0c169352de487a3c2463d82da24e9442fc097dddaa5f800df7129
+        image = Image(docker_metadata['Image'].split(':')[1])
+
+        status = ContainerStatus.CREATED
+
+        if docker_metadata['State']['Status'] == 'created':
+            status = ContainerStatus.CREATED
+        elif docker_metadata['State']['Status'] == 'restarting':
+            status = ContainerStatus.RESTARTING
+        elif docker_metadata['State']['Status'] == 'running':
+            status = ContainerStatus.RUNNING
+        elif docker_metadata['State']['Status'] == 'removing':
+            status = ContainerStatus.REMOVING
+        elif docker_metadata['State']['Status'] == 'paused':
+            status = ContainerStatus.PAUSED
+        elif docker_metadata['State']['Status'] == 'exited':
+            status = ContainerStatus.EXITED
+        elif docker_metadata['State']['Status'] == 'dead':
+            status = ContainerStatus.DEAD
+
+        # format of Port mappings from docker inspect:
+        # {'12345/tcp': [{'HostIp': '0.0.0.0', 'HostPort': '123'}, {'HostIp': '0.0.0.0', 'HostPort': '1234'}]}
+        port_mappings = dict()
+        for key, value in docker_metadata['HostConfig']['PortBindings'].items():
+            for item in value:
+                if item['HostPort'] in port_mappings.keys():
+                    port_mappings[item['HostPort']].append(key)
+                else:
+                    port_mappings.update({item['HostPort']: key})
+
+        container_metadata = ContainerMetadata(
+            name=docker_metadata['Name'][1:],  # remove / at the beginning
+            identifier=docker_metadata['Id'],
+            labels=docker_metadata['Config']['Labels'],
+            command=docker_metadata['Config']['Cmd'],
+            creation_timestamp=docker_metadata['Created'],
+            env_variables=env_variables,
+            image=image,
+            exposed_ports=list(docker_metadata['Config']['ExposedPorts'].keys()),
+            port_mappings=port_mappings,
+            hostname=docker_metadata['Config']['Hostname'],
+            ipv4_addresses=self.get_IPv4s(),
+            ipv6_addresses=self.get_IPv6s(),
+            status=status)
+
+        return container_metadata
+
+

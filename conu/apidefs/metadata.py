@@ -47,8 +47,8 @@ class ContainerMetadata(Metadata):
         :param env_variables: dict, {name: value}
         :param image: Image, reference to Image instance
         :param exposed_ports: list, list of exposed ports
-        :param port_mappings: dict, dictionary of port mappings {"host_port": "container_port"}, example:
-            - {"8080":"80"} map port 80 in the container to port 8080 on the host
+        :param port_mappings: dict, dictionary of port mappings {"host_port": ["container_port"]}, example:
+            - {"8080":["80", "443"]} map port 80 and 443 in the container to port 8080 on the host
         :param hostname: str, hostname
         :param ipv4_addresses: dict, {address: port}
         :param ipv6_addresses: dict, {address: port}

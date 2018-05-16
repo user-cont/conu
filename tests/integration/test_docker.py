@@ -27,6 +27,7 @@ from conu.backend.docker.backend import parse_reference
 from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, \
     FEDORA_REPOSITORY
 
+from conu.apidefs.metadata import ContainerStatus
 from conu.backend.docker.client import get_client
 from conu import \
     DockerRunBuilder, \
@@ -34,7 +35,6 @@ from conu import \
     ConuException, \
     DockerBackend, \
     DockerImagePullPolicy, \
-    DockerImage, \
     Directory
 
 from six import string_types
@@ -414,4 +414,42 @@ def test_layers():
         assert layers[0].inspect()['ContainerConfig']['Cmd'] == punchbag_cmd
         reversed = image.layers(reversed=False)
         assert reversed[-1].inspect()['ContainerConfig']['Cmd'] == punchbag_cmd
+
+
+def test_metadata():
+    with DockerBackend() as backend:
+        image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+
+        c = image.run_via_binary(
+            DockerRunBuilder(command=["cat"], additional_opts=['-i',
+                                                               '-t',
+                                                               '--name', 'my_container',
+                                                               '-p', '1234:12345',
+                                                               '-p', '123:12345',
+                                                               '--hostname', 'my_hostname',
+                                                               '-e', 'ENV1=my_env',
+                                                               '-e', 'ASD=',
+                                                               '-e', 'A=B=C=D',
+                                                               '-e', 'XYZ',
+                                                               '-l', 'testlabel1=testvalue1'
+                                                               ])
+        )
+
+        container_metadata = c.get_container_metadata()
+
+        try:
+            assert container_metadata.command == ["cat"]
+            assert container_metadata.name == "my_container"
+            assert container_metadata.env_variables["ENV1"] == "my_env"
+            assert container_metadata.env_variables["ASD"] == ""
+            assert container_metadata.env_variables["A"] == "B=C=D"
+            assert container_metadata.hostname == "my_hostname"
+            assert "XYZ" not in list(container_metadata.env_variables.keys())
+            assert container_metadata.port_mappings["1234"] == "12345/tcp"
+            assert container_metadata.port_mappings["123"] == "12345/tcp"
+            assert container_metadata.exposed_ports == ["12345/tcp"]
+            assert container_metadata.labels["testlabel1"] == "testvalue1"
+            assert container_metadata.status == ContainerStatus.RUNNING
+        finally:
+            c.delete(force=True)
 
