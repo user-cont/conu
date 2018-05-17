@@ -471,3 +471,73 @@ def test_image_metadata():
         assert image_metadata.command == ["/bin/bash"]
         assert image_metadata.labels['name'] == 'fedora'
 
+
+def test_docker_parameters():
+    docker_run_builder = DockerRunBuilder(additional_opts=['-l', 'hello=there', '-l', 'oh=noo', '--name', 'test', '-d',
+                                                           '--hostname', 'my_hostname',
+                                                           '--rm', '--privileged', '--isolation', 'default',
+                                                           '--mac-address', '92:d0:c6:0a:29:33',
+                                                           '--memory', '1G', '--user', 'my_user',
+                                                           '--workdir', '/tmp',
+                                                           '--env', 'ENV1=my_env', '-p', '123:12345',
+                                                           '--cap-add', 'MKNOD', '--cap-add', 'SYS_ADMIN',
+                                                           '--cap-drop', 'SYS_ADMIN', '--device', '/dev/sdc:/dev/xvdc',
+                                                           '--dns', 'www.example.com', '--group-add', 'group1',
+                                                           '--group-add', 'group2', '--mount', '/tmp',
+                                                           '--volume', '/tmp:/tmp', '--no-healthcheck'],
+                                          command=['sleep', '50'])
+
+    parameters = docker_run_builder.get_parameters()
+
+    assert parameters.labels == {'hello': 'there', 'oh': 'noo'}
+    assert parameters.name == 'test'
+    assert parameters.detach
+    assert parameters.privileged
+    assert parameters.hostname == 'my_hostname'
+    assert parameters.remove
+    assert parameters.isolation == 'default'
+    assert parameters.mac_address == '92:d0:c6:0a:29:33'
+    assert parameters.mem_limit == '1G'
+    assert parameters.user == 'my_user'
+    assert parameters.working_dir == '/tmp'
+    assert 'ENV1=my_env' in parameters.environment
+    assert parameters.ports == {'123': '12345'}
+    assert parameters.cap_add == ['MKNOD', 'SYS_ADMIN']
+    assert parameters.cap_drop == ['SYS_ADMIN']
+    assert parameters.devices == ['/dev/sdc:/dev/xvdc']
+    assert parameters.dns == ['www.example.com']
+    assert parameters.group_add == ['group1', 'group2']
+    assert parameters.mounts == ['/tmp']
+    assert parameters.volumes == ['/tmp:/tmp']
+    assert parameters.command == ['sleep', '50']
+
+
+def test_run_via_docker_api():
+    docker_run_builder = DockerRunBuilder(additional_opts=['-l', 'hello=there', '-l', 'oh=noo', '--name', 'test', '-d',
+                                                           '--hostname', 'my_hostname',
+                                                           '--rm',
+                                                           '--memory', '1G',
+                                                           '--workdir', '/tmp',
+                                                           '--env', 'ENV1=my_env', '-p', '123:12345',
+                                                           '--cap-add', 'MKNOD', '--cap-add', 'SYS_ADMIN',
+                                                           '--cap-drop', 'SYS_ADMIN',
+                                                           '--dns', 'www.example.com',
+                                                           '--volume', '/tmp:/tmp', '--no-healthcheck'],
+                                          command=['sleep', '10'])
+
+    parameters = docker_run_builder.get_parameters()
+
+    client = docker.from_env()
+    container = client.containers.run("fedora", command=parameters.command, remove=parameters.remove,
+                                      cap_add=parameters.cap_add, cap_drop=parameters.cap_drop,
+                                      detach=parameters.detach, dns=parameters.dns,
+                                      environment=parameters.environment,
+                                      healthcheck=parameters.healthcheck, hostname=parameters.hostname,
+                                      labels=parameters.labels,
+                                      mem_limit=parameters.mem_limit,
+                                      name=parameters.name, ports=parameters.ports, stdin_open=parameters.stdin_open,
+                                      stdout=parameters.stdout,
+                                      stderr=parameters.stderr, tty=parameters.tty,
+                                      volumes=parameters.volumes, working_dir=parameters.working_dir)
+
+    assert container.status == 'created' or container.status == 'running'
