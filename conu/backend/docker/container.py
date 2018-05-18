@@ -509,8 +509,6 @@ class DockerContainer(Container):
 
         docker_metadata = self.get_metadata(refresh=True)
 
-        print(docker_metadata)
-
         # format of Environment Variables from docker inspect:
         # ['DISTTAG=f26container', 'FGC=f26']
         env_variables = dict()
