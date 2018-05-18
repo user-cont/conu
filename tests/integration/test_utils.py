@@ -20,7 +20,7 @@ import subprocess
 import pytest
 
 from conu import check_port, Probe
-from conu.utils import s2i_command_exists, atomic_command_exists, getenforce_command_exists, \
+from conu.utils import s2i_command_exists, getenforce_command_exists, \
     chcon_command_exists, setfacl_command_exists, command_exists, CommandDoesNotExistException, \
     check_docker_command_works
 
@@ -45,7 +45,6 @@ def test_probes_port():
 def test_required_binaries_exist():
     # should work since we have all the deps installed
     assert s2i_command_exists()
-    assert atomic_command_exists()
     assert getenforce_command_exists()
     assert chcon_command_exists()
     assert setfacl_command_exists()

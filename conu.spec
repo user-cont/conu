@@ -62,13 +62,11 @@ Requires:       docker
 # no s2i on centos :<
 # Requires:       source-to-image
 Requires:       acl
-Requires:       atomic
 Requires:       libselinux-utils
 %else
 # these are optional but still recommended
 Recommends:     source-to-image
 Recommends:     acl
-Recommends:     atomic
 Recommends:     libselinux-utils
 %endif
 
@@ -102,7 +100,6 @@ Requires:       docker
 # these are optional but still recommended
 Recommends:     source-to-image
 Recommends:     acl
-Recommends:     atomic
 Recommends:     libselinux-utils
 
 %description -n python3-%{pypi_name}
