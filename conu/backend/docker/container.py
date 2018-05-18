@@ -515,7 +515,10 @@ class DockerContainer(Container):
         # ['DISTTAG=f26container', 'FGC=f26']
         env_variables = dict()
         for env_variable in docker_metadata['Config']['Env']:
-            env_variables.update({env_variable.split('=')[0]: env_variable.split('=')[1]})
+            try:
+                env_variables.update({env_variable.split('=', 1)[0]: env_variable.split('=', 1)[1]})
+            except IndexError:
+                pass  # wrong format of environment variable
 
         # format of image name from docker inspect:
         # sha256:8f0e66c924c0c169352de487a3c2463d82da24e9442fc097dddaa5f800df7129
@@ -543,10 +546,10 @@ class DockerContainer(Container):
         port_mappings = dict()
         for key, value in docker_metadata['HostConfig']['PortBindings'].items():
             for item in value:
-                if item['HostPort'] in port_mappings.keys():
-                    port_mappings[item['HostPort']].append(key)
+                if key in port_mappings.keys():
+                    port_mappings[key].append(int(item['HostPort']))
                 else:
-                    port_mappings.update({item['HostPort']: key})
+                    port_mappings.update({key: [int(item['HostPort'])]})
 
         container_metadata = ContainerMetadata(
             name=docker_metadata['Name'][1:],  # remove / at the beginning
