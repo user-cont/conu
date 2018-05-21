@@ -479,7 +479,8 @@ def test_docker_parameters():
                                                            '--mac-address', '92:d0:c6:0a:29:33',
                                                            '--memory', '1G', '--user', 'my_user',
                                                            '--workdir', '/tmp',
-                                                           '--env', 'ENV1=my_env', '-p', '123:12345',
+                                                           '--env', 'ENV1=my_env', '-p', '123:12345', '-p', '1444',
+                                                           '-p', '10.0.0.1::150', '-p', '10.0.0.2:2345:7654',
                                                            '--cap-add', 'MKNOD', '--cap-add', 'SYS_ADMIN',
                                                            '--cap-drop', 'SYS_ADMIN', '--device', '/dev/sdc:/dev/xvdc',
                                                            '--dns', 'www.example.com', '--group-add', 'group1',
@@ -501,7 +502,7 @@ def test_docker_parameters():
     assert parameters.user == 'my_user'
     assert parameters.working_dir == '/tmp'
     assert 'ENV1=my_env' in parameters.environment
-    assert parameters.ports == {'123': '12345'}
+    assert parameters.ports == {'12345': 123, '1444': None, '150': ('10.0.0.1', None), '7654': ('10.0.0.2', 2345)}
     assert parameters.cap_add == ['MKNOD', 'SYS_ADMIN']
     assert parameters.cap_drop == ['SYS_ADMIN']
     assert parameters.devices == ['/dev/sdc:/dev/xvdc']

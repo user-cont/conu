@@ -91,6 +91,7 @@ class DockerRunBuilder(object):
         parser.add_argument("--rm", action="store_true", dest="remove")
 
         # string parameter
+        parser.add_argument("--entrypoint", action="store", dest="entrypoint")
         parser.add_argument("-h", "--hostname", action="store", dest="hostname")
         parser.add_argument("--name", action="store", dest="name")
         parser.add_argument("--ipc", action="store", dest="ipc_mode")
@@ -108,7 +109,6 @@ class DockerRunBuilder(object):
         parser.add_argument("--pids-limit", action="store", dest="pids_limit", type=int)
 
         # list parameter
-        parser.add_argument("--entrypoint", action="append", dest="entrypoint")
         parser.add_argument("-e", "--env", action="append", dest="env_variables")
         parser.add_argument("--cap-add", action="append", dest="cap_add")
         parser.add_argument("--cap-drop", action="append", dest="cap_drop")
@@ -145,8 +145,9 @@ class DockerRunBuilder(object):
         else:
             options_dict['healthcheck'] = None
 
+        # parse dictionary
         # {'name': 'separator'}
-        with_dictionary_parameter = {'labels': '=', 'port_mappings': ':'}
+        with_dictionary_parameter = {'labels': '='}
         for name, separator in with_dictionary_parameter.items():
             if options_dict[name] is not None:
                 dictionary = {}
@@ -156,10 +157,42 @@ class DockerRunBuilder(object):
                         dictionary[key] = value
                     except ValueError:
                         dictionary = options_dict[name]
+                        ConuException('Wrong format of dictionary: {name}'.format(name=name))
                         break
                 options_dict[name] = dictionary
 
-        print(options_dict)
+        # parse ports
+        # create dictionary according to https://docker-py.readthedocs.io/en/stable/containers.html
+        if options_dict['port_mappings'] is not None:
+            dictionary = {}
+            for port_string in options_dict['port_mappings']:
+                colon_count = port_string.count(':')
+                if colon_count == 2:
+                    split_array = port_string.split(':')
+                    if split_array[1] == '':
+                        # format - ip::containerPort
+                        # create dictionary - {'1111/tcp': ('127.0.0.1', None)}
+                        dictionary[split_array[2]] = (split_array[0], None)
+                    else:
+                        # format - ip:hostPort:containerPort
+                        # create dictionary - {'1111/tcp': ('127.0.0.1', 1111)}
+                        dictionary[split_array[2]] = (split_array[0], int(split_array[1]))
+                    pass
+                elif colon_count == 1:
+                    # format - hostPort:containerPort
+                    # create dictionary - {'2222/tcp': 3333}
+                    split_array = port_string.split(':')
+                    dictionary[split_array[1]] = int(split_array[0])
+                    pass
+                elif colon_count == 0:
+                    # format - containerPort
+                    # create dictionary - {'2222/tcp': None}
+                    dictionary[port_string] = None
+                    pass
+                else:
+                    ConuException('Wrong format of port mappings')
+
+            options_dict['port_mappings'] = dictionary
 
         container_parameters = DockerContainerParameters(cap_add=options_dict['cap_add'],
                                                          cap_drop=options_dict['cap_drop'],
