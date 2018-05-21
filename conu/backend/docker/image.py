@@ -158,7 +158,7 @@ class DockerImage(Image):
         :return: str
         """
         if self._id is None:
-            self._id = self.get_metadata(refresh=False)["Id"]
+            self._id = self.inspect(refresh=False)["Id"]
         return self._id
 
     def is_present(self):
@@ -169,7 +169,7 @@ class DockerImage(Image):
         """
         # TODO: move this method to generic API
         try:
-            return bool(self.get_metadata())
+            return bool(self.inspect())
         except docker.errors.DockerException:
             return False
 
@@ -214,9 +214,9 @@ class DockerImage(Image):
         :param refresh: bool, update the metadata with up to date content
         :return: dict
         """
-        return self.get_metadata(refresh=refresh)
+        return self.inspect(refresh=refresh)
 
-    def get_metadata(self, refresh=True):
+    def inspect(self, refresh=True):
         """
         return cached metadata by default
 

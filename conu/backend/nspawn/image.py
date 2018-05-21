@@ -75,7 +75,7 @@ class NspawnImageFS(Filesystem):
         # TODO RFE: use libguestfs if possible
         # TODO: allow pass partition number to mount exact partition of disc
         self.loopdevice = run_cmd(
-            ["losetup", "--show", "-f", self.image.get_metadata()["Path"]],
+            ["losetup", "--show", "-f", self.image.inspect["Path"]],
             return_output=True).strip()
         run_cmd(["partprobe", self.loopdevice])
         partitions = glob.glob("{}*".format(self.loopdevice))
@@ -267,7 +267,7 @@ class NspawnImage(Image):
         :param tag: str - tag for image
         :return: NspawnImage instance
         """
-        source = self.get_metadata()["Path"]
+        source = self.inspect()["Path"]
         logger.debug("Create Snapshot: %s -> %s" % (source, name))
         # FIXME: actually create the snapshot via clone command
         if name and tag:
@@ -293,9 +293,9 @@ class NspawnImage(Image):
         :return: dict
         """
         # TODO: move to API it is same
-        return self.get_metadata(refresh=refresh)
+        return self.inspect(refresh=refresh)
 
-    def get_metadata(self, refresh=True):
+    def inspect(self, refresh=True):
         """
         return cached metadata by default
 
@@ -397,7 +397,7 @@ class NspawnImage(Image):
             "--machine",
             machine_name,
             "-i",
-            self.get_metadata()["Path"]] + additional_opts + command
+            self.inspect()["Path"]] + additional_opts + command
         logger.debug("Start command: %s" % " ".join(systemd_command))
         callback_method = (subprocess.Popen, systemd_command, inernalargs, internalkw)
         self.container_process = NspawnContainer.internal_run_container(

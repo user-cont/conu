@@ -88,7 +88,7 @@ class DockerBackend(Backend):
 
         Container objects returned from this methods will contain a limited
         amount of metadata in property `short_metadata`. These are just a subset
-        of `.get_metadata()`, but don't require an API call against dockerd.
+        of `.inspect()`, but don't require an API call against dockerd.
 
         :return: collection of instances of :class:`conu.DockerContainer`
         """
@@ -100,7 +100,7 @@ class DockerBackend(Backend):
 
         Image objects returned from this methods will contain a limited
         amount of metadata in property `short_metadata`. These are just a subset
-        of `.get_metadata()`, but don't require an API call against dockerd.
+        of `.inspect()`, but don't require an API call against dockerd.
 
         :return: collection of instances of :class:`conu.DockerImage`
         """

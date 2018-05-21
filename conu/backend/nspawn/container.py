@@ -115,9 +115,9 @@ class NspawnContainer(Container):
         :return: dict
         """
         # TODO: move to API defs
-        return self.get_metadata(refresh=refresh)
+        return self.inspect(refresh=refresh)
 
-    def get_metadata(self, refresh=True):
+    def inspect(self, refresh=True):
         """
         return cached metadata by default
 

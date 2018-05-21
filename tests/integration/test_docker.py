@@ -57,7 +57,7 @@ def test_image():
     with DockerBackend() as backend:
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
         assert "Config" in image.inspect()
-        assert "Config" in image.get_metadata()
+        assert "Config" in image.inspect()
         assert "fedora-minimal:26" in image.get_full_name()
         assert "registry.fedoraproject.org/fedora-minimal:26" == str(image)
         assert "DockerImage(repository=%s, tag=%s)" % (FEDORA_MINIMAL_REPOSITORY,
@@ -85,7 +85,7 @@ def test_container():
         )
         try:
             assert "Config" in c.inspect()
-            assert "Config" in c.get_metadata()
+            assert "Config" in c.inspect()
             assert c.get_id() == str(c)
             assert repr(c)
             assert isinstance(c.get_id(), string_types)
@@ -346,10 +346,10 @@ def test_run_with_volumes_metadata_check():
                                    pull_policy=DockerImagePullPolicy.NEVER)
         container = image.run_via_binary(volumes=(Directory('/usr/bin'), "/mountpoint", "Z"))
 
-        binds = container.get_metadata()["HostConfig"]["Binds"]
+        binds = container.inspect ()["HostConfig"]["Binds"]
         assert "/usr/bin:/mountpoint:Z" in binds
 
-        mount = container.get_metadata()["Mounts"][0]
+        mount = container.inspect()["Mounts"][0]
         print(mount)
         assert mount["Source"] == "/usr/bin"
         assert mount["Destination"] == "/mountpoint"

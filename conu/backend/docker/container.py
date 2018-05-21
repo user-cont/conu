@@ -132,7 +132,7 @@ class DockerContainer(Container):
         """
         if self._id is None:
             # FIXME: provide a better error message when key is not defined
-            self._id = self.get_metadata(refresh=False)["Id"]
+            self._id = self.inspect(refresh=False)["Id"]
         return self._id
 
     def inspect(self, refresh=True):
@@ -142,9 +142,9 @@ class DockerContainer(Container):
         :param refresh: bool, returns up to date metadata if set to True
         :return: dict
         """
-        return self.get_metadata(refresh=refresh)
+        return self.inspect(refresh=refresh)
 
-    def get_metadata(self, refresh=True):
+    def inspect(self, refresh=True):
         """
         return cached metadata by default
 
@@ -172,7 +172,7 @@ class DockerContainer(Container):
         # output = run_cmd(cmdline)
         # print(output)
         try:
-            return self.get_metadata(refresh=True)["State"]["Running"]
+            return self.inspect(refresh=True)["State"]["Running"]
         except NotFound:
             return False
 
@@ -186,7 +186,7 @@ class DockerContainer(Container):
         """
         # FIXME: be graceful in obtaining values from dict: the keys might not be set
         return [x["IPAddress"]
-                for x in self.get_metadata(refresh=True)["NetworkSettings"]["Networks"].values()]
+                for x in self.inspect(refresh=True)["NetworkSettings"]["Networks"].values()]
 
     def get_IPv6s(self):
         """
@@ -198,7 +198,7 @@ class DockerContainer(Container):
         """
         # FIXME: be graceful in obtaining values from dict: the keys might not be set
         return [x["GlobalIPv6Address"]
-                for x in self.get_metadata(refresh=True)["NetworkSettings"]["Networks"].values()]
+                for x in self.inspect(refresh=True)["NetworkSettings"]["Networks"].values()]
 
     def get_ports(self):
         """
@@ -207,7 +207,7 @@ class DockerContainer(Container):
         :return: list of str
         """
         ports = []
-        container_ports = self.get_metadata(refresh=True)["NetworkSettings"]["Ports"]
+        container_ports = self.inspect(refresh=True)["NetworkSettings"]["Ports"]
         if not container_ports:
             return ports
         for p in container_ports:
@@ -240,7 +240,7 @@ class DockerContainer(Container):
         :param port: int or None, container port
         :return: list of dict or None; dict when port=None
         """
-        port_mappings = self.get_metadata(refresh=True)["NetworkSettings"]["Ports"]
+        port_mappings = self.inspect(refresh=True)["NetworkSettings"]["Ports"]
 
         if not port:
             return port_mappings
@@ -258,7 +258,7 @@ class DockerContainer(Container):
 
         :return: str
         """
-        metadata = self.get_metadata()
+        metadata = self.inspect()
         if "Config" in metadata:
             return metadata["Config"].get("Image", None)
         return None
@@ -448,7 +448,7 @@ class DockerContainer(Container):
 
         :return: one of: 'created', 'restarting', 'running', 'paused', 'exited', 'dead'
         """
-        return self.get_metadata(refresh=True)["State"]["Status"]
+        return self.inspect(refresh=True)["State"]["Status"]
 
     def wait(self, timeout=None):
         """
@@ -466,7 +466,7 @@ class DockerContainer(Container):
 
         :return: int
         """
-        return self.get_metadata()["State"]["ExitCode"]
+        return self.inspect()["State"]["ExitCode"]
 
     def write_to_stdin(self, message):
         """
@@ -507,7 +507,7 @@ class DockerContainer(Container):
         :return: ContainerMetadata, container metadata instance
         """
 
-        docker_metadata = self.get_metadata(refresh=True)
+        docker_metadata = self.inspect(refresh=True)
 
         # format of Environment Variables from docker inspect:
         # ['DISTTAG=f26container', 'FGC=f26']

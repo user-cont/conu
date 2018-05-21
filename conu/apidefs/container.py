@@ -103,14 +103,14 @@ class Container(object):
         """
         raise NotImplementedError("get_id method is not implemented")
 
-    def get_metadata(self, refresh=False):
+    def inspect(self, refresh=False):
         """
         return cached metadata by default
 
         :param refresh: bool, returns up to date metadata if set to True
         :return: dict
         """
-        raise NotImplementedError("get_metadata method is not implemented")
+        raise NotImplementedError("inspect method is not implemented")
 
     def get_image_name(self):
         """
