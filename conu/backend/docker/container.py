@@ -137,15 +137,6 @@ class DockerContainer(Container):
 
     def inspect(self, refresh=True):
         """
-        return cached metadata by default (a convenience method)
-
-        :param refresh: bool, returns up to date metadata if set to True
-        :return: dict
-        """
-        return self.inspect(refresh=refresh)
-
-    def inspect(self, refresh=True):
-        """
         return cached metadata by default
 
         :param refresh: bool, returns up to date metadata if set to True

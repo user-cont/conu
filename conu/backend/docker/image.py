@@ -209,15 +209,6 @@ class DockerImage(Image):
 
     def inspect(self, refresh=True):
         """
-        return cached metadata by default (a convenience method)
-
-        :param refresh: bool, update the metadata with up to date content
-        :return: dict
-        """
-        return self.inspect(refresh=refresh)
-
-    def inspect(self, refresh=True):
-        """
         return cached metadata by default
 
         :param refresh: bool, update the metadata with up to date content

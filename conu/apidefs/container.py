@@ -110,6 +110,15 @@ class Container(object):
         """
         raise NotImplementedError("inspect method is not implemented")
 
+    def get_metadata(self):
+        """
+        return general metadata for container
+
+        :return: ContainerMetadata
+        """
+
+        raise NotImplementedError("get_metadata method is not implemented")
+
     def get_image_name(self):
         """
         return name of the container image

@@ -44,7 +44,7 @@ class TestNspawnBackend(object):
         im1 = NspawnImage(repository=image_name, pull_policy=ImagePullPolicy.IF_NOT_PRESENT,
                           location=url)
         logger.debug("%s", im1)
-        logger.debug("%s", im1.inspect())
+        logger.debug("%s", im1.get_metadata())
         logger.debug("%s", im1.get_id())
         logger.debug("%s", im1.get_full_name())
 
@@ -89,7 +89,7 @@ class TestNspawnBackend(object):
             repositories=bootstrap_repos,
             name="bootstrapped",
             additional_packages=["fedora-release"])
-        logger.debug(im.inspect())
+        logger.debug(im.get_metadata())
         out = im.run_foreground(["ls", "/"], stdout=subprocess.PIPE).communicate()
         assert "sbin" in out[0]
         out = im.run_foreground(
@@ -108,8 +108,8 @@ class TestNspawnBackend(object):
         im = NspawnImage(repository=image_name, pull_policy=ImagePullPolicy.IF_NOT_PRESENT,
                          location=url)
         cont = im.run_via_binary()
-        logger.debug(im.inspect())
-        logger.debug(cont.inspect())
+        logger.debug(im.get_metadata())
+        logger.debug(cont.get_metadata())
         assert cont.is_running()
         assert cont.selfcheck()
         cont.stop()
