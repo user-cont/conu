@@ -177,18 +177,15 @@ class DockerRunBuilder(object):
                         # format - ip:hostPort:containerPort
                         # create dictionary - {'1111/tcp': ('127.0.0.1', 1111)}
                         dictionary[split_array[2]] = (split_array[0], int(split_array[1]))
-                    pass
                 elif colon_count == 1:
                     # format - hostPort:containerPort
                     # create dictionary - {'2222/tcp': 3333}
                     split_array = port_string.split(':')
                     dictionary[split_array[1]] = int(split_array[0])
-                    pass
                 elif colon_count == 0:
                     # format - containerPort
                     # create dictionary - {'2222/tcp': None}
                     dictionary[port_string] = None
-                    pass
                 else:
                     ConuException('Wrong format of port mappings')
 
@@ -199,7 +196,7 @@ class DockerRunBuilder(object):
                                                          command=command, detach=options_dict['detach'],
                                                          devices=options_dict['devices'], dns=options_dict['dns'],
                                                          entrypoint=options_dict['entrypoint'],
-                                                         environment=options_dict['env_variables'],
+                                                         env_variables=options_dict['env_variables'],
                                                          group_add=options_dict['group_add'],
                                                          healthcheck=options_dict['healthcheck'],
                                                          hostname=options_dict['hostname'],
@@ -214,7 +211,7 @@ class DockerRunBuilder(object):
                                                          network=options_dict['network'],
                                                          pids_limit=options_dict['pids_limit'],
                                                          platform=options_dict['platform'],
-                                                         ports=options_dict['port_mappings'],
+                                                         port_mappings=options_dict['port_mappings'],
                                                          privileged=options_dict['privileged'],
                                                          publish_all_ports=options_dict['publish_all_ports'],
                                                          read_only=options_dict['read_only'],

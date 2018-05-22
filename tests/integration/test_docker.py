@@ -501,8 +501,8 @@ def test_docker_parameters():
     assert parameters.mem_limit == '1G'
     assert parameters.user == 'my_user'
     assert parameters.working_dir == '/tmp'
-    assert 'ENV1=my_env' in parameters.environment
-    assert parameters.ports == {'12345': 123, '1444': None, '150': ('10.0.0.1', None), '7654': ('10.0.0.2', 2345)}
+    assert 'ENV1=my_env' in parameters.env_variables
+    assert parameters.port_mappings == {'12345': 123, '1444': None, '150': ('10.0.0.1', None), '7654': ('10.0.0.2', 2345)}
     assert parameters.cap_add == ['MKNOD', 'SYS_ADMIN']
     assert parameters.cap_drop == ['SYS_ADMIN']
     assert parameters.devices == ['/dev/sdc:/dev/xvdc']
@@ -513,32 +513,26 @@ def test_docker_parameters():
     assert parameters.command == ['sleep', '50']
 
 
-def test_run_via_docker_api():
-    docker_run_builder = DockerRunBuilder(additional_opts=['-l', 'hello=there', '-l', 'oh=noo', '--name', 'test', '-d',
-                                                           '--hostname', 'my_hostname',
-                                                           '--rm',
-                                                           '--memory', '1G',
-                                                           '--workdir', '/tmp',
-                                                           '--env', 'ENV1=my_env', '-p', '123:12345',
-                                                           '--cap-add', 'MKNOD', '--cap-add', 'SYS_ADMIN',
-                                                           '--cap-drop', 'SYS_ADMIN',
-                                                           '--dns', 'www.example.com',
-                                                           '--volume', '/tmp:/tmp', '--no-healthcheck'],
-                                          command=['sleep', '10'])
+def test_run_via_api():
+    with DockerBackend() as backend:
+        image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+        docker_run_builder = DockerRunBuilder(additional_opts=['-l', 'hello=there', '-l', 'oh=noo',
+                                                               '--name', 'test', '-d',
+                                                               '--hostname', 'my_hostname',
+                                                               '--rm',
+                                                               '--memory', '1G',
+                                                               '--workdir', '/tmp',
+                                                               '--env', 'ENV1=my_env', '-p', '123:12345',
+                                                               '--cap-add', 'MKNOD', '--cap-add', 'SYS_ADMIN',
+                                                               '--cap-drop', 'SYS_ADMIN',
+                                                               '--dns', 'www.example.com',
+                                                               '--volume', '/tmp:/tmp', '--no-healthcheck'],
+                                              command=['sleep', '10'])
 
-    parameters = docker_run_builder.get_parameters()
+        parameters = docker_run_builder.get_parameters()
 
-    client = docker.from_env()
-    container = client.containers.run("fedora", command=parameters.command, remove=parameters.remove,
-                                      cap_add=parameters.cap_add, cap_drop=parameters.cap_drop,
-                                      detach=parameters.detach, dns=parameters.dns,
-                                      environment=parameters.environment,
-                                      healthcheck=parameters.healthcheck, hostname=parameters.hostname,
-                                      labels=parameters.labels,
-                                      mem_limit=parameters.mem_limit,
-                                      name=parameters.name, ports=parameters.ports, stdin_open=parameters.stdin_open,
-                                      stdout=parameters.stdout,
-                                      stderr=parameters.stderr, tty=parameters.tty,
-                                      volumes=parameters.volumes, working_dir=parameters.working_dir)
+        c = image.run_via_api(parameters)
 
-    assert container.status == 'created' or container.status == 'running'
+        assert c.get_id() == str(c)
+        assert repr(c)
+        assert isinstance(c.get_id(), string_types)
