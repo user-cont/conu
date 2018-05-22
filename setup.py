@@ -48,7 +48,7 @@ setup(
     description='Container testing library',
     keywords='containers,testing',
     author='Red Hat',
-    author_email='user-cont@redhat.com',
+    author_email='user-cont-team@redhat.com',
     url='https://github.com/fedora-modularity/conu',
     license='GPLv2+',
     packages=find_packages(exclude=['examples', 'tests', 'tests.*']),
