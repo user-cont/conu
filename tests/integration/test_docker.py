@@ -426,6 +426,8 @@ def test_metadata():
                                                                '--name', 'my_container',
                                                                '-p', '1234:12345',
                                                                '-p', '123:12345',
+                                                               '-p', '8080',
+                                                               '-p', '444:8080',
                                                                '--hostname', 'my_hostname',
                                                                '-e', 'ENV1=my_env',
                                                                '-e', 'ASD=',
@@ -435,7 +437,7 @@ def test_metadata():
                                                                ])
         )
 
-        container_metadata = c.get_container_metadata()
+        container_metadata = c.get_metadata()
 
         try:
             assert container_metadata.command == ["cat"]
@@ -445,11 +447,9 @@ def test_metadata():
             assert container_metadata.env_variables["A"] == "B=C=D"
             assert container_metadata.hostname == "my_hostname"
             assert "XYZ" not in list(container_metadata.env_variables.keys())
-            assert container_metadata.port_mappings["1234"] == "12345/tcp"
-            assert container_metadata.port_mappings["123"] == "12345/tcp"
-            assert container_metadata.exposed_ports == ["12345/tcp"]
+            assert container_metadata.port_mappings == {'12345/tcp': [1234, 123], '8080/tcp': [None, 444]}
+            assert container_metadata.exposed_ports == ["12345/tcp", "8080/tcp"]
             assert container_metadata.labels["testlabel1"] == "testvalue1"
             assert container_metadata.status == ContainerStatus.RUNNING
         finally:
             c.delete(force=True)
-

@@ -501,7 +501,7 @@ class DockerContainer(Container):
         except subprocess.CalledProcessError as e:
             raise ConuException(e)
 
-    def get_container_metadata(self):
+    def get_metadata(self):
         """
         Convert dictionary returned after docker inspect command into instance of ContainerMetadata class
         :return: ContainerMetadata, container metadata instance
@@ -516,38 +516,36 @@ class DockerContainer(Container):
             try:
                 env_variables.update({env_variable.split('=', 1)[0]: env_variable.split('=', 1)[1]})
             except IndexError:
-                pass  # wrong format of environment variable
+                ConuException("Wrong format of environment variable")
 
         # format of image name from docker inspect:
         # sha256:8f0e66c924c0c169352de487a3c2463d82da24e9442fc097dddaa5f800df7129
         image = Image(docker_metadata['Image'].split(':')[1])
 
-        status = ContainerStatus.CREATED
+        status = ContainerStatus.get_from_docker(docker_metadata['State']['Status'],
+                                                 docker_metadata['State']['ExitCode'])
 
-        if docker_metadata['State']['Status'] == 'created':
-            status = ContainerStatus.CREATED
-        elif docker_metadata['State']['Status'] == 'restarting':
-            status = ContainerStatus.RESTARTING
-        elif docker_metadata['State']['Status'] == 'running':
-            status = ContainerStatus.RUNNING
-        elif docker_metadata['State']['Status'] == 'removing':
-            status = ContainerStatus.REMOVING
-        elif docker_metadata['State']['Status'] == 'paused':
-            status = ContainerStatus.PAUSED
-        elif docker_metadata['State']['Status'] == 'exited':
-            status = ContainerStatus.EXITED
-        elif docker_metadata['State']['Status'] == 'dead':
-            status = ContainerStatus.DEAD
+        try:
+            exposed_ports = list(docker_metadata['Config']['ExposedPorts'].keys())
+        except KeyError:
+            exposed_ports = None
 
         # format of Port mappings from docker inspect:
         # {'12345/tcp': [{'HostIp': '0.0.0.0', 'HostPort': '123'}, {'HostIp': '0.0.0.0', 'HostPort': '1234'}]}
         port_mappings = dict()
+
         for key, value in docker_metadata['HostConfig']['PortBindings'].items():
             for item in value:
                 if key in port_mappings.keys():
-                    port_mappings[key].append(int(item['HostPort']))
+                    if item['HostPort'] is not '':
+                        port_mappings[key].append(int(item['HostPort']))
+                    else:
+                        port_mappings[key].append(None)
                 else:
-                    port_mappings.update({key: [int(item['HostPort'])]})
+                    if item['HostPort'] is not '':
+                        port_mappings.update({key: [int(item['HostPort'])]})
+                    else:
+                        port_mappings.update({key: [None]})
 
         container_metadata = ContainerMetadata(
             name=docker_metadata['Name'][1:],  # remove / at the beginning
@@ -557,7 +555,7 @@ class DockerContainer(Container):
             creation_timestamp=docker_metadata['Created'],
             env_variables=env_variables,
             image=image,
-            exposed_ports=list(docker_metadata['Config']['ExposedPorts'].keys()),
+            exposed_ports=exposed_ports,
             port_mappings=port_mappings,
             hostname=docker_metadata['Config']['Hostname'],
             ipv4_addresses=self.get_IPv4s(),

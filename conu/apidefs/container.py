@@ -27,7 +27,6 @@ from six.moves.urllib.parse import urlunsplit
 from contextlib import contextmanager
 
 
-
 class Container(object):
     """
     Container class definition which contains abstract methods. The instances should call the
@@ -93,7 +92,6 @@ class Container(object):
         port = port or self.get_ports()[0]
 
         yield HttpClient(host, port, self.http_session)
-
 
     def get_id(self):
         """

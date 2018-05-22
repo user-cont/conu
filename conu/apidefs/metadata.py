@@ -105,10 +105,28 @@ class ContainerStatus(enum.Enum):
     This Enum defines the status of container
     """
 
-    CREATED = 0
-    RESTARTING = 1
-    RUNNING = 2
-    REMOVING = 3
-    PAUSED = 4
-    EXITED = 5
-    DEAD = 6
+    RUNNING = 0
+    NOT_RUNNING = 1
+    UNKNOWN = 2
+    FAILED = 3
+
+    @classmethod
+    def get_from_docker(cls, string, exit_code):
+        if exit_code != 0:
+            return ContainerStatus.FAILED
+        elif string == 'created':
+            return ContainerStatus.NOT_RUNNING
+        elif string == 'restarting':
+            return ContainerStatus.UNKNOWN
+        elif string == 'running':
+            return ContainerStatus.RUNNING
+        elif string == 'removing':
+            return ContainerStatus.UNKNOWN
+        elif string == 'paused':
+            return ContainerStatus.NOT_RUNNING
+        elif string == 'exited':
+            return ContainerStatus.NOT_RUNNING
+        elif string == 'dead':
+            return ContainerStatus.FAILED
+        else:
+            return ContainerStatus.UNKNOWN
