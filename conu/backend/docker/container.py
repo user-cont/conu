@@ -28,7 +28,10 @@ from tempfile import mkdtemp
 from docker.errors import NotFound
 
 from conu.apidefs.container import Container
+from conu.apidefs.image import Image
+from conu.apidefs.metadata import ContainerStatus
 from conu.apidefs.filesystem import Filesystem
+from conu.apidefs.metadata import ContainerMetadata
 from conu.backend.docker.client import get_client
 from conu.exceptions import ConuException
 from conu.utils import check_port, run_cmd, export_docker_container_to_directory
@@ -129,19 +132,10 @@ class DockerContainer(Container):
         """
         if self._id is None:
             # FIXME: provide a better error message when key is not defined
-            self._id = self.get_metadata(refresh=False)["Id"]
+            self._id = self.inspect(refresh=False)["Id"]
         return self._id
 
     def inspect(self, refresh=True):
-        """
-        return cached metadata by default (a convenience method)
-
-        :param refresh: bool, returns up to date metadata if set to True
-        :return: dict
-        """
-        return self.get_metadata(refresh=refresh)
-
-    def get_metadata(self, refresh=True):
         """
         return cached metadata by default
 
@@ -169,7 +163,7 @@ class DockerContainer(Container):
         # output = run_cmd(cmdline)
         # print(output)
         try:
-            return self.get_metadata(refresh=True)["State"]["Running"]
+            return self.inspect(refresh=True)["State"]["Running"]
         except NotFound:
             return False
 
@@ -183,7 +177,19 @@ class DockerContainer(Container):
         """
         # FIXME: be graceful in obtaining values from dict: the keys might not be set
         return [x["IPAddress"]
-                for x in self.get_metadata(refresh=True)["NetworkSettings"]["Networks"].values()]
+                for x in self.inspect(refresh=True)["NetworkSettings"]["Networks"].values()]
+
+    def get_IPv6s(self):
+        """
+        Return all known IPv6 addresses of this container. It may be possible
+        that the container has disabled networking: in that case, the list is
+        empty
+
+        :return: list of str
+        """
+        # FIXME: be graceful in obtaining values from dict: the keys might not be set
+        return [x["GlobalIPv6Address"]
+                for x in self.inspect(refresh=True)["NetworkSettings"]["Networks"].values()]
 
     def get_ports(self):
         """
@@ -192,7 +198,7 @@ class DockerContainer(Container):
         :return: list of str
         """
         ports = []
-        container_ports = self.get_metadata(refresh=True)["NetworkSettings"]["Ports"]
+        container_ports = self.inspect(refresh=True)["NetworkSettings"]["Ports"]
         if not container_ports:
             return ports
         for p in container_ports:
@@ -225,7 +231,7 @@ class DockerContainer(Container):
         :param port: int or None, container port
         :return: list of dict or None; dict when port=None
         """
-        port_mappings = self.get_metadata(refresh=True)["NetworkSettings"]["Ports"]
+        port_mappings = self.inspect(refresh=True)["NetworkSettings"]["Ports"]
 
         if not port:
             return port_mappings
@@ -243,7 +249,7 @@ class DockerContainer(Container):
 
         :return: str
         """
-        metadata = self.get_metadata()
+        metadata = self.inspect()
         if "Config" in metadata:
             return metadata["Config"].get("Image", None)
         return None
@@ -433,7 +439,7 @@ class DockerContainer(Container):
 
         :return: one of: 'created', 'restarting', 'running', 'paused', 'exited', 'dead'
         """
-        return self.get_metadata(refresh=True)["State"]["Status"]
+        return self.inspect(refresh=True)["State"]["Status"]
 
     def wait(self, timeout=None):
         """
@@ -451,7 +457,7 @@ class DockerContainer(Container):
 
         :return: int
         """
-        return self.get_metadata()["State"]["ExitCode"]
+        return self.inspect()["State"]["ExitCode"]
 
     def write_to_stdin(self, message):
         """
@@ -485,3 +491,68 @@ class DockerContainer(Container):
             self.popen_instance.stdin.flush()
         except subprocess.CalledProcessError as e:
             raise ConuException(e)
+
+    def get_metadata(self):
+        """
+        Convert dictionary returned after docker inspect command into instance of ContainerMetadata class
+        :return: ContainerMetadata, container metadata instance
+        """
+
+        docker_metadata = self.inspect(refresh=True)
+
+        # format of Environment Variables from docker inspect:
+        # ['DISTTAG=f26container', 'FGC=f26']
+        env_variables = dict()
+        for env_variable in docker_metadata['Config']['Env']:
+            try:
+                env_variables.update({env_variable.split('=', 1)[0]: env_variable.split('=', 1)[1]})
+            except IndexError:
+                ConuException("Wrong format of environment variable")
+
+        # format of image name from docker inspect:
+        # sha256:8f0e66c924c0c169352de487a3c2463d82da24e9442fc097dddaa5f800df7129
+        image = Image(docker_metadata['Image'].split(':')[1])
+
+        status = ContainerStatus.get_from_docker(docker_metadata['State']['Status'],
+                                                 docker_metadata['State']['ExitCode'])
+
+        try:
+            exposed_ports = list(docker_metadata['Config']['ExposedPorts'].keys())
+        except KeyError:
+            exposed_ports = None
+
+        # format of Port mappings from docker inspect:
+        # {'12345/tcp': [{'HostIp': '0.0.0.0', 'HostPort': '123'}, {'HostIp': '0.0.0.0', 'HostPort': '1234'}]}
+        port_mappings = dict()
+
+        for key, value in docker_metadata['HostConfig']['PortBindings'].items():
+            for item in value:
+                if key in port_mappings.keys():
+                    if item['HostPort'] is not '':
+                        port_mappings[key].append(int(item['HostPort']))
+                    else:
+                        port_mappings[key].append(None)
+                else:
+                    if item['HostPort'] is not '':
+                        port_mappings.update({key: [int(item['HostPort'])]})
+                    else:
+                        port_mappings.update({key: [None]})
+
+        container_metadata = ContainerMetadata(
+            name=docker_metadata['Name'][1:],  # remove / at the beginning
+            identifier=docker_metadata['Id'],
+            labels=docker_metadata['Config']['Labels'],
+            command=docker_metadata['Config']['Cmd'],
+            creation_timestamp=docker_metadata['Created'],
+            env_variables=env_variables,
+            image=image,
+            exposed_ports=exposed_ports,
+            port_mappings=port_mappings,
+            hostname=docker_metadata['Config']['Hostname'],
+            ipv4_addresses=self.get_IPv4s(),
+            ipv6_addresses=self.get_IPv6s(),
+            status=status)
+
+        return container_metadata
+
+

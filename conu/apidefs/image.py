@@ -69,7 +69,7 @@ class Image(object):
         """
         raise NotImplementedError("load_from_file method is not implemented")
 
-    def get_metadata(self, refresh=False):
+    def inspect(self, refresh=False):
         """
         return cached metadata by default
 

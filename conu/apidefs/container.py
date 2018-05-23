@@ -27,7 +27,6 @@ from six.moves.urllib.parse import urlunsplit
 from contextlib import contextmanager
 
 
-
 class Container(object):
     """
     Container class definition which contains abstract methods. The instances should call the
@@ -94,7 +93,6 @@ class Container(object):
 
         yield HttpClient(host, port, self.http_session)
 
-
     def get_id(self):
         """
         get unique identifier of this container
@@ -103,13 +101,22 @@ class Container(object):
         """
         raise NotImplementedError("get_id method is not implemented")
 
-    def get_metadata(self, refresh=False):
+    def inspect(self, refresh=False):
         """
         return cached metadata by default
 
         :param refresh: bool, returns up to date metadata if set to True
         :return: dict
         """
+        raise NotImplementedError("inspect method is not implemented")
+
+    def get_metadata(self):
+        """
+        return general metadata for container
+
+        :return: ContainerMetadata
+        """
+
         raise NotImplementedError("get_metadata method is not implemented")
 
     def get_image_name(self):

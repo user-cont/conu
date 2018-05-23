@@ -27,6 +27,7 @@ from conu.backend.docker.backend import parse_reference
 from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, \
     FEDORA_REPOSITORY
 
+from conu.apidefs.metadata import ContainerStatus
 from conu.backend.docker.client import get_client
 from conu import \
     DockerRunBuilder, \
@@ -34,7 +35,6 @@ from conu import \
     ConuException, \
     DockerBackend, \
     DockerImagePullPolicy, \
-    DockerImage, \
     Directory
 
 from six import string_types
@@ -57,7 +57,7 @@ def test_image():
     with DockerBackend() as backend:
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
         assert "Config" in image.inspect()
-        assert "Config" in image.get_metadata()
+        assert "Config" in image.inspect()
         assert "fedora-minimal:26" in image.get_full_name()
         assert "registry.fedoraproject.org/fedora-minimal:26" == str(image)
         assert "DockerImage(repository=%s, tag=%s)" % (FEDORA_MINIMAL_REPOSITORY,
@@ -85,7 +85,7 @@ def test_container():
         )
         try:
             assert "Config" in c.inspect()
-            assert "Config" in c.get_metadata()
+            assert "Config" in c.inspect()
             assert c.get_id() == str(c)
             assert repr(c)
             assert isinstance(c.get_id(), string_types)
@@ -346,10 +346,10 @@ def test_run_with_volumes_metadata_check():
                                    pull_policy=DockerImagePullPolicy.NEVER)
         container = image.run_via_binary(volumes=(Directory('/usr/bin'), "/mountpoint", "Z"))
 
-        binds = container.get_metadata()["HostConfig"]["Binds"]
+        binds = container.inspect ()["HostConfig"]["Binds"]
         assert "/usr/bin:/mountpoint:Z" in binds
 
-        mount = container.get_metadata()["Mounts"][0]
+        mount = container.inspect()["Mounts"][0]
         print(mount)
         assert mount["Source"] == "/usr/bin"
         assert mount["Destination"] == "/mountpoint"
@@ -415,3 +415,41 @@ def test_layers():
         reversed = image.layers(reversed=False)
         assert reversed[-1].inspect()['ContainerConfig']['Cmd'] == punchbag_cmd
 
+
+def test_metadata():
+    with DockerBackend() as backend:
+        image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+
+        c = image.run_via_binary(
+            DockerRunBuilder(command=["cat"], additional_opts=['-i',
+                                                               '-t',
+                                                               '--name', 'my_container',
+                                                               '-p', '1234:12345',
+                                                               '-p', '123:12345',
+                                                               '-p', '8080',
+                                                               '-p', '444:8080',
+                                                               '--hostname', 'my_hostname',
+                                                               '-e', 'ENV1=my_env',
+                                                               '-e', 'ASD=',
+                                                               '-e', 'A=B=C=D',
+                                                               '-e', 'XYZ',
+                                                               '-l', 'testlabel1=testvalue1'
+                                                               ])
+        )
+
+        container_metadata = c.get_metadata()
+
+        try:
+            assert container_metadata.command == ["cat"]
+            assert container_metadata.name == "my_container"
+            assert container_metadata.env_variables["ENV1"] == "my_env"
+            assert container_metadata.env_variables["ASD"] == ""
+            assert container_metadata.env_variables["A"] == "B=C=D"
+            assert container_metadata.hostname == "my_hostname"
+            assert "XYZ" not in list(container_metadata.env_variables.keys())
+            assert container_metadata.port_mappings == {'12345/tcp': [1234, 123], '8080/tcp': [None, 444]}
+            assert container_metadata.exposed_ports == ["12345/tcp", "8080/tcp"]
+            assert container_metadata.labels["testlabel1"] == "testvalue1"
+            assert container_metadata.status == ContainerStatus.RUNNING
+        finally:
+            c.delete(force=True)

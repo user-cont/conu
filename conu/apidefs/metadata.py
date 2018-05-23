@@ -47,8 +47,8 @@ class ContainerMetadata(Metadata):
         :param env_variables: dict, {name: value}
         :param image: Image, reference to Image instance
         :param exposed_ports: list, list of exposed ports
-        :param port_mappings: dict, dictionary of port mappings {"host_port": "container_port"}, example:
-            - {"8080":"80"} map port 80 in the container to port 8080 on the host
+        :param port_mappings: dict, dictionary of port mappings {"container_port": [host_port1]}, example:
+            - {"1111/tcp":[1234, 4567]} bind host ports 1234 and 4567 to a single container port 1111/tcp
         :param hostname: str, hostname
         :param ipv4_addresses: dict, {address: port}
         :param ipv6_addresses: dict, {address: port}
@@ -105,10 +105,28 @@ class ContainerStatus(enum.Enum):
     This Enum defines the status of container
     """
 
-    CREATED = 0
-    RESTARTING = 1
-    RUNNING = 2
-    REMOVING = 3
-    PAUSED = 4
-    EXITED = 5
-    DEAD = 6
+    RUNNING = 0
+    NOT_RUNNING = 1
+    UNKNOWN = 2
+    FAILED = 3
+
+    @classmethod
+    def get_from_docker(cls, string, exit_code):
+        if exit_code != 0:
+            return ContainerStatus.FAILED
+        elif string == 'created':
+            return ContainerStatus.NOT_RUNNING
+        elif string == 'restarting':
+            return ContainerStatus.UNKNOWN
+        elif string == 'running':
+            return ContainerStatus.RUNNING
+        elif string == 'removing':
+            return ContainerStatus.UNKNOWN
+        elif string == 'paused':
+            return ContainerStatus.NOT_RUNNING
+        elif string == 'exited':
+            return ContainerStatus.NOT_RUNNING
+        elif string == 'dead':
+            return ContainerStatus.FAILED
+        else:
+            return ContainerStatus.UNKNOWN
