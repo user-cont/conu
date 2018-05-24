@@ -42,7 +42,7 @@ test-in-container:
 	@# use it like this: `make test-in-container TEST_TARGET=tests/integration/test_utils.py`
 	docker run --net=host --rm -v /dev:/dev:ro -v /var/lib/docker:/var/lib/docker:ro --security-opt label=disable --cap-add SYS_ADMIN -ti -v /var/run/docker.sock:/var/run/docker.sock -v $(CURDIR):/src -v $(CURDIR)/pytest-container.ini:/src/pytest.ini $(TEST_IMAGE_NAME) make exec-test TEST_TARGET=$(TEST_TARGET)
 
-test-doc-examples:
+test-doc-examples: install
 	for file in $$(ls $(DOC_EXAMPLE_PATH)) ; do \
 		echo "Checking example file $$file" ; \
 		PYTHONPATH=$(CURDIR) python2 $(DOC_EXAMPLE_PATH)/$$file || exit ; \

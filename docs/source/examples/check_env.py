@@ -17,10 +17,10 @@
 import subprocess
 import time
 
-from conu import DockerBackend, DockerRunBuilder
+from conu import DockerBackend
 
 with DockerBackend() as backend:
-    image = backend.ImageClass('fedora')
+    image = backend.ImageClass("registry.fedoraproject.org/fedora", tag='27')
     additional_opts = ['-i', '-e', 'KEY=space']
 
     cont = image.run_via_binary_in_foreground(additional_opts=additional_opts, popen_params={"stdin": subprocess.PIPE})

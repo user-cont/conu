@@ -94,16 +94,16 @@ def test_directory_acl():
 
 def test_user_ownership_int():
     p = os.path.join("/tmp/", random_str())
-    with Directory(p, user_owner=99) as d:
+    with Directory(p, user_owner=65534) as d:
         s = os.stat(d.path)
-        assert s.st_uid == 99
+        assert s.st_uid == 65534
 
 
 def test_user_ownership_str():
     p = os.path.join("/tmp/", random_str())
     with Directory(p, user_owner="nobody") as d:
         s = os.stat(d.path)
-        assert s.st_uid == 99
+        assert s.st_uid == 65534
 
 
 def test_user_ownership_404():
@@ -114,16 +114,16 @@ def test_user_ownership_404():
 
 def test_group_ownership():
     p = os.path.join("/tmp/", random_str())
-    with Directory(p, group_owner=99) as d:
+    with Directory(p, group_owner=65534) as d:
         s = os.stat(d.path)
-        assert s.st_gid == 99
+        assert s.st_gid == 65534
 
 
 def test_group_ownership_str():
     p = os.path.join("/tmp/", random_str())
     with Directory(p, group_owner="nobody") as d:
         s = os.stat(d.path)
-        assert s.st_gid == 99
+        assert s.st_gid == 65534
 
 
 def test_group_ownership_404():
@@ -136,8 +136,8 @@ def test_ownership():
     p = os.path.join("/tmp/", random_str())
     with Directory(p, user_owner="nobody", group_owner="nobody") as d:
         s = os.stat(d.path)
-        assert s.st_gid == 99
-        assert s.st_uid == 99
+        assert s.st_gid == 65534
+        assert s.st_uid == 65534
 
 
 def test_graceful_get():
