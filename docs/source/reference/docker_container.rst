@@ -9,6 +9,6 @@ Aside from methods in API definition - :class:`conu.apidefs.container.Container`
 .. autoclass:: conu.DockerRunBuilder
    :members:
 
-.. autoclass:: conu.DockerContainerFS
+.. autoclass:: conu.DockerContainerViaExportFS
    :members:
 
