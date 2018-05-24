@@ -467,7 +467,7 @@ class DockerImage(Image):
         """
         layers = [x['Id'] for x in self.d.history(self.get_id())]
         if not rev:
-            l = layers.reverse()
+            layers = layers.reverse()
         return layers
 
     def layers(self, rev=True):
