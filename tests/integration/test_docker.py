@@ -531,8 +531,11 @@ def test_run_via_api():
 
         parameters = docker_run_builder.get_parameters()
 
+        # image will be deleted after because of "--rm" option
         c = image.run_via_api(parameters)
 
+        assert "Config" in c.inspect()
+        assert "Config" in c.get_metadata()
         assert c.get_id() == str(c)
         assert repr(c)
         assert isinstance(c.get_id(), string_types)

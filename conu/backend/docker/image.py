@@ -387,44 +387,50 @@ class DockerImage(Image):
 
     def run_via_api(self, container_params):
         """
-        :param container_params:
+        create a container using this image and run it in background via Docker-py API.
+        https://docker-py.readthedocs.io/en/stable/api.html
+        :param container_params: DockerContainerParameters
         :return: instance of DockerContainer
         """
 
-        client = docker.from_env()
-        container = client.containers.run(self.get_id(), command=container_params.command,
-                                          remove=container_params.remove, cap_add=container_params.cap_add,
-                                          cap_drop=container_params.cap_drop, detach=container_params.detach,
-                                          devices=container_params.devices,
-                                          dns=container_params.dns, entrypoint=container_params.entrypoint,
-                                          environment=container_params.env_variables,
-                                          group_add=container_params.group_add,
-                                          healthcheck=container_params.healthcheck,
-                                          hostname=container_params.hostname,
-                                          init=container_params.init, ipc_mode=container_params.ipc_mode,
-                                          isolation=container_params.isolation, labels=container_params.labels,
-                                          mac_address=container_params.mac_address,
-                                          mem_limit=container_params.mem_limit,
-                                          mounts=container_params.mounts,
-                                          name=container_params.name,
-                                          network=container_params.network,
-                                          pids_limit=container_params.pids_limit,
-                                          platform=container_params.platform,
-                                          ports=container_params.port_mappings,
-                                          privileged=container_params.privileged,
-                                          publish_all_ports=container_params.publish_all_ports,
-                                          read_only=container_params.read_only,
-                                          runtime=container_params.runtime,
-                                          stdin_open=container_params.stdin_open,
-                                          stdout=container_params.stdout,
-                                          stderr=container_params.stderr,
-                                          stop_signal=container_params.stop_signal,
-                                          tty=container_params.tty,
-                                          user=container_params.user,
-                                          volumes=container_params.volumes,
-                                          working_dir=container_params.working_dir)
+        # Host-specific configuration
+        host_config = self.d.create_host_config(auto_remove=container_params.remove,
+                                                cap_add=container_params.cap_add,
+                                                cap_drop=container_params.cap_drop,
+                                                devices=container_params.devices,
+                                                dns=container_params.dns,
+                                                group_add=container_params.group_add,
+                                                init=container_params.init,
+                                                ipc_mode=container_params.ipc_mode,
+                                                isolation=container_params.isolation,
+                                                mem_limit=container_params.mem_limit,
+                                                mounts=container_params.mounts,
+                                                pids_limit=container_params.pids_limit,
+                                                privileged=container_params.privileged,
+                                                publish_all_ports=container_params.publish_all_ports,
+                                                port_bindings=container_params.port_mappings,
+                                                read_only=container_params.read_only)
 
-        return DockerContainer(self, container.id, name=container.name)
+        container = self.d.create_container(self.get_id(), command=container_params.command,
+                                            detach=True,
+                                            hostname=container_params.hostname,
+                                            user=container_params.user,
+                                            stdin_open=container_params.stdin_open,
+                                            tty=container_params.tty,
+                                            ports=container_params.exposed_ports,
+                                            environment=container_params.env_variables,
+                                            volumes=container_params.volumes,
+                                            name=container_params.name,
+                                            entrypoint=container_params.entrypoint,
+                                            working_dir=container_params.working_dir,
+                                            host_config=host_config,
+                                            mac_address=container_params.mac_address,
+                                            labels=container_params.labels,
+                                            stop_signal=container_params.stop_signal,
+                                            healthcheck=container_params.healthcheck,
+                                            runtime=container_params.runtime)
+
+        return DockerContainer(self, container['Id'], name=container_params.name)
 
     def has_pkgs_signed_with(self, allowed_keys):
         """
