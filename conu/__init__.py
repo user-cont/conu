@@ -36,6 +36,9 @@ from conu.exceptions import ConuException
 
 from conu.version import __version__ as version  # `conu.version == "3.1.4"` should work as well
 
+# enumerations
+from conu.apidefs.backend import CleanupPolicy
+
 # PEP-396
 # https://www.python.org/dev/peps/pep-0396/
 __version__ = version
