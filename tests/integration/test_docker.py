@@ -412,8 +412,8 @@ def test_layers():
                 "CMD [\"usage\"]"
         ]
         assert layers[0].inspect()['ContainerConfig']['Cmd'] == punchbag_cmd
-        reversed = image.layers(reversed=False)
-        assert reversed[-1].inspect()['ContainerConfig']['Cmd'] == punchbag_cmd
+        rev = image.layers(rev=False)
+        assert rev[-1].inspect()['ContainerConfig']['Cmd'] == punchbag_cmd
 
 
 def test_metadata():
