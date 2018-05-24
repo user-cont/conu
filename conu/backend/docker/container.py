@@ -429,7 +429,7 @@ class DockerContainer(Container):
         mount container filesystem
 
         :param mount_point: str, directory where the filesystem will be mounted
-        :return: instance of DockerContainerFS
+        :return: instance of DockerContainerViaExportFS
         """
         return DockerContainerViaExportFS(self, mount_point=mount_point)
 

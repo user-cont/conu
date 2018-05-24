@@ -3,7 +3,7 @@
 CONU_REPOSITORY := docker.io/modularitycontainers/conu
 TEST_IMAGE_NAME := conu-tests
 DOC_EXAMPLE_PATH := "docs/source/examples"
-VERSION := 0.3.1
+VERSION := 0.4.0
 
 install-dependencies:
 	./requirements.sh

@@ -18,3 +18,5 @@ docs/build/
 
 # PyCharm
 .idea/
+
+.pytest_cache/

@@ -1,3 +1,33 @@
+# 0.4.0
+
+## Breaking changes
+
+* We have changed behavior of `.get_metadata` method. It now returns an
+  instance of `Metadata` class. Method `.inspect` is meant to return raw data
+  of the selected backend.
+
+## New Features
+
+* Introduction of a new class to hold [container and image
+  metadata](https://github.com/user-cont/conu/blob/d19accbbc82b7a04090fc6339f4974c73f2987d6/conu/apidefs/metadata.py#L4).
+  In coming weeks, we'll be working on integrating this class into the library.
+  Our main intent is to make the Metadata class generic across all backends.
+  * Thanks to Rado Pitonak
+    ([#210](https://github.com/user-cont/conu/pulls/210),
+    [#204](https://github.com/user-cont/conu/pulls/204),
+    [#207](https://github.com/user-cont/conu/pulls/207))
+* conu now has an API to access image layers ([#207](https://github.com/user-cont/conu/pulls/203))
+* We've added [Contribution guide](https://github.com/user-cont/conu/blob/master/CONTRIBUTING.md), thanks to Rado Pitonak ([#208](https://github.com/user-cont/conu/pulls/208)).
+
+## Fixes
+
+* Provide docker container filesystem using `docker export` instead of `atomic
+  mount` — conu no longer requires
+  [atomic](https://github.com/projectatomic/atomic). This also means that root
+  privileges are no longer required.
+* Don't depend on `enum34` for python 3, thanks to Rado Pitonak ([#214](https://github.com/user-cont/conu/pulls/214))
+
+
 # 0.3.1
 
 ## New Features
