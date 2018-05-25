@@ -88,9 +88,8 @@ class ImageMetadata(Metadata):
         :param env_variables: dict, {name: value}, example:
             - {"MYSQL_PASSWORD": "password"}
         :param exposed_ports: list, list of exposed ports
-        :param image_names: str, image name, example:
-            - fedora
-            - docker.io/library/fedora:latest
+        :param image_names: list of str, image names, examples:
+            - [fedora, docker.io/library/fedora:latest]
         """
 
         super(ImageMetadata, self).__init__(

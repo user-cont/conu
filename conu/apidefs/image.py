@@ -78,6 +78,13 @@ class Image(object):
         """
         raise NotImplementedError("inspect method is not implemented")
 
+    def get_metadata(self):
+        """
+        return general metadata for image
+
+        :return: ImageMetadata
+        """
+
     def rmi(self, force=False, via_name=False):
         """
         remove selected image

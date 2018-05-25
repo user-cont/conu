@@ -416,7 +416,7 @@ def test_layers():
         assert rev[-1].inspect()['ContainerConfig']['Cmd'] == punchbag_cmd
 
 
-def test_metadata():
+def test_container_metadata():
     with DockerBackend() as backend:
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
 
@@ -453,3 +453,21 @@ def test_metadata():
             assert container_metadata.status == ContainerStatus.RUNNING
         finally:
             c.delete(force=True)
+
+
+def test_image_metadata():
+    with DockerBackend() as backend:
+        image = backend.ImageClass(FEDORA_REPOSITORY)
+
+        image_metadata = image.get_metadata()
+
+        assert image_metadata.command == image.inspect(refresh=True)['Config']['Cmd']
+        assert image_metadata.creation_timestamp == image.inspect(refresh=True)['Created']
+        assert image_metadata.identifier == image.inspect(refresh=True)['Id'].split(':')[1]
+        assert image_metadata.labels == image.inspect(refresh=True)['Config']['Labels']
+        assert image_metadata.name == image.inspect(refresh=True)['RepoTags'][0]
+
+        # comparison with hard coded values that are unlikely to change with new versions of image
+        assert image_metadata.command == ["/bin/bash"]
+        assert image_metadata.labels['name'] == 'fedora'
+
