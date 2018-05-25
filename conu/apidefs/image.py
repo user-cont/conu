@@ -84,6 +84,7 @@ class Image(object):
 
         :return: ImageMetadata
         """
+        raise NotImplementedError("get_metadata method is not implemented")
 
     def rmi(self, force=False, via_name=False):
         """
