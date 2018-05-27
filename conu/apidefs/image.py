@@ -18,6 +18,8 @@
 Abstract definition for an Image
 """
 from __future__ import print_function, unicode_literals
+from kubernetes import client, config
+from conu.backend.kubernetes.pod import Pod
 
 
 class Image(object):
@@ -169,6 +171,49 @@ class Image(object):
         :return: instance of Container
         """
         raise NotImplementedError("create_container method is not implemented")
+
+    def run_in_pod(self, namespace="default"):
+        """
+        run image inside the Kubernetes Pod
+        :param namespace: str, name of namespace where pod will be created
+        :return: Pod instance
+        """
+        config.load_kube_config()
+        api = client.CoreV1Api()
+
+        image_data = self.get_metadata()
+
+        env_variables = []
+
+        for key, value in image_data.env_variables.items():
+            env_variables.append(client.V1EnvVar(name=key, value=value))
+
+        exposed_ports = []
+
+        if image_data.exposed_ports is not None:
+            for port in image_data.exposed_ports:
+                try:
+                    protocol = port.split("/", 1)[1]
+                    exposed_ports.append(client.V1ContainerPort(container_port=port.split("/", 1)[0],
+                                                                protocol=protocol))
+                except IndexError:
+                    exposed_ports.append(client.V1ContainerPort(container_port=port.split("/", 1)[0]))
+
+        container = client.V1Container(command=image_data.command,
+                                       env=env_variables,
+                                       image=image_data.name,
+                                       name=image_data.name,
+                                       ports=exposed_ports)
+
+        pod_metadata = client.V1ObjectMeta(name=image_data.name + "-pod")
+        pod_spec = client.V1PodSpec(containers=[container])
+        pod = client.V1Pod(spec=pod_spec, metadata=pod_metadata)
+
+        pod_instance = api.create_namespaced_pod(namespace=namespace, body=pod)
+
+        return Pod(name=pod_instance.metadata.name,
+                   namespace=pod_instance.metadata.namespace,
+                   spec=pod_instance.spec)
 
 
 class S2Image:
