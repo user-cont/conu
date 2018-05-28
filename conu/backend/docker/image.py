@@ -29,6 +29,7 @@ from tempfile import mkdtemp
 
 import six
 
+from conu.apidefs.metadata import ImageMetadata
 from conu.apidefs.backend import get_backend_tmpdir
 from conu.apidefs.filesystem import Filesystem
 from conu.apidefs.image import Image, S2Image
@@ -215,10 +216,10 @@ class DockerImage(Image):
         :return: dict
         """
         if refresh or not self._metadata:
-            ident = self._id or self.get_full_name()
-            if not ident:
+            identifier = self._id or self.get_full_name()
+            if not identifier:
                 raise ConuException("This image does not have a valid identifier.")
-            self._metadata = self.d.inspect_image(ident)
+            self._metadata = self.d.inspect_image(identifier)
         return self._metadata
 
     def rmi(self, force=False, via_name=False):
@@ -484,6 +485,43 @@ class DockerImage(Image):
         if not rev:
             image_layers.reverse()
         return image_layers
+
+    def get_metadata(self):
+        """
+        Convert dictionary returned after docker inspect command into instance of ImageMetadata class
+        :return: ImageMetadata, Image metadata instance
+        """
+
+        docker_metadata = self.inspect(refresh=True)
+
+        # format of image name from docker inspect:
+        # sha256:8f0e66c924c0c169352de487a3c2463d82da24e9442fc097dddaa5f800df7129
+        identifier = docker_metadata['Id'].split(':')[1]
+
+        # format of Environment Variables from docker inspect:
+        # ['DISTTAG=f26container', 'FGC=f26']
+        env_variables = dict()
+        for env_variable in docker_metadata['Config']['Env']:
+            try:
+                env_variables.update({env_variable.split('=', 1)[0]: env_variable.split('=', 1)[1]})
+            except IndexError:
+                ConuException("Wrong format of environment variable")
+
+        try:
+            exposed_ports = list(docker_metadata['Config']['ExposedPorts'].keys())
+        except KeyError:
+            exposed_ports = None
+
+        image_metadata = ImageMetadata(name=docker_metadata['RepoTags'][0],
+                                       identifier=identifier,
+                                       labels=docker_metadata['Config']['Labels'],
+                                       command=docker_metadata['Config']['Cmd'],
+                                       creation_timestamp=docker_metadata['Created'],
+                                       env_variables=env_variables,
+                                       exposed_ports=exposed_ports,
+                                       image_names=docker_metadata['RepoTags'])
+
+        return image_metadata
 
 
 class S2IDockerImage(DockerImage, S2Image):
