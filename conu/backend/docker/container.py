@@ -129,7 +129,7 @@ class DockerRunBuilder(object):
         parser.add_argument("--health-timeout", action="store", dest="health_timeout", type=int)
         parser.add_argument("--no-healthcheck", action="store_true", dest="no_healthcheck")
 
-        args = parser.parse_args(args=self.options)
+        args, _ = parser.parse_known_args(args=self.options)
         command = self.arguments
 
         options_dict = vars(args)

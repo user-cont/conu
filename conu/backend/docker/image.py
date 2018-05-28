@@ -35,6 +35,7 @@ from conu.apidefs.filesystem import Filesystem
 from conu.apidefs.image import Image, S2Image
 from conu.backend.docker.client import get_client
 from conu.backend.docker.container import DockerContainer, DockerRunBuilder
+from conu.backend.docker.container_parameters import DockerContainerParameters
 from conu.exceptions import ConuException
 from conu.utils import run_cmd, random_tmp_filename, s2i_command_exists, \
     graceful_get, export_docker_container_to_directory
@@ -385,13 +386,16 @@ class DockerImage(Image):
             container_name = actual_name
         return DockerContainer(self, container_id, popen_instance=popen_instance, name=container_name)
 
-    def run_via_api(self, container_params):
+    def run_via_api(self, container_params=None):
         """
         create a container using this image and run it in background via Docker-py API.
         https://docker-py.readthedocs.io/en/stable/api.html
         :param container_params: DockerContainerParameters
         :return: instance of DockerContainer
         """
+
+        if not container_params:
+            container_params = DockerContainerParameters()
 
         # Host-specific configuration
         host_config = self.d.create_host_config(auto_remove=container_params.remove,
