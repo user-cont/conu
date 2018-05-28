@@ -109,6 +109,12 @@ class Pod(object):
 
         Probe(timeout=timeout, fnc=self.get_phase, expected_retval=PodPhase.RUNNING).run()
 
+    def get_pod_ip(self):
+        pass
+
+    def wait(self):
+        pass
+
 
 class PodPhase(enum.Enum):
     """
