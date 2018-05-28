@@ -19,7 +19,7 @@ Abstract definition for an Image
 """
 from __future__ import print_function, unicode_literals
 from kubernetes import client, config
-from conu.backend.kubernetes.pod import Pod
+from conu.backend.k8s.pod import Pod
 
 
 class Image(object):
@@ -202,10 +202,10 @@ class Image(object):
         container = client.V1Container(command=image_data.command,
                                        env=env_variables,
                                        image=image_data.name,
-                                       name=image_data.name,
+                                       name="test-container",
                                        ports=exposed_ports)
 
-        pod_metadata = client.V1ObjectMeta(name=image_data.name + "-pod")
+        pod_metadata = client.V1ObjectMeta(name="test-pod")
         pod_spec = client.V1PodSpec(containers=[container])
         pod = client.V1Pod(spec=pod_spec, metadata=pod_metadata)
 
