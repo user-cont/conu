@@ -390,6 +390,8 @@ class DockerImage(Image):
         """
         create a container using this image and run it in background via Docker-py API.
         https://docker-py.readthedocs.io/en/stable/api.html
+        Note: If you are using Healthchecks, be aware that support of some options were introduced
+         just with version of Docker-py API 1.29
         :param container_params: DockerContainerParameters
         :return: instance of DockerContainer
         """
