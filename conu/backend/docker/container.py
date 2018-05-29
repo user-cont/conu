@@ -26,10 +26,12 @@ import subprocess
 from tempfile import mkdtemp
 
 from docker.errors import NotFound
+from docker.types import Healthcheck
 
 from conu.apidefs.container import Container
 from conu.apidefs.image import Image
 from conu.apidefs.metadata import ContainerStatus
+from conu.backend.docker.container_parameters import DockerContainerParameters
 from conu.apidefs.filesystem import Filesystem
 from conu.apidefs.metadata import ContainerMetadata
 from conu.backend.docker.client import get_client
@@ -69,6 +71,161 @@ class DockerRunBuilder(object):
     def build(self):
         return self.binary + self.global_options + self.command + self.options + \
             ["-l", CONU_ARTIFACT_TAG] + [self.image_name] + self.arguments
+
+    def get_parameters(self):
+        """
+        Parse DockerRunBuilder options and create object with properties for docker-py run command
+        :return: DockerContainerParameters
+        """
+        import argparse
+        parser = argparse.ArgumentParser(add_help=False)
+
+        # without parameter
+        parser.add_argument("-i", "--interactive", action="store_true", dest="stdin_open")
+        parser.add_argument("-d", "--detach", action="store_true", dest="detach")
+        parser.add_argument("-t", "--tty", action="store_true", dest="tty")
+        parser.add_argument("--init", action="store_true", dest="init")
+        parser.add_argument("--privileged", action="store_true", dest="privileged")
+        parser.add_argument("-P", "--publish-all", action="store_true", dest="publish_all_ports")
+        parser.add_argument("--read-only", action="store_true", dest="read_only")
+        parser.add_argument("--rm", action="store_true", dest="remove")
+
+        # string parameter
+        parser.add_argument("--entrypoint", action="store", dest="entrypoint")
+        parser.add_argument("-h", "--hostname", action="store", dest="hostname")
+        parser.add_argument("--name", action="store", dest="name")
+        parser.add_argument("--ipc", action="store", dest="ipc_mode")
+        parser.add_argument("--isolation", action="store", dest="isolation")
+        parser.add_argument("--mac-address", action="store", dest="mac_address")
+        parser.add_argument("-m", "--memory", action="store", dest="mem_limit")
+        parser.add_argument("--network", action="store", dest="network")
+        parser.add_argument("--platform", action="store", dest="platform")
+        parser.add_argument("--runtime", action="store", dest="runtime")
+        parser.add_argument("--stop-signal", action="store", dest="stop_signal")
+        parser.add_argument("-u", "--user", action="store", dest="user")
+        parser.add_argument("-w", "--workdir", action="store", dest="working_dir")
+
+        # int parameter
+        parser.add_argument("--pids-limit", action="store", dest="pids_limit", type=int)
+
+        # list parameter
+        parser.add_argument("-e", "--env", action="append", dest="env_variables")
+        parser.add_argument("--cap-add", action="append", dest="cap_add")
+        parser.add_argument("--cap-drop", action="append", dest="cap_drop")
+        parser.add_argument("--device", action="append", dest="devices")
+        parser.add_argument("--dns", action="append", dest="dns")
+        parser.add_argument("--group-add", action="append", dest="group_add")
+        parser.add_argument("--mount", action="append", dest="mounts")
+        parser.add_argument("-v", "--volume", action="append", dest="volumes")
+
+        # dict parameter
+        parser.add_argument("-l", "--label", action="append", dest="labels")
+        parser.add_argument("-p", "--publish", action="append", dest="port_mappings")
+
+        # health
+        parser.add_argument("--health-cmd", action="store", dest="health_cmd")
+        parser.add_argument("--health-interval", action="store", dest="health_interval", type=int)
+        parser.add_argument("--health-retries", action="store", dest="health_retries", type=int)
+        parser.add_argument("--health-timeout", action="store", dest="health_timeout", type=int)
+        parser.add_argument("--no-healthcheck", action="store_true", dest="no_healthcheck")
+
+        args, _ = parser.parse_known_args(args=self.options)
+        command = self.arguments
+
+        options_dict = vars(args)
+
+        # create Healthcheck object
+        if not options_dict.pop("no_healthcheck", None):
+            options_dict["healthcheck"] = Healthcheck(
+                test=options_dict.pop("health_cmd", None),
+                interval=options_dict.pop("health_interval", None),
+                timeout=options_dict.pop("health_timeout", None),
+                retries=options_dict.pop("health_retries", None)
+            )
+        else:
+            options_dict['healthcheck'] = None
+
+        # parse dictionary
+        # {'name': 'separator'}
+        with_dictionary_parameter = {'labels': '='}
+        for name, separator in with_dictionary_parameter.items():
+            if options_dict[name] is not None:
+                dictionary = {}
+                for item in options_dict[name]:
+                    try:
+                        key, value = item.split(separator)
+                        dictionary[key] = value
+                    except ValueError:
+                        dictionary = options_dict[name]
+                        ConuException('Wrong format of dictionary: {name}'.format(name=name))
+                        break
+                options_dict[name] = dictionary
+
+        # parse ports
+        # create dictionary according to https://docker-py.readthedocs.io/en/stable/containers.html
+        if options_dict['port_mappings'] is not None:
+            dictionary = {}
+            for port_string in options_dict['port_mappings']:
+                colon_count = port_string.count(':')
+                if colon_count == 2:
+                    split_array = port_string.split(':')
+                    if split_array[1] == '':
+                        # format - ip::containerPort
+                        # create dictionary - {'1111/tcp': ('127.0.0.1', None)}
+                        dictionary[split_array[2]] = (split_array[0], None)
+                    else:
+                        # format - ip:hostPort:containerPort
+                        # create dictionary - {'1111/tcp': ('127.0.0.1', 1111)}
+                        dictionary[split_array[2]] = (split_array[0], int(split_array[1]))
+                elif colon_count == 1:
+                    # format - hostPort:containerPort
+                    # create dictionary - {'2222/tcp': 3333}
+                    split_array = port_string.split(':')
+                    dictionary[split_array[1]] = int(split_array[0])
+                elif colon_count == 0:
+                    # format - containerPort
+                    # create dictionary - {'2222/tcp': None}
+                    dictionary[port_string] = None
+                else:
+                    ConuException('Wrong format of port mappings')
+
+            options_dict['port_mappings'] = dictionary
+
+        container_parameters = DockerContainerParameters(cap_add=options_dict['cap_add'],
+                                                         cap_drop=options_dict['cap_drop'],
+                                                         command=command, detach=options_dict['detach'],
+                                                         devices=options_dict['devices'], dns=options_dict['dns'],
+                                                         entrypoint=options_dict['entrypoint'],
+                                                         env_variables=options_dict['env_variables'],
+                                                         group_add=options_dict['group_add'],
+                                                         healthcheck=options_dict['healthcheck'],
+                                                         hostname=options_dict['hostname'],
+                                                         init=options_dict['init'],
+                                                         ipc_mode=options_dict['ipc_mode'],
+                                                         isolation=options_dict['isolation'],
+                                                         labels=options_dict['labels'],
+                                                         mac_address=options_dict['mac_address'],
+                                                         mem_limit=options_dict['mem_limit'],
+                                                         mounts=options_dict['mounts'],
+                                                         name=options_dict['name'],
+                                                         network=options_dict['network'],
+                                                         pids_limit=options_dict['pids_limit'],
+                                                         platform=options_dict['platform'],
+                                                         port_mappings=options_dict['port_mappings'],
+                                                         privileged=options_dict['privileged'],
+                                                         publish_all_ports=options_dict['publish_all_ports'],
+                                                         read_only=options_dict['read_only'],
+                                                         remove=options_dict['remove'],
+                                                         runtime=options_dict['runtime'],
+                                                         stdin_open=options_dict['stdin_open'],
+                                                         stop_signal=options_dict['stop_signal'],
+                                                         tty=options_dict['tty'],
+                                                         user=options_dict['user'],
+                                                         volumes=options_dict['volumes'],
+                                                         working_dir=options_dict['working_dir']
+                                                         )
+
+        return container_parameters
 
 
 class DockerContainerViaExportFS(Filesystem):
