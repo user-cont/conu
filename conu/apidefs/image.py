@@ -21,6 +21,9 @@ from __future__ import print_function, unicode_literals
 from kubernetes import client, config
 from conu.backend.k8s.pod import Pod
 
+import string
+import random
+
 
 class Image(object):
     """
@@ -174,7 +177,7 @@ class Image(object):
 
     def run_in_pod(self, namespace="default"):
         """
-        run image inside the Kubernetes Pod
+        run image inside Kubernetes Pod
         :param namespace: str, name of namespace where pod will be created
         :return: Pod instance
         """
@@ -183,29 +186,33 @@ class Image(object):
 
         image_data = self.get_metadata()
 
+        # convert environment variables to Kubernetes objects
         env_variables = []
-
         for key, value in image_data.env_variables.items():
             env_variables.append(client.V1EnvVar(name=key, value=value))
 
+        # convert exposed ports to Kubernetes objects
         exposed_ports = []
-
         if image_data.exposed_ports is not None:
             for port in image_data.exposed_ports:
                 try:
                     protocol = port.split("/", 1)[1]
                     exposed_ports.append(client.V1ContainerPort(container_port=port.split("/", 1)[0],
                                                                 protocol=protocol))
-                except IndexError:
+                except IndexError:  # protocol is not defined in image metadata
                     exposed_ports.append(client.V1ContainerPort(container_port=port.split("/", 1)[0]))
+
+        # generate random container name
+        # https://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits-in-python
+        container_name = ''.join(random.choice(string.ascii_lowercase) for _ in range(10))
 
         container = client.V1Container(command=image_data.command,
                                        env=env_variables,
                                        image=image_data.name,
-                                       name="test-container",
+                                       name=container_name,
                                        ports=exposed_ports)
 
-        pod_metadata = client.V1ObjectMeta(name="test-pod")
+        pod_metadata = client.V1ObjectMeta(name=container_name + "-pod")
         pod_spec = client.V1PodSpec(containers=[container])
         pod = client.V1Pod(spec=pod_spec, metadata=pod_metadata)
 
