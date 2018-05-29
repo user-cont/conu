@@ -1,6 +1,6 @@
 .PHONY: install-dependencies exec-test check container build-test-container test docs open-docs
 
-CONU_REPOSITORY := docker.io/modularitycontainers/conu
+CONU_REPOSITORY := docker.io/usercont/conu:dev
 TEST_IMAGE_NAME := conu-tests
 DOC_EXAMPLE_PATH := "docs/source/examples"
 VERSION := 0.4.0
