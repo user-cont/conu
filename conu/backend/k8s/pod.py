@@ -25,6 +25,7 @@ class Pod(object):
         self.name = name
         self.namespace = namespace
         self.spec = spec
+        self.phase = None
 
     def delete(self):
         """
@@ -38,19 +39,44 @@ class Pod(object):
             if status.status == 'Failure':
                 ConuException("Deletion of Pod failed")
 
+            logger.info("Deleting Pod {pod_name} in {namespace}".format(pod_name=self.name,
+                                                                        namespace=self.namespace))
+
+            self.phase = PodPhase.TERMINATING
+
         except ApiException as e:
             ConuException("Exception when calling Kubernetes API - delete_namespaced_pod: {}\n".format(e))
 
-    def get_phase(self):
+    def get_status(self):
         """
-        get status of the pod
-        :return: PodPhase enum
+        get status of the Pod
+        :return: V1PodStatus, https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1PodStatus.md
         """
         try:
             api_response = api.read_namespaced_pod_status(self.name, self.namespace)
-            return PodPhase.get_from_string(api_response.status.phase)
+            return api_response.status
         except ApiException as e:
             ConuException("Exception when calling Kubernetes API - read_namespaced_pod_status: {}\n".format(e))
+
+    def get_ip(self):
+        """
+        get IP address of Pod
+        :return: str, IP address or empty string if is not allocated yet
+        """
+
+        return self.get_status().pod_ip
+
+    def get_phase(self):
+        """
+        get phase of the pod
+        :return: PodPhase enum
+
+        """
+
+        if self.phase != PodPhase.TERMINATING:
+            self.phase = PodPhase.get_from_string(self.get_status().phase)
+
+        return self.phase
 
     def wait(self, timeout=15):
         """
@@ -65,13 +91,16 @@ class Pod(object):
 class PodPhase(enum.Enum):
     """
     https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase
+    Additional values in conu:
+    TERMINATING - phase right after delete() method is called on pod
     """
 
     PENDING = 0
     RUNNING = 1
     SUCCEEDED = 2
     FAILED = 3
-    UNKNOWN = 4
+    TERMINATING = 4
+    UNKNOWN = 5
 
     @classmethod
     def get_from_string(cls, string):
@@ -84,4 +113,6 @@ class PodPhase(enum.Enum):
         elif string == 'Failed':
             return cls.FAILED
         elif string == 'Unknown':
+            return cls.UNKNOWN
+        else:
             return cls.UNKNOWN

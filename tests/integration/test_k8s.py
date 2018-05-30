@@ -15,3 +15,4 @@ def test_pod():
             assert pod.get_phase() == PodPhase.RUNNING
         finally:
             pod.delete()
+            assert pod.get_phase() == PodPhase.TERMINATING

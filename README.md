@@ -105,6 +105,9 @@ modularitycontainers/conu:0.2.0 python3 /app/my_source.py
     - delay execution
     - delay between iterations
 
+# Kubernetes
+
+Running tests in Kubernetes requires Minikube installed on a host machine. See installation guide in `README.md` of the [minikube Github repository](https://github.com/kubernetes/minikube). 
 
 # Docker example
 
