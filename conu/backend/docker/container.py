@@ -157,7 +157,7 @@ class DockerRunBuilder(object):
                         dictionary[key] = value
                     except ValueError:
                         dictionary = options_dict[name]
-                        ConuException('Wrong format of dictionary: {name}'.format(name=name))
+                        raise ConuException('Wrong format of dictionary: {name}'.format(name=name))
                         break
                 options_dict[name] = dictionary
 
@@ -187,7 +187,7 @@ class DockerRunBuilder(object):
                     # create dictionary - {'2222/tcp': None}
                     dictionary[port_string] = None
                 else:
-                    ConuException('Wrong format of port mappings')
+                    raise ConuException('Wrong format of port mappings')
 
             options_dict['port_mappings'] = dictionary
 
@@ -664,7 +664,7 @@ class DockerContainer(Container):
             try:
                 env_variables.update({env_variable.split('=', 1)[0]: env_variable.split('=', 1)[1]})
             except IndexError:
-                ConuException("Wrong format of environment variable")
+                raise ConuException("Wrong format of environment variable")
 
         # format of image name from docker inspect:
         # sha256:8f0e66c924c0c169352de487a3c2463d82da24e9442fc097dddaa5f800df7129

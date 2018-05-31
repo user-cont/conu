@@ -451,7 +451,7 @@ class DockerImage(Image):
         :param namespace: str, name of namespace where pod will be created
         :return: Pod instance
         """
-        
+
         image_data = self.get_metadata()
 
         # convert environment variables to Kubernetes objects
@@ -463,12 +463,10 @@ class DockerImage(Image):
         exposed_ports = []
         if image_data.exposed_ports is not None:
             for port in image_data.exposed_ports:
-                try:
-                    protocol = port.split("/", 1)[1]
-                    exposed_ports.append(client.V1ContainerPort(container_port=int(port.split("/", 1)[0]),
-                                                                protocol=protocol.upper()))
-                except IndexError:  # protocol is not defined in image metadata
-                    exposed_ports.append(client.V1ContainerPort(container_port=int(port.split("/", 1)[0])))
+                splits = port.split("/", 1)
+                port = int(splits[0])
+                protocol = splits[1].upper() if len(splits) > 1 else None
+                exposed_ports.append(client.V1ContainerPort(container_port=port, protocol=protocol))
 
         # generate container name {image-name}-{username}-{random-4-letters}
         # take just name of image and remove tag
@@ -618,7 +616,7 @@ class DockerImage(Image):
             try:
                 env_variables.update({env_variable.split('=', 1)[0]: env_variable.split('=', 1)[1]})
             except IndexError:
-                ConuException("Wrong format of environment variable")
+                raise ConuException("Wrong format of environment variable")
 
         try:
             exposed_ports = list(docker_metadata['Config']['ExposedPorts'].keys())

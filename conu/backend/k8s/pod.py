@@ -30,22 +30,20 @@ class Pod(object):
     def delete(self):
         """
         delete pod from the Kubernetes cluster
-        :return:
+        :return: None
         """
         body = client.V1DeleteOptions()
 
         try:
             status = api.delete_namespaced_pod(self.name, self.namespace, body)
-            if status.status == 'Failure':
-                ConuException("Deletion of Pod failed")
-
             logger.info("Deleting Pod {pod_name} in {namespace}".format(pod_name=self.name,
                                                                         namespace=self.namespace))
-
             self.phase = PodPhase.TERMINATING
-
         except ApiException as e:
-            ConuException("Exception when calling Kubernetes API - delete_namespaced_pod: {}\n".format(e))
+            raise ConuException("Exception when calling Kubernetes API - delete_namespaced_pod: {}\n".format(e))
+
+        if status.status == 'Failure':
+            raise ConuException("Deletion of Pod failed")
 
     def get_status(self):
         """
@@ -54,9 +52,10 @@ class Pod(object):
         """
         try:
             api_response = api.read_namespaced_pod_status(self.name, self.namespace)
-            return api_response.status
         except ApiException as e:
-            ConuException("Exception when calling Kubernetes API - read_namespaced_pod_status: {}\n".format(e))
+            raise ConuException("Exception when calling Kubernetes API - read_namespaced_pod_status: {}\n".format(e))
+
+        return api_response.status
 
     def get_ip(self):
         """
