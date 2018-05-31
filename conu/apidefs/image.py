@@ -18,16 +18,6 @@
 Abstract definition for an Image
 """
 from __future__ import print_function, unicode_literals
-from kubernetes import client, config
-from conu.backend.k8s.pod import Pod
-
-
-import getpass
-import string
-import random
-import logging
-
-logger = logging.getLogger(__name__)
 
 
 class Image(object):
@@ -186,54 +176,7 @@ class Image(object):
         :param namespace: str, name of namespace where pod will be created
         :return: Pod instance
         """
-        config.load_kube_config()
-        api = client.CoreV1Api()
-
-        image_data = self.get_metadata()
-
-        # convert environment variables to Kubernetes objects
-        env_variables = []
-        for key, value in image_data.env_variables.items():
-            env_variables.append(client.V1EnvVar(name=key, value=value))
-
-        # convert exposed ports to Kubernetes objects
-        exposed_ports = []
-        if image_data.exposed_ports is not None:
-            for port in image_data.exposed_ports:
-                try:
-                    protocol = port.split("/", 1)[1]
-                    exposed_ports.append(client.V1ContainerPort(container_port=int(port.split("/", 1)[0]),
-                                                                protocol=protocol.upper()))
-                except IndexError:  # protocol is not defined in image metadata
-                    exposed_ports.append(client.V1ContainerPort(container_port=int(port.split("/", 1)[0])))
-
-        # generate container name {image-name}-{username}-{random-4-letters}
-        # take just name of image and remove tag
-        image_name = image_data.name.split("/")[-1].split(":")[0]
-        # https://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits-in-python
-        random_string = ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(4))
-        container_name = '{image_name}-{user_name}-{random_string}'.format(image_name=image_name,
-                                                                           user_name=getpass.getuser(),
-                                                                           random_string=random_string)
-
-        container = client.V1Container(command=image_data.command,
-                                       env=env_variables,
-                                       image=image_data.name,
-                                       name=container_name,
-                                       ports=exposed_ports)
-
-        pod_metadata = client.V1ObjectMeta(name=container_name + "-pod")
-        pod_spec = client.V1PodSpec(containers=[container])
-        pod = client.V1Pod(spec=pod_spec, metadata=pod_metadata)
-
-        pod_instance = api.create_namespaced_pod(namespace=namespace, body=pod)
-
-        logger.info("Starting Pod {pod_name} in namespace {namespace}".format(pod_name=pod_metadata.name,
-                                                                              namespace=namespace))
-
-        return Pod(name=pod_instance.metadata.name,
-                   namespace=pod_instance.metadata.namespace,
-                   spec=pod_instance.spec)
+        raise NotImplementedError("run_in_pod is not implemented")
 
 
 class S2Image:
