@@ -20,9 +20,13 @@ Implementation of a Kubernetes pod
 
 import logging
 import enum
+import string
+import random
+import getpass
 
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
+
 from conu.utils.probes import Probe
 from conu.exceptions import ConuException
 
@@ -114,6 +118,48 @@ class Pod(object):
 
     def wait(self):
         pass
+
+    @staticmethod
+    def create(image_data):
+        """
+
+        :return: V1Pod, kubernetes object
+        """
+
+        # convert environment variables to Kubernetes objects
+        env_variables = []
+        for key, value in image_data.env_variables.items():
+            env_variables.append(client.V1EnvVar(name=key, value=value))
+
+        # convert exposed ports to Kubernetes objects
+        exposed_ports = []
+        if image_data.exposed_ports is not None:
+            for port in image_data.exposed_ports:
+                splits = port.split("/", 1)
+                port = int(splits[0])
+                protocol = splits[1].upper() if len(splits) > 1 else None
+                exposed_ports.append(client.V1ContainerPort(container_port=port, protocol=protocol))
+
+        # generate container name {image-name}-{username}-{random-4-letters}
+        # take just name of image and remove tag
+        image_name = image_data.name.split("/")[-1].split(":")[0]
+        # https://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits-in-python
+        random_string = ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(4))
+        container_name = '{image_name}-{user_name}-{random_string}'.format(image_name=image_name,
+                                                                           user_name=getpass.getuser(),
+                                                                           random_string=random_string)
+
+        container = client.V1Container(command=image_data.command,
+                                       env=env_variables,
+                                       image=image_data.name,
+                                       name=container_name,
+                                       ports=exposed_ports)
+
+        pod_metadata = client.V1ObjectMeta(name=container_name + "-pod")
+        pod_spec = client.V1PodSpec(containers=[container])
+        pod = client.V1Pod(spec=pod_spec, metadata=pod_metadata)
+
+        return pod
 
 
 class PodPhase(enum.Enum):

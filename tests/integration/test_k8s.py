@@ -16,7 +16,9 @@
 
 from conu import DockerBackend
 from conu.backend.k8s.pod import PodPhase
-from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
+
+from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, \
+    FEDORA_REPOSITORY
 
 
 def test_pod():

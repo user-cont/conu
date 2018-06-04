@@ -4,6 +4,7 @@ CONU_REPOSITORY := docker.io/usercont/conu:dev
 TEST_IMAGE_NAME := conu-tests
 DOC_EXAMPLE_PATH := "docs/source/examples"
 VERSION := 0.4.0
+kubedir := $(shell mktemp -d /tmp/tmp.conu-kube-XXXXX)
 
 install-dependencies:
 	./requirements.sh
