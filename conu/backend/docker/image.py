@@ -613,10 +613,11 @@ class DockerImage(Image):
         # ['DISTTAG=f26container', 'FGC=f26']
         env_variables = dict()
         for env_variable in docker_metadata['Config']['Env']:
-            try:
-                env_variables.update({env_variable.split('=', 1)[0]: env_variable.split('=', 1)[1]})
-            except IndexError:
-                raise ConuException("Wrong format of environment variable")
+            splits = env_variable.split("=", 1)
+            name = splits[0]
+            value = splits[1] if len(splits) > 1 else None
+            if value is not None:
+                env_variables.update({name: value})
 
         try:
             exposed_ports = list(docker_metadata['Config']['ExposedPorts'].keys())

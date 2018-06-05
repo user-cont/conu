@@ -1,6 +1,9 @@
 FROM docker.io/usercont/conu:dev
 
+ENV KUBECONFIG=/var/lib/origin/openshift.local.config/master/admin.kubeconfig
+
 # F27 doesn't have new-enough pytest
 RUN dnf install -y nmap-ncat make python2-pytest python3-pytest && \
     pip2 install --user --upgrade -r tests/requirements.txt && \
     pip3 install --user --upgrade -r tests/requirements.txt
+
