@@ -3,6 +3,11 @@ import logging
 from conu.exceptions import ConuException
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
+from conu.utils.http_client import HttpClient, get_url
+
+from contextlib import contextmanager
+
+import requests
 
 config.load_kube_config()
 api = client.CoreV1Api()
@@ -23,11 +28,12 @@ class Service(object):
         """
         self.name = name
         self.namespace = namespace
+        self.ports = ports
 
         exposed_ports = []
 
         # create Kubernetes service port objects
-        for port in ports:
+        for port in self.ports:
             splits = port.split("/", 1)
             port = int(splits[0])
             protocol = splits[1].upper() if len(splits) > 1 else None
@@ -37,6 +43,9 @@ class Service(object):
         self.spec = client.V1ServiceSpec(ports=exposed_ports, selector=selector)
 
         body = client.V1Service(spec=self.spec, metadata=metadata)
+
+        # provides HTTP client (requests.Session)
+        self.http_session = requests.Session()
 
         try:
             api.create_namespaced_service(self.namespace, body)
@@ -75,3 +84,32 @@ class Service(object):
             raise ConuException("Exception when calling Kubernetes API - read_namespaced_service_status: {}\n".format(e))
 
         return api_response.status
+
+    def get_ip(self):
+        """
+        get IP adress of service
+        :return: str, IP address
+        """
+
+        return self.spec.cluster_ip
+
+    @contextmanager
+    def http_client(self, host=None, port=None):
+        """
+        allow requests in context -- e.g.:
+
+        .. code-block:: python
+
+            with container.http_client(port="80", ...) as c:
+                assert c.get("/api/...")
+
+
+        :param host: str, if None, set self.get_IPv4s()[0]
+        :param port: str or int, if None, set to self.get_ports()[0]
+        :return: instance of :class:`conu.utils.http_client.HttpClient`
+        """
+
+        host = host or self.get_ip()
+        port = port or self.ports[0]
+
+        yield HttpClient(host, port, self.http_session)

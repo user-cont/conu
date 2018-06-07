@@ -62,6 +62,10 @@ def test_database_deployment():
 
         assert db_deployment.all_pods_ready()
 
+        with db_service.http_client(port=5432) as session:
+            r = session.get("/")
+            assert r.ok
+
         # cleanup
         db_deployment.delete()
         db_service.delete()
