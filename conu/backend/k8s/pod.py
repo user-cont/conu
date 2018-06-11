@@ -1,10 +1,30 @@
+# -*- coding: utf-8 -*-
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+"""
+Implementation of a Kubernetes pod
+"""
+
 import logging
 import enum
 
-from conu.exceptions import ConuException
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 from conu.utils.probes import Probe
+from conu.exceptions import ConuException
 
 config.load_kube_config()
 api = client.CoreV1Api()
@@ -19,7 +39,8 @@ class Pod(object):
 
         :param name: name of pod
         :param namespace: str, namespace in which is pod created
-        :param spec: pod spec https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1PodSpec.md
+        :param spec: pod spec
+        https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1PodSpec.md
         """
 
         self.name = name
@@ -36,11 +57,11 @@ class Pod(object):
 
         try:
             status = api.delete_namespaced_pod(self.name, self.namespace, body)
-            logger.info("Deleting Pod {pod_name} in {namespace}".format(pod_name=self.name,
-                                                                        namespace=self.namespace))
+            logger.info("Deleting Pod %s in namespace %s" % (self.name, self.namespace))
             self.phase = PodPhase.TERMINATING
         except ApiException as e:
-            raise ConuException("Exception when calling Kubernetes API - delete_namespaced_pod: {}\n".format(e))
+            raise ConuException(
+                "Exception when calling Kubernetes API - delete_namespaced_pod: %s\n" % e)
 
         if status.status == 'Failure':
             raise ConuException("Deletion of Pod failed")
@@ -48,12 +69,14 @@ class Pod(object):
     def get_status(self):
         """
         get status of the Pod
-        :return: V1PodStatus, https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1PodStatus.md
+        :return: V1PodStatus,
+        https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1PodStatus.md
         """
         try:
             api_response = api.read_namespaced_pod_status(self.name, self.namespace)
         except ApiException as e:
-            raise ConuException("Exception when calling Kubernetes API - read_namespaced_pod_status: {}\n".format(e))
+            raise ConuException(
+                "Exception when calling Kubernetes API - read_namespaced_pod_status: %s\n" % e)
 
         return api_response.status
 
@@ -103,6 +126,11 @@ class PodPhase(enum.Enum):
 
     @classmethod
     def get_from_string(cls, string):
+        """
+        Convert string value obtained from k8s API to PodPhase enum value
+        :param string:
+        :return: PodPhase
+        """
         if string == 'Pending':
             return cls.PENDING
         elif string == 'Running':
@@ -113,5 +141,5 @@ class PodPhase(enum.Enum):
             return cls.FAILED
         elif string == 'Unknown':
             return cls.UNKNOWN
-        else:
-            return cls.UNKNOWN
+
+        return cls.UNKNOWN

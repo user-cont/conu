@@ -18,7 +18,6 @@
 Utilities related to manipulate docker images.
 """
 from __future__ import print_function, unicode_literals
-from kubernetes import client, config
 
 import getpass
 import string
@@ -33,6 +32,7 @@ from tempfile import mkdtemp
 
 import six
 
+from kubernetes import client, config
 from conu.apidefs.metadata import ImageMetadata
 from conu.apidefs.backend import get_backend_tmpdir
 from conu.apidefs.filesystem import Filesystem
@@ -54,6 +54,7 @@ logger = logging.getLogger(__name__)
 
 config.load_kube_config()
 api = client.CoreV1Api()
+
 
 class DockerImageViaArchiveFS(Filesystem):
     def __init__(self, image, mount_point=None):
@@ -489,8 +490,7 @@ class DockerImage(Image):
 
         pod_instance = api.create_namespaced_pod(namespace=namespace, body=pod)
 
-        logger.info("Starting Pod {pod_name} in namespace {namespace}".format(pod_name=pod_metadata.name,
-                                                                              namespace=namespace))
+        logger.info("Starting Pod %s in namespace %s" % (pod_metadata.name, namespace))
 
         return Pod(name=pod_instance.metadata.name,
                    namespace=pod_instance.metadata.namespace,
