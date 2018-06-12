@@ -20,9 +20,13 @@ Implementation of a Kubernetes pod
 
 import logging
 import enum
-import string
 import random
-import getpass
+import string
+
+from kubernetes import client, config
+from kubernetes.client.rest import ApiException
+from conu.utils.probes import Probe
+from conu.exceptions import ConuException
 
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
@@ -113,18 +117,8 @@ class Pod(object):
 
         Probe(timeout=timeout, fnc=self.get_phase, expected_retval=PodPhase.RUNNING).run()
 
-    def get_pod_ip(self):
-        pass
-
-    def wait(self):
-        pass
-
     @staticmethod
     def create(image_data):
-        """
-
-        :return: V1Pod, kubernetes object
-        """
 
         # convert environment variables to Kubernetes objects
         env_variables = []
@@ -177,21 +171,22 @@ class PodPhase(enum.Enum):
     UNKNOWN = 5
 
     @classmethod
-    def get_from_string(cls, string):
+    def get_from_string(cls, str):
         """
         Convert string value obtained from k8s API to PodPhase enum value
         :param string:
         :return: PodPhase
         """
-        if string == 'Pending':
+
+        if str == 'Pending':
             return cls.PENDING
-        elif string == 'Running':
+        elif str == 'Running':
             return cls.RUNNING
-        elif string == 'Succeeded':
+        elif str == 'Succeeded':
             return cls.SUCCEEDED
-        elif string == 'Failed':
+        elif str == 'Failed':
             return cls.FAILED
-        elif string == 'Unknown':
+        elif str == 'Unknown':
             return cls.UNKNOWN
 
         return cls.UNKNOWN
