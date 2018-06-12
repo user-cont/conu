@@ -19,6 +19,7 @@ Vagrant.configure(2) do |config|
         set -x
         cd /vagrant
         sudo ./requirements.sh
+        sudo systemctl start docker
         sudo -E make exec-test
     SHELL
 end
