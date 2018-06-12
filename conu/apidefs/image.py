@@ -170,6 +170,14 @@ class Image(object):
         """
         raise NotImplementedError("create_container method is not implemented")
 
+    def run_in_pod(self, namespace="default"):
+        """
+        run image inside Kubernetes Pod
+        :param namespace: str, name of namespace where pod will be created
+        :return: Pod instance
+        """
+        raise NotImplementedError("run_in_pod is not implemented")
+
 
 class S2Image:
     """

@@ -105,7 +105,6 @@ modularitycontainers/conu:0.2.0 python3 /app/my_source.py
     - delay execution
     - delay between iterations
 
-
 # Docker example
 
 Let's look at a practical example:
