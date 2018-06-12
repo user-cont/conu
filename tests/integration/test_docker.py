@@ -340,18 +340,18 @@ def test_set_name():
         cont.delete(force=True)
 
 
-def test_run_with_volumes_metadata_check():
+def test_run_with_volumes_metadata_check(tmpdir):
     with DockerBackend() as backend:
+        t = str(tmpdir)
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG,
                                    pull_policy=DockerImagePullPolicy.NEVER)
-        container = image.run_via_binary(volumes=(Directory('/usr/bin'), "/mountpoint", "Z"))
+        container = image.run_via_binary(volumes=(Directory(t), "/mountpoint", "Z"))
 
-        binds = container.inspect ()["HostConfig"]["Binds"]
-        assert "/usr/bin:/mountpoint:Z" in binds
+        binds = container.inspect()["HostConfig"]["Binds"]
+        assert t + ":/mountpoint:Z" in binds
 
         mount = container.inspect()["Mounts"][0]
-        print(mount)
-        assert mount["Source"] == "/usr/bin"
+        assert mount["Source"] == t
         assert mount["Destination"] == "/mountpoint"
         assert mount["Mode"] == "Z"
 
