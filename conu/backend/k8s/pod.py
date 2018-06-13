@@ -40,6 +40,7 @@ class Pod(object):
 
     def __init__(self, name, namespace, spec):
         """
+        Utility functions for kubernetes pods.
 
         :param name: name of pod
         :param namespace: str, namespace in which is pod created
@@ -61,7 +62,7 @@ class Pod(object):
 
         try:
             status = api.delete_namespaced_pod(self.name, self.namespace, body)
-            logger.info("Deleting Pod %s in namespace %s" % (self.name, self.namespace))
+            logger.info("Deleting Pod %s in namespace %s", self.name, self.namespace)
             self.phase = PodPhase.TERMINATING
         except ApiException as e:
             raise ConuException(
@@ -138,11 +139,12 @@ class Pod(object):
         # generate container name {image-name}-{username}-{random-4-letters}
         # take just name of image and remove tag
         image_name = image_data.name.split("/")[-1].split(":")[0]
-        # https://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits-in-python
-        random_string = ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(4))
-        container_name = '{image_name}-{user_name}-{random_string}'.format(image_name=image_name,
-                                                                           user_name=getpass.getuser(),
-                                                                           random_string=random_string)
+        random_string = ''.join(
+            random.choice(string.ascii_lowercase + string.digits) for _ in range(4))
+        container_name = '{image_name}-{user_name}-{random_string}'.format(
+            image_name=image_name,
+            user_name=getpass.getuser(),
+            random_string=random_string)
 
         container = client.V1Container(command=image_data.command,
                                        env=env_variables,
@@ -172,22 +174,22 @@ class PodPhase(enum.Enum):
     UNKNOWN = 5
 
     @classmethod
-    def get_from_string(cls, str):
+    def get_from_string(cls, string_phase):
         """
         Convert string value obtained from k8s API to PodPhase enum value
-        :param string:
+        :param string_phase: str, phase value from Kubernetes API
         :return: PodPhase
         """
 
-        if str == 'Pending':
+        if string_phase == 'Pending':
             return cls.PENDING
-        elif str == 'Running':
+        elif string_phase == 'Running':
             return cls.RUNNING
-        elif str == 'Succeeded':
+        elif string_phase == 'Succeeded':
             return cls.SUCCEEDED
-        elif str == 'Failed':
+        elif string_phase == 'Failed':
             return cls.FAILED
-        elif str == 'Unknown':
+        elif string_phase == 'Unknown':
             return cls.UNKNOWN
 
         return cls.UNKNOWN

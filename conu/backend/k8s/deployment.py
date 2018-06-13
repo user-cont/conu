@@ -37,6 +37,8 @@ class Deployment(object):
 
     def __init__(self, name, selector, labels, image_metadata, namespace='default'):
         """
+        Utility functions for kubernetes deployments.
+
         :param name: str, name of the deployment
         :param selector: Label selector for pods. Existing ReplicaSets whose pods are selected by
          this will be the ones affected by this deployment. It must match the pod template's labels
@@ -52,7 +54,7 @@ class Deployment(object):
         self.spec = client.V1DeploymentSpec(selector=client.V1LabelSelector(match_labels=selector),
                                             template=client.V1PodTemplateSpec(
                                                 metadata=client.V1ObjectMeta(labels=selector),
-                                                                              spec=self.pod.spec))
+                                                spec=self.pod.spec))
 
         metadata = client.V1ObjectMeta(name=self.name, namespace=self.namespace, labels=labels)
 
@@ -63,6 +65,8 @@ class Deployment(object):
         except ApiException as e:
             raise ConuException(
                 "Exception when calling Kubernetes API - create_namespaced_deployment: %s\n" % e)
+
+        logger.info("Creating Service %s in namespace: %s", self.name, self.namespace)
 
     def delete(self):
         """
@@ -75,7 +79,7 @@ class Deployment(object):
         try:
             status = api.delete_namespaced_deployment(self.name, self.namespace, body)
 
-            logger.info("Deleting Service %s in namespace: %s" % (self.name, self.namespace))
+            logger.info("Deleting Service %s in namespace: %s", self.name, self.namespace)
         except ApiException as e:
             raise ConuException(
                 "Exception when calling Kubernetes API - delete_namespaced_deployment: %s\n" % e)
@@ -86,16 +90,15 @@ class Deployment(object):
     def get_status(self):
         """
         get status of the Deployment
-        :return: V1DeploymentStatus,
-        https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1DeploymentStatus.md
+        :return: V1DeploymentStatus, https://git.io/vhKE3
         """
         try:
             api_response = api.read_namespaced_deployment_status(self.name, self.namespace)
         except ApiException as e:
             raise ConuException(
-                "Exception when calling Kubernetes API - read_namespaced_deployment_status: %s\n" % e)
+                "Exception when calling Kubernetes API - "
+                "read_namespaced_deployment_status: %s\n" % e)
 
-        print(api_response.status)
         return api_response.status
 
     def all_pods_ready(self):
@@ -103,9 +106,6 @@ class Deployment(object):
         Check if number of replicas with same selector is equals to number of ready replicas
         :return: bool
         """
-
-        print(self.get_status().replicas)
-        print(self.get_status().ready_replicas)
 
         if self.get_status().replicas and self.get_status().ready_replicas:
             if self.get_status().replicas == self.get_status().ready_replicas:

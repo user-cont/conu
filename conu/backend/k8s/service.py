@@ -19,7 +19,6 @@ Implementation of a Kubernetes service
 """
 
 import logging
-import requests
 
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
@@ -35,6 +34,8 @@ class Service(object):
 
     def __init__(self, name, ports, namespace='default', labels=None, selector=None):
         """
+        Utility functions for kubernetes services.
+
         :param name: str, name of the service
         :param namespace: str, name of the namespace
         :param ports: list of str, list of exposed ports, example:
@@ -61,14 +62,14 @@ class Service(object):
 
         body = client.V1Service(spec=self.spec, metadata=metadata)
 
-        # provides HTTP client (requests.Session)
-        self.http_session = requests.Session()
-
         try:
             api.create_namespaced_service(self.namespace, body)
         except ApiException as e:
-            print(e)
-            raise ConuException("Exception when calling Kubernetes API - create_namespaced_service: {}\n".format(e))
+            raise ConuException(
+                "Exception when calling Kubernetes API - create_namespaced_service: {}\n".format(e))
+
+        logger.info(
+            "Creating Service %s in namespace: %s", self.name, self.namespace)
 
     def delete(self):
         """
@@ -81,10 +82,11 @@ class Service(object):
         try:
             status = api.delete_namespaced_service(self.name, self.namespace, body)
 
-            logger.info("Deleting Service {service_name} in namespace:{namespace}".format(service_name=self.name,
-                                                                                          namespace=self.namespace))
+            logger.info(
+                "Deleting Service %s in namespace: %s", self.name, self.namespace)
         except ApiException as e:
-            raise ConuException("Exception when calling Kubernetes API - delete_namespaced_service: {}\n".format(e))
+            raise ConuException(
+                "Exception when calling Kubernetes API - delete_namespaced_service: {}\n".format(e))
 
         if status.status == 'Failure':
             raise ConuException("Deletion of Service failed")
@@ -92,13 +94,15 @@ class Service(object):
     def get_status(self):
         """
         get status of service
-        :return: V1ServiceStatus, https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1ServiceStatus.md
+        :return: V1ServiceStatus,
+         https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1ServiceStatus.md
         """
 
         try:
             api_response = api.read_namespaced_service_status(self.name, self.namespace)
         except ApiException as e:
-            raise ConuException("Exception when calling Kubernetes API - read_namespaced_service_status: {}\n".format(e))
+            raise ConuException(
+                "Exception when calling Kubernetes API - read_namespaced_service_status: %s\n" % e)
 
         return api_response.status
 
