@@ -1,13 +1,29 @@
-import logging
+# -*- coding: utf-8 -*-
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
 
-from conu.exceptions import ConuException
+"""
+Implementation of a Kubernetes service
+"""
+
+import logging
+import requests
+
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
-from conu.utils.http_client import HttpClient, get_url
-
-from contextlib import contextmanager
-
-import requests
+from conu.exceptions import ConuException
 
 config.load_kube_config()
 api = client.CoreV1Api()
@@ -24,7 +40,8 @@ class Service(object):
         :param ports: list of str, list of exposed ports, example:
                 - ['1234/tcp', '8080/udp']
         :param labels: dict, dict of labels
-        :param selector: dict, route service traffic to pods with label keys and values matching this selector
+        :param selector: dict, route service traffic to pods with label keys and
+         values matching this selector
         """
         self.name = name
         self.namespace = namespace
@@ -92,24 +109,3 @@ class Service(object):
         """
 
         return self.spec.cluster_ip
-
-    @contextmanager
-    def http_client(self, host=None, port=None):
-        """
-        allow requests in context -- e.g.:
-
-        .. code-block:: python
-
-            with container.http_client(port="80", ...) as c:
-                assert c.get("/api/...")
-
-
-        :param host: str, if None, set self.get_IPv4s()[0]
-        :param port: str or int, if None, set to self.get_ports()[0]
-        :return: instance of :class:`conu.utils.http_client.HttpClient`
-        """
-
-        host = host or self.get_ip()
-        port = port or self.ports[0]
-
-        yield HttpClient(host, port, self.http_session)

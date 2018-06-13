@@ -22,11 +22,7 @@ import logging
 import enum
 import random
 import string
-
-from kubernetes import client, config
-from kubernetes.client.rest import ApiException
-from conu.utils.probes import Probe
-from conu.exceptions import ConuException
+import getpass
 
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
@@ -119,6 +115,11 @@ class Pod(object):
 
     @staticmethod
     def create(image_data):
+        """
+        :param image_data: ImageMetadata
+        :return: V1Pod,
+        https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1Pod.md
+        """
 
         # convert environment variables to Kubernetes objects
         env_variables = []

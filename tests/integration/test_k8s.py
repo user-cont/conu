@@ -14,20 +14,23 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""
+Tests for Kubernetes backend
+"""
+
 from conu import DockerBackend
 from conu.backend.k8s.pod import PodPhase
 from conu.backend.k8s.service import Service
 from conu.backend.k8s.deployment import Deployment
 
-from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, \
-    FEDORA_REPOSITORY
+from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
 
 
 def test_pod():
     with DockerBackend() as backend:
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
 
-        pod = image.run_in_pod(namespace='conu')
+        pod = image.run_in_pod(namespace='default')
 
         try:
             pod.wait(200)
@@ -58,14 +61,9 @@ def test_database_deployment():
         db_deployment = Deployment(name="database", selector=db_labels, labels=db_labels,
                                    image_metadata=postgres_image_metadata)
 
-        db_deployment.wait()
-
-        assert db_deployment.all_pods_ready()
-
-        with db_service.http_client(port=5432) as session:
-            r = session.get("/")
-            assert r.ok
-
-        # cleanup
-        db_deployment.delete()
-        db_service.delete()
+        try:
+            db_deployment.wait(200)
+            assert db_deployment.all_pods_ready()
+        finally:
+            db_deployment.delete()
+            db_service.delete()
