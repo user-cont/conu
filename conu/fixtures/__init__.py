@@ -39,6 +39,5 @@ def docker_backend():
 
     :return: instance of DockerBackend
     """
-    backend = DockerBackend(logging_level=logging.DEBUG).__enter__()
-    yield backend
-    backend._clean()
+    with DockerBackend(logging_level=logging.DEBUG) as backend:
+        yield backend

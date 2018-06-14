@@ -4,4 +4,5 @@ six
 docker
 openshift
 pyxattr
+# conu/fixtures/
 pytest
