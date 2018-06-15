@@ -265,7 +265,8 @@ class DockerImage(Image):
             container_id = fd.read()
         return container_id, response
 
-    def run_via_binary(self, run_command_instance=None, command=None, volumes=None, additional_opts=None, *args, **kwargs):
+    def run_via_binary(self, run_command_instance=None, command=None, volumes=None,
+                       additional_opts=None, *args, **kwargs):
         """
         create a container using this image and run it in background;
         this method is useful to test real user scenarios when users invoke containers using
@@ -280,7 +281,8 @@ class DockerImage(Image):
             * `("/path/to/directory", )`
             * `("/host/path", "/container/path")`
             * `("/host/path", "/container/path", "mode")`
-            * `(conu.Directory('/host/path'), "/container/path")` (source can be also Directory instance)
+            * `(conu.Directory('/host/path'), "/container/path")` (source can be also
+                Directory instance)
 
         :param additional_opts: list of str, additional options for `docker run`
         :return: instance of DockerContainer
@@ -288,8 +290,11 @@ class DockerImage(Image):
 
         logger.info("run container via binary in background")
 
-        if (command is not None or additional_opts is not None) and run_command_instance is not None:
-            raise ConuException("run_command_instance and command parameters cannot be passed into method at same time")
+        if (command is not None or additional_opts is not None) \
+                and run_command_instance is not None:
+            raise ConuException(
+                "run_command_instance and command parameters cannot be passed "
+                "into method at same time")
 
         if run_command_instance is None:
             command = command or []
@@ -297,13 +302,15 @@ class DockerImage(Image):
 
             if (isinstance(command, list) or isinstance(command, tuple) and
                 isinstance(additional_opts, list) or isinstance(additional_opts, tuple)):
-                run_command_instance = DockerRunBuilder(command=command, additional_opts=additional_opts)
+                run_command_instance = DockerRunBuilder(
+                    command=command, additional_opts=additional_opts)
             else:
                 raise ConuException("command and additional_opts needs to be list of str or None")
         else:
             run_command_instance = run_command_instance or DockerRunBuilder()
             if not isinstance(run_command_instance, DockerRunBuilder):
-                raise ConuException("run_command_instance needs to be an instance of DockerRunBuilder")
+                raise ConuException(
+                    "run_command_instance needs to be an instance of DockerRunBuilder")
 
         run_command_instance.image_name = self.get_id()
         run_command_instance.options += ["-d"]
@@ -323,7 +330,9 @@ class DockerImage(Image):
         container_name = self.d.inspect_container(container_id)['Name'][1:]
         return DockerContainer(self, container_id, name=container_name)
 
-    def run_via_binary_in_foreground(self, run_command_instance=None, command=None, volumes=None, additional_opts=None, popen_params=None, container_name=None):
+    def run_via_binary_in_foreground(
+            self, run_command_instance=None, command=None, volumes=None,
+            additional_opts=None, popen_params=None, container_name=None):
         """
         Create a container using this image and run it in foreground;
         this method is useful to test real user scenarios when users invoke containers using
@@ -347,7 +356,8 @@ class DockerImage(Image):
             * `("/path/to/directory", )`
             * `("/host/path", "/container/path")`
             * `("/host/path", "/container/path", "mode")`
-            * `(conu.Directory('/host/path'), "/container/path")` (source can be also Directory instance)
+            * `(conu.Directory('/host/path'), "/container/path")` (source can be also
+                Directory instance)
 
         :param additional_opts: list of str, additional options for `docker run`
         :param popen_params: dict, keyword arguments passed to Popen constructor
@@ -356,8 +366,11 @@ class DockerImage(Image):
         """
         logger.info("run container via binary in foreground")
 
-        if (command is not None or additional_opts is not None) and run_command_instance is not None:
-            raise ConuException("run_command_instance and command parameters cannot be passed into method at same time")
+        if (command is not None or additional_opts is not None) \
+                and run_command_instance is not None:
+            raise ConuException(
+                "run_command_instance and command parameters cannot be "
+                "passed into method at same time")
 
         if run_command_instance is None:
             command = command or []
@@ -365,13 +378,15 @@ class DockerImage(Image):
 
             if (isinstance(command, list) or isinstance(command, tuple) and
                 isinstance(additional_opts, list) or isinstance(additional_opts, tuple)):
-                run_command_instance = DockerRunBuilder(command=command, additional_opts=additional_opts)
+                run_command_instance = DockerRunBuilder(
+                    command=command, additional_opts=additional_opts)
             else:
                 raise ConuException("command and additional_opts needs to be list of str or None")
         else:
             run_command_instance = run_command_instance or DockerRunBuilder()
             if not isinstance(run_command_instance, DockerRunBuilder):
-                raise ConuException("run_command_instance needs to be an instance of DockerRunBuilder")
+                raise ConuException("run_command_instance needs to be an "
+                                    "instance of DockerRunBuilder")
 
         popen_params = popen_params or {}
 
@@ -389,10 +404,13 @@ class DockerImage(Image):
 
         actual_name = self.d.inspect_container(container_id)['Name'][1:]
         if container_name and container_name != actual_name:
-            raise ConuException("Unexpected container name value. Expected = " + str(container_name) + " Actual = " + str(actual_name))
+            raise ConuException(
+                "Unexpected container name value. Expected = "
+                + str(container_name) + " Actual = " + str(actual_name))
         if not container_name:
             container_name = actual_name
-        return DockerContainer(self, container_id, popen_instance=popen_instance, name=container_name)
+        return DockerContainer(
+            self, container_id, popen_instance=popen_instance, name=container_name)
 
     def run_via_api(self, container_params=None):
         """
