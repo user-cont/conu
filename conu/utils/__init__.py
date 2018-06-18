@@ -286,7 +286,7 @@ def graceful_get(d, *args):
         try:
             value = value[arg]
         except (IndexError, KeyError, AttributeError, TypeError) as ex:
-            logger.warning("exception while getting a value: %s", ex)
+            logger.debug("exception while getting a value %r from %s", ex, str(value)[:32])
             return None
     return value
 
