@@ -364,15 +364,25 @@ def test_list_containers():
         assert l >= 0
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG,
                                    pull_policy=DockerImagePullPolicy.NEVER)
-        container = image.run_via_binary(command=["sleep", "1"])
+        drb = DockerRunBuilder(command=["sleep", "1"], additional_opts=[
+            "-e", "FOO=BAR",
+            "-p", "1234"
+        ])
+        container = image.run_via_binary(run_command_instance=drb)
         try:
             container_list = backend.list_containers()
+            l = len(container_list)
+            assert l >= 1
+            cont_under_test = [x for x in container_list
+                               if x.metadata.identifier == container.get_id()][0]
+            assert cont_under_test.metadata.image
+            # TODO: implement parsing docker_client.containers metadata
+            # assert cont_under_test.metadata.command
+            # assert cont_under_test.metadata.env_variables == {"FOO": "BAR"}
+            # assert cont_under_test.metadata.exposed_ports == ["1234"]
+            # assert cont_under_test.get_IPv4s()
         finally:
             container.delete(force=True)
-        l = len(container_list)
-        assert l >= 1
-        assert container_list[0].short_metadata
-        assert container_list[0].short_metadata["Id"]
 
 
 def test_list_images():

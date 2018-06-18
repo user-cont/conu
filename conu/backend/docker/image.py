@@ -40,6 +40,7 @@ from conu.apidefs.image import Image, S2Image
 from conu.backend.docker.client import get_client
 from conu.backend.docker.container import DockerContainer, DockerRunBuilder
 from conu.backend.docker.container_parameters import DockerContainerParameters
+from conu.backend.docker.utils import inspect_to_metadata
 from conu.exceptions import ConuException
 from conu.utils import run_cmd, random_tmp_filename, s2i_command_exists, \
     graceful_get, export_docker_container_to_directory
@@ -264,7 +265,7 @@ class DockerImage(Image):
         return container_id, response
 
     def run_via_binary(self, run_command_instance=None, command=None, volumes=None,
-                       additional_opts=None, *args, **kwargs):
+                       additional_opts=None, **kwargs):
         """
         create a container using this image and run it in background;
         this method is useful to test real user scenarios when users invoke containers using
@@ -613,74 +614,29 @@ class DockerImage(Image):
             image_layers.reverse()
         return image_layers
 
-    def load_metadata(self, inspect_data):
-        """
-        process metadata obtained from docker and add it to self.metadata
-
-        :param inspect_data: dict, metadata from `docker inspect` or `dockert_client.images()`
-        :return: None
-        """
-        # format of image name from docker inspect:
-        # sha256:8f0e66c924c0c169352de487a3c2463d82da24e9442fc097dddaa5f800df7129
-        identifier = graceful_get(inspect_data, 'Id')
-        if identifier:
-            self.metadata.identifier = identifier.split(':')[1]
-
-        # format of Environment Variables from docker inspect:
-        # ['DISTTAG=f26container', 'FGC=f26']
-        raw_env_vars = graceful_get(inspect_data, "Config", "Env") or []
-        if raw_env_vars:
-            self.metadata.env_variables = {}
-            for env_variable in raw_env_vars:
-                splits = env_variable.split("=", 1)
-                name = splits[0]
-                value = splits[1] if len(splits) > 1 else None
-                if value is not None:
-                    self.metadata.env_variables.update({name: value})
-
-        raw_exposed_ports = graceful_get(inspect_data, "Config", "ExposedPorts")
-        if raw_exposed_ports:
-            self.metadata.exposed_ports = list(raw_exposed_ports.keys())
-
-        raw_repo_tags = graceful_get(inspect_data, 'RepoTags')
-        if raw_repo_tags:
-            self.metadata.name = raw_repo_tags[0]
-        self.metadata.labels = graceful_get(inspect_data, 'Config', 'Labels')
-        self.metadata.command = graceful_get(inspect_data, 'Config', 'Cmd')
-        self.metadata.creation_timestamp = inspect_data.get('Created', None)
-        self.metadata.image_names = inspect_data.get('RepoTags', None)
-        digests = inspect_data.get("RepoDigests", None)
-        if digests:
-            self.metadata.repo_digests = digests
-            self.metadata.digest = digests[0]
-
     def get_metadata(self):
         """
         Provide metadata about this image.
 
         :return: ImageMetadata, Image metadata instance
         """
-        self.load_metadata(self.inspect(refresh=True))
-        return self.metadata
+        return inspect_to_metadata(self.metadata, self.inspect(refresh=True))
 
 
 class S2IDockerImage(DockerImage, S2Image):
     def __init__(self, repository, tag="latest",  identifier=None,
-                 pull_policy=DockerImagePullPolicy.IF_NOT_PRESENT,
-                 short_metadata=None):
+                 pull_policy=DockerImagePullPolicy.IF_NOT_PRESENT):
         """
         :param repository: str, image name, examples: "fedora", "registry.fedoraproject.org/fedora",
                             "tomastomecek/sen", "docker.io/tomastomecek/sen"
         :param tag: str, tag of the image, when not specified, "latest" is implied
         :param identifier: str, unique identifier for this image
         :param pull_policy: enum, strategy to apply for pulling the image
-        :param short_metadata: dict, metadata obtained from `docker.APIClient.images()`
         """
         super(S2IDockerImage, self).__init__(repository,
                                              tag=tag,
                                              identifier=identifier,
-                                             pull_policy=pull_policy,
-                                             short_metadata=short_metadata)
+                                             pull_policy=pull_policy)
         self._s2i_exists = None
 
     def _s2i_command(self, args):

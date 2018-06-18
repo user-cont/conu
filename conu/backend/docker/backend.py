@@ -24,7 +24,7 @@ from conu.backend.docker.container import DockerContainer
 from conu.backend.docker.image import DockerImage, DockerImagePullPolicy
 from conu.backend.docker.client import get_client
 from conu.backend.docker.constants import CONU_ARTIFACT_TAG
-
+from conu.backend.docker.utils import inspect_to_metadata, inspect_to_container_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -93,14 +93,16 @@ class DockerBackend(Backend):
         :return: collection of instances of :class:`conu.DockerContainer`
         """
         result = []
-        # TODO: list images as well to get their names -- just 2 API calls
         for c in self.d.containers(all=True):
             name = None
             names = c.get("Names", None)
             if names:
                 name = names[0]
             i = DockerImage(None, identifier=c["ImageID"])
-            result.append(DockerContainer(i, c["Id"], short_metadata=c, name=name))
+            cont = DockerContainer(i, c["Id"], name=name)
+            # TODO: docker_client.containers produces different metadata than inspect
+            inspect_to_container_metadata(cont.metadata, c, i)
+            result.append(cont)
         return result
 
     def list_images(self):
@@ -121,7 +123,7 @@ class DockerBackend(Backend):
                 i_name, tag = None, None
             d_im = DockerImage(i_name, tag=tag, identifier=im["Id"],
                                pull_policy=DockerImagePullPolicy.NEVER)
-            d_im.load_metadata(im)
+            inspect_to_metadata(d_im.metadata, im)
 
             response.append(d_im)
         return response

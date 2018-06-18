@@ -35,8 +35,9 @@ from conu.backend.docker.container_parameters import DockerContainerParameters
 from conu.apidefs.filesystem import Filesystem
 from conu.apidefs.metadata import ContainerMetadata
 from conu.backend.docker.client import get_client
+from conu.backend.docker.utils import inspect_to_metadata
 from conu.exceptions import ConuException
-from conu.utils import check_port, run_cmd, export_docker_container_to_directory
+from conu.utils import check_port, run_cmd, export_docker_container_to_directory, graceful_get
 from conu.utils.probes import Probe
 from conu.backend.docker.constants import CONU_ARTIFACT_TAG
 
@@ -260,20 +261,20 @@ class DockerContainerViaExportFS(Filesystem):
 
 
 class DockerContainer(Container):
-    def __init__(self, image, container_id, name=None, popen_instance=None, short_metadata=None):
+    def __init__(self, image, container_id, name=None, popen_instance=None):
         """
         :param image: DockerImage instance (if None, it will be found from the container itself)
         :param container_id: str, unique identifier of this container
         :param name: str, pretty container name
         :param popen_instance: instance of Popen (if container was created using method
             `via_binary`, this is the docker client process)
-        :param short_metadata: dict, metadata obtained from `docker.APIClient.containers()`
         """
         self.d = get_client()
         super(DockerContainer, self).__init__(image, container_id, name)
         self.popen_instance = popen_instance
         # metadata obtained when doing `docker.APIClient().containers()`
-        self.short_metadata = short_metadata
+        self._inspect_data = None
+        self.metadata = ContainerMetadata()
 
     def __repr__(self):
         return "DockerContainer(image=%s, id=%s)" % (self.image, self.get_id())
@@ -299,12 +300,12 @@ class DockerContainer(Container):
         :param refresh: bool, returns up to date metadata if set to True
         :return: dict
         """
-        if refresh or not self._metadata:
+        if refresh or not self._inspect_data:
             ident = self._id or self.name
             if not ident:
                 raise ConuException("This container does not have a valid identifier.")
-            self._metadata = self.d.inspect_container(ident)
-        return self._metadata
+            self._inspect_data = self.d.inspect_container(ident)
+        return self._inspect_data
 
     def is_running(self):
         """
@@ -332,9 +333,7 @@ class DockerContainer(Container):
 
         :return: list of str
         """
-        # FIXME: be graceful in obtaining values from dict: the keys might not be set
-        return [x["IPAddress"]
-                for x in self.inspect(refresh=True)["NetworkSettings"]["Networks"].values()]
+        return self.metadata.ipv4_addresses
 
     def get_IPv6s(self):
         """
@@ -344,9 +343,7 @@ class DockerContainer(Container):
 
         :return: list of str
         """
-        # FIXME: be graceful in obtaining values from dict: the keys might not be set
-        return [x["GlobalIPv6Address"]
-                for x in self.inspect(refresh=True)["NetworkSettings"]["Networks"].values()]
+        return self.metadata.ipv6_addresses
 
     def get_ports(self):
         """
@@ -654,36 +651,27 @@ class DockerContainer(Container):
         Convert dictionary returned after docker inspect command into instance of ContainerMetadata class
         :return: ContainerMetadata, container metadata instance
         """
-
-        docker_metadata = self.inspect(refresh=True)
-
-        # format of Environment Variables from docker inspect:
-        # ['DISTTAG=f26container', 'FGC=f26']
-        env_variables = dict()
-        for env_variable in docker_metadata['Config']['Env']:
-            splits = env_variable.split("=", 1)
-            name = splits[0]
-            value = splits[1] if len(splits) > 1 else None
-            if value is not None:
-                env_variables.update({name: value})
+        inspect_data = self.inspect(refresh=True)
+        inspect_to_metadata(self.metadata, inspect_data)
 
         # format of image name from docker inspect:
         # sha256:8f0e66c924c0c169352de487a3c2463d82da24e9442fc097dddaa5f800df7129
-        image = Image(docker_metadata['Image'].split(':')[1])
+        image = Image(inspect_data['Image'].split(':')[1])
 
-        status = ContainerStatus.get_from_docker(docker_metadata['State']['Status'],
-                                                 docker_metadata['State']['ExitCode'])
-
-        try:
-            exposed_ports = list(docker_metadata['Config']['ExposedPorts'].keys())
-        except KeyError:
-            exposed_ports = None
+        status = ContainerStatus.get_from_docker(
+            graceful_get(inspect_data, "State", "Status"),
+            graceful_get(inspect_data, "State", "ExitCode"),
+        )
 
         # format of Port mappings from docker inspect:
-        # {'12345/tcp': [{'HostIp': '0.0.0.0', 'HostPort': '123'}, {'HostIp': '0.0.0.0', 'HostPort': '1234'}]}
+        # {'12345/tcp': [
+        #   {'HostIp': '0.0.0.0', 'HostPort': '123'},
+        #   {'HostIp': '0.0.0.0', 'HostPort': '1234'}]}
         port_mappings = dict()
 
-        for key, value in docker_metadata['HostConfig']['PortBindings'].items():
+        raw_port_mappings = graceful_get(inspect_data, 'HostConfig', 'PortBindings') or {}
+
+        for key, value in raw_port_mappings.items():
             for item in value:
                 if key in port_mappings.keys():
                     if item['HostPort'] is not '':
@@ -696,21 +684,17 @@ class DockerContainer(Container):
                     else:
                         port_mappings.update({key: [None]})
 
-        container_metadata = ContainerMetadata(
-            name=docker_metadata['Name'][1:],  # remove / at the beginning
-            identifier=docker_metadata['Id'],
-            labels=docker_metadata['Config']['Labels'],
-            command=docker_metadata['Config']['Cmd'],
-            creation_timestamp=docker_metadata['Created'],
-            env_variables=env_variables,
-            image=image,
-            exposed_ports=exposed_ports,
-            port_mappings=port_mappings,
-            hostname=docker_metadata['Config']['Hostname'],
-            ipv4_addresses=self.get_IPv4s(),
-            ipv6_addresses=self.get_IPv6s(),
-            status=status)
+        self.metadata.status = status
+        self.metadata.port_mappings = port_mappings
+        self.metadata.hostname = graceful_get(inspect_data, 'Config', 'Hostname')
+        self.metadata.ipv4_addresses = self.get_IPv4s()
+        self.metadata.ipv6_addresses = self.get_IPv6s()
+        self.metadata.image = image
+        name = graceful_get(inspect_data, "Name")
+        if name:
+            name = name[1:] if name.startswith("/") else name  # remove / at the beginning
+            self.metadata.name = name
 
-        return container_metadata
+        return self.metadata
 
 
