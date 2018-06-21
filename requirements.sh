@@ -21,6 +21,6 @@ SKIP_SETUP_OPENSHIFT=${SKIP_SETUP_OPENSHIFT:-false}
 
 if [ "$SKIP_SETUP_OPENSHIFT" = false ] ; then
     systemctl start docker
-    oc cluster up --skip-registry-check=true
+    oc cluster status || oc cluster up --skip-registry-check=true
     oc new-project conu
 fi
