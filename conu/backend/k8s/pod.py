@@ -20,9 +20,13 @@ Implementation of a Kubernetes pod
 
 import logging
 import enum
+import random
+import string
+import getpass
 
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
+
 from conu.utils.probes import Probe
 from conu.exceptions import ConuException
 
@@ -36,6 +40,7 @@ class Pod(object):
 
     def __init__(self, name, namespace, spec):
         """
+        Utility functions for kubernetes pods.
 
         :param name: name of pod
         :param namespace: str, namespace in which is pod created
@@ -57,7 +62,7 @@ class Pod(object):
 
         try:
             status = api.delete_namespaced_pod(self.name, self.namespace, body)
-            logger.info("Deleting Pod %s in namespace %s" % (self.name, self.namespace))
+            logger.info("Deleting Pod %s in namespace %s", self.name, self.namespace)
             self.phase = PodPhase.TERMINATING
         except ApiException as e:
             raise ConuException(
@@ -109,6 +114,50 @@ class Pod(object):
 
         Probe(timeout=timeout, fnc=self.get_phase, expected_retval=PodPhase.RUNNING).run()
 
+    @staticmethod
+    def create(image_data):
+        """
+        :param image_data: ImageMetadata
+        :return: V1Pod,
+        https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1Pod.md
+        """
+
+        # convert environment variables to Kubernetes objects
+        env_variables = []
+        for key, value in image_data.env_variables.items():
+            env_variables.append(client.V1EnvVar(name=key, value=value))
+
+        # convert exposed ports to Kubernetes objects
+        exposed_ports = []
+        if image_data.exposed_ports is not None:
+            for port in image_data.exposed_ports:
+                splits = port.split("/", 1)
+                port = int(splits[0])
+                protocol = splits[1].upper() if len(splits) > 1 else None
+                exposed_ports.append(client.V1ContainerPort(container_port=port, protocol=protocol))
+
+        # generate container name {image-name}-{username}-{random-4-letters}
+        # take just name of image and remove tag
+        image_name = image_data.name.split("/")[-1].split(":")[0]
+        random_string = ''.join(
+            random.choice(string.ascii_lowercase + string.digits) for _ in range(4))
+        container_name = '{image_name}-{user_name}-{random_string}'.format(
+            image_name=image_name,
+            user_name=getpass.getuser(),
+            random_string=random_string)
+
+        container = client.V1Container(command=image_data.command,
+                                       env=env_variables,
+                                       image=image_data.name,
+                                       name=container_name,
+                                       ports=exposed_ports)
+
+        pod_metadata = client.V1ObjectMeta(name=container_name + "-pod")
+        pod_spec = client.V1PodSpec(containers=[container])
+        pod = client.V1Pod(spec=pod_spec, metadata=pod_metadata)
+
+        return pod
+
 
 class PodPhase(enum.Enum):
     """
@@ -125,21 +174,22 @@ class PodPhase(enum.Enum):
     UNKNOWN = 5
 
     @classmethod
-    def get_from_string(cls, string):
+    def get_from_string(cls, string_phase):
         """
         Convert string value obtained from k8s API to PodPhase enum value
-        :param string:
+        :param string_phase: str, phase value from Kubernetes API
         :return: PodPhase
         """
-        if string == 'Pending':
+
+        if string_phase == 'Pending':
             return cls.PENDING
-        elif string == 'Running':
+        elif string_phase == 'Running':
             return cls.RUNNING
-        elif string == 'Succeeded':
+        elif string_phase == 'Succeeded':
             return cls.SUCCEEDED
-        elif string == 'Failed':
+        elif string_phase == 'Failed':
             return cls.FAILED
-        elif string == 'Unknown':
+        elif string_phase == 'Unknown':
             return cls.UNKNOWN
 
         return cls.UNKNOWN
