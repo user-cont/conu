@@ -112,6 +112,7 @@ Let's look at a practical example:
 ```bash
 $ cat examples/readme_webserver.py
 ```
+
 ```python
 #!/usr/bin/python3
 
@@ -155,9 +156,11 @@ with DockerBackend(logging_level=logging.DEBUG) as backend:
 ```
 
 Let's run it and look at the logs:
+
 ```bash
 $ python3 examples/readme_webserver.py
 ```
+
 ```
 13:32:17.668 backend.py        INFO   conu has initiated, welcome to the party!
 13:32:17.668 backend.py        DEBUG  conu version: 0.1.0
