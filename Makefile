@@ -1,12 +1,15 @@
-.PHONY: install-dependencies exec-test check container build-test-container test docs open-docs
+.PHONY: install-requirements install-test-requirements exec-test check container build-test-container test docs open-docs
 
 CONU_REPOSITORY := docker.io/usercont/conu:dev
 TEST_IMAGE_NAME := conu-tests
 DOC_EXAMPLE_PATH := "docs/source/examples"
 VERSION := 0.4.0
 
-install-dependencies:
+install-requirements:
 	./requirements.sh
+
+install-test-requirements:
+	./test-requirements.sh
 
 # FIXME: run both, fail if any failed -- I am not good makefile hacker
 exec-test:
@@ -36,7 +39,10 @@ container:
 build-test-container:
 	docker build --network host --tag=$(TEST_IMAGE_NAME) -f ./Dockerfile.tests .
 
+# You have to run 'sudo make install-test-requirements' prior to this.
 test: build-test-container test-in-container test-doc-examples
+
+centos-ci-test: install-test-requirements build-test-container test-in-container
 
 test-in-container:
 	@# use it like this: `make test-in-container TEST_TARGET=tests/integration/test_utils.py`k
@@ -72,13 +78,13 @@ rpm: sdist
 srpm: sdist
 	rpmbuild ./*.spec -bs --define "_sourcedir $(CURDIR)" --define "_specdir $(CURDIR)" --define "_builddir $(CURDIR)" --define "_srcrpmdir $(CURDIR)" --define "_rpmdir $(CURDIR)"
 
-rpm-in-mock-f27: srpm
-	mock --rebuild -r fedora-27-x86_64 ./*.src.rpm
+rpm-in-mock-f28: srpm
+	mock --rebuild -r fedora-28-x86_64 ./*.src.rpm
 
 rpm-in-mock-el7: srpm
 	mock --rebuild -r epel-7-x86_64 ./*.src.rpm
 
-install-conu-in-centos-container: rpm-in-mock-el7
+install-conu-rpm-in-centos-container: rpm-in-mock-el7
 	docker run -v "/var/lib/mock/epel-7-x86_64/result:/conu" -ti centos:7 bash -c " \
 		yum install -y /conu/python2-conu-*.el7.centos.noarch.rpm && \
 		python2 -c 'import conu; print conu.version'"
@@ -89,7 +95,7 @@ encrypt-password-in-travis-yml:
 clean:
 	git clean -dfx
 
-install: clean install-dependencies
+install: clean install-requirements
 	pip install --user .
 
 uninstall:

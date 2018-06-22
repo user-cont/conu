@@ -1,7 +1,6 @@
 FROM registry.fedoraproject.org/fedora:28
 
 ENV PYTHONDONTWRITEBYTECODE=yes
-ENV SKIP_SETUP_OPENSHIFT=true
 
 WORKDIR /src
 COPY ./requirements.sh /src/
