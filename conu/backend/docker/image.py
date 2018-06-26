@@ -29,7 +29,6 @@ from tempfile import mkdtemp
 
 import six
 
-from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
 from conu.apidefs.metadata import ImageMetadata
@@ -46,13 +45,11 @@ from conu.utils.filesystem import Volume
 from conu.utils.probes import Probe
 from conu.utils.rpms import check_signatures
 from conu.backend.k8s.pod import Pod
+from conu.backend.k8s.client import get_core_api
 
 import docker.errors
 
 logger = logging.getLogger(__name__)
-
-config.load_kube_config()
-api = client.CoreV1Api()
 
 
 class DockerImageViaArchiveFS(Filesystem):
@@ -452,12 +449,14 @@ class DockerImage(Image):
         :return: Pod instance
         """
 
+        core_api = get_core_api()
+
         image_data = self.get_metadata()
 
         pod = Pod.create(image_data)
 
         try:
-            pod_instance = api.create_namespaced_pod(namespace=namespace, body=pod)
+            pod_instance = core_api.create_namespaced_pod(namespace=namespace, body=pod)
         except ApiException as e:
             raise ConuException("Exception when calling CoreV1Api->create_namespaced_pod: %s\n" % e)
 

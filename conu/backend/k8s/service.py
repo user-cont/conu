@@ -23,6 +23,7 @@ import logging
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 from conu.exceptions import ConuException
+from conu.backend.k8s.utils import metadata_ports_to_k8s_ports
 
 config.load_kube_config()
 api = client.CoreV1Api()
@@ -32,7 +33,8 @@ logger = logging.getLogger(__name__)
 
 class Service(object):
 
-    def __init__(self, name, ports, namespace='default', labels=None, selector=None):
+    def __init__(self, name, ports, namespace='default', labels=None, selector=None,
+                 create_in_cluster=False):
         """
         Utility functions for kubernetes services.
 
@@ -48,28 +50,15 @@ class Service(object):
         self.namespace = namespace
         self.ports = ports
 
-        exposed_ports = []
+        exposed_ports = metadata_ports_to_k8s_ports(self.ports)
 
-        # create Kubernetes service port objects
-        for port in self.ports:
-            splits = port.split("/", 1)
-            port = int(splits[0])
-            protocol = splits[1].upper() if len(splits) > 1 else None
-            exposed_ports.append(client.V1ServicePort(port=port, protocol=protocol))
-
-        metadata = client.V1ObjectMeta(name=self.name, namespace=self.namespace, labels=labels)
+        self.metadata = client.V1ObjectMeta(name=self.name, namespace=self.namespace, labels=labels)
         self.spec = client.V1ServiceSpec(ports=exposed_ports, selector=selector)
 
-        body = client.V1Service(spec=self.spec, metadata=metadata)
+        self.body = client.V1Service(spec=self.spec, metadata=self.metadata)
 
-        try:
-            api.create_namespaced_service(self.namespace, body)
-        except ApiException as e:
-            raise ConuException(
-                "Exception when calling Kubernetes API - create_namespaced_service: {}\n".format(e))
-
-        logger.info(
-            "Creating Service %s in namespace: %s", self.name, self.namespace)
+        if create_in_cluster:
+            self.create_in_cluster()
 
     def delete(self):
         """
@@ -113,3 +102,13 @@ class Service(object):
         """
 
         return self.spec.cluster_ip
+
+    def create_in_cluster(self):
+        try:
+            api.create_namespaced_service(self.namespace, self.body)
+        except ApiException as e:
+            raise ConuException(
+                "Exception when calling Kubernetes API - create_namespaced_service: {}\n".format(e))
+
+        logger.info(
+            "Creating Service %s in namespace: %s", self.name, self.namespace)

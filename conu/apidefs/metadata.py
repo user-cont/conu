@@ -24,7 +24,7 @@ class Metadata(object):
         self.labels = labels
         self.command = command
         self.creation_timestamp = creation_timestamp
-        self.env_variables = env_variables
+        self.env_variables = env_variables or {}
 
 
 class ContainerMetadata(Metadata):
@@ -47,8 +47,10 @@ class ContainerMetadata(Metadata):
         :param env_variables: dict, {name: value}
         :param image: Image, reference to Image instance
         :param exposed_ports: list, list of exposed ports
-        :param port_mappings: dict, dictionary of port mappings {"container_port": [host_port1]}, example:
-            - {"1111/tcp":[1234, 4567]} bind host ports 1234 and 4567 to a single container port 1111/tcp
+        :param port_mappings: dict, dictionary of port mappings {"container_port": [host_port1]},
+               example:
+            - {"1111/tcp":[1234, 4567]}
+               bind host ports 1234 and 4567 to a single container port 1111/tcp
         :param hostname: str, hostname
         :param ipv4_addresses: dict, {address: port}
         :param ipv6_addresses: dict, {address: port}
@@ -60,7 +62,7 @@ class ContainerMetadata(Metadata):
         super(ContainerMetadata, self).__init__(
             name=name, identifier=identifier, labels=labels, command=command,
             creation_timestamp=creation_timestamp, env_variables=env_variables)
-        self.exposed_ports = exposed_ports
+        self.exposed_ports = exposed_ports or []
         self.port_mappings = port_mappings
         self.hostname = hostname
         self.image = image
@@ -95,7 +97,7 @@ class ImageMetadata(Metadata):
         super(ImageMetadata, self).__init__(
             name=name, identifier=identifier, labels=labels, command=command,
             creation_timestamp=creation_timestamp, env_variables=env_variables)
-        self.exposed_ports = exposed_ports
+        self.exposed_ports = exposed_ports or []
         self.image_names = image_names
 
 

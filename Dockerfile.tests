@@ -3,4 +3,3 @@ FROM docker.io/usercont/conu:dev
 RUN dnf install -y nmap-ncat make python2-pytest python3-pytest && \
     pip2 install --user -r tests/requirements.txt && \
     pip3 install --user -r tests/requirements.txt
-
