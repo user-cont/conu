@@ -14,16 +14,33 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""
+singleton instances of kubernetes client
+"""
+
 from kubernetes import client, config
 
 
-def get_core_api():
-    config.load_kube_config()
+core_api = None
+apps_api = None
 
-    return client.CoreV1Api()
+
+def get_core_api():
+    global core_api
+
+    if core_api is None:
+        config.load_kube_config()
+        core_api = client.CoreV1Api()
+
+    return core_api
 
 
 def get_apps_api():
-    config.load_kube_config()
+    global apps_api
 
-    return client.AppsV1Api()
+    if apps_api is None:
+        config.load_kube_config()
+        apps_api = client.CoreV1Api()
+
+    return apps_api
+

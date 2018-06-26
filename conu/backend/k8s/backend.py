@@ -16,6 +16,7 @@
 
 import string
 import random
+import logging
 
 from conu.apidefs.backend import Backend
 from conu.backend.k8s.pod import Pod
