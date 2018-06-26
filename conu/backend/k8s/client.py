@@ -40,7 +40,7 @@ def get_apps_api():
 
     if apps_api is None:
         config.load_kube_config()
-        apps_api = client.CoreV1Api()
+        apps_api = client.AppsV1Api()
 
     return apps_api
 

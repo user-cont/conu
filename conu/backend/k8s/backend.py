@@ -70,7 +70,7 @@ class K8sBackend(Backend):
         return [Service(name=s.metadata.name,
                         ports=k8s_ports_to_metadata_ports(s.spec.ports),
                         namespace=s.metadata.namespace,
-                        labels=s.matadata.labels, selector=s.spec.selector)
+                        labels=s.metadata.labels, selector=s.spec.selector)
                 for s in self.core_api.list_service_for_all_namespaces(watch=False).items]
 
     def list_deployments(self):
@@ -82,9 +82,10 @@ class K8sBackend(Backend):
 
         return [Deployment(name=d.metadata.name,
                            namespace=d.metadata.namespace,
-                           labels=d.matadata.labels, selector=d.spec.selector,
-                           image_metadata=ImageMetadata())
-                for d in self.core_api.list_deployment_for_all_namespaces(watch=False).items]
+                           labels=d.metadata.labels, selector=d.spec.selector,
+                           image_metadata=ImageMetadata(
+                               name=d.spec.template.spec.containers[0].name.split("-", 1)[0]))
+                for d in self.apps_api.list_deployment_for_all_namespaces(watch=False).items]
 
     def create_namespace(self):
         """
