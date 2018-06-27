@@ -24,18 +24,23 @@ import os
 import logging
 import subprocess
 
+from conu.apidefs.backend import set_logging
+
 # fails when doing absolute import
+from tests.constants import FEDORA_MINIMAL_REPOSITORY_DIGEST
 from ..constants import FEDORA_MINIMAL_IMAGE, THE_HELPER_IMAGE, FEDORA_REPOSITORY, S2I_IMAGE
 
 import pytest
 
 
+set_logging("conu.tests", level=logging.DEBUG)
 log = logging.getLogger("conu.tests")
 
 
 def obtain_images():
     subprocess.check_call(["docker", "image", "pull", FEDORA_MINIMAL_IMAGE])
     subprocess.check_call(["docker", "image", "pull", FEDORA_REPOSITORY])
+    subprocess.check_call(["docker", "image", "pull", FEDORA_MINIMAL_REPOSITORY_DIGEST])
     subprocess.check_call(["docker", "container", "run", "--name", "nc-container",
                            FEDORA_MINIMAL_IMAGE, "microdnf", "install", "nmap-ncat"])
     subprocess.check_call(["docker", "container", "commit", "nc-container", THE_HELPER_IMAGE])
@@ -56,7 +61,8 @@ def build_punchbag():
 
 @pytest.fixture(autouse=True, scope='session')
 def setup_test_session():
-    for x in [FEDORA_MINIMAL_IMAGE, THE_HELPER_IMAGE, FEDORA_REPOSITORY, S2I_IMAGE]:
+    for x in [FEDORA_MINIMAL_IMAGE, THE_HELPER_IMAGE, FEDORA_REPOSITORY, S2I_IMAGE,
+              FEDORA_MINIMAL_REPOSITORY_DIGEST]:
         try:
             subprocess.check_call(["docker", "image", "inspect", x], stdout=subprocess.PIPE)
         except subprocess.CalledProcessError:

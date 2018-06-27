@@ -39,6 +39,7 @@ from conu.apidefs.image import Image, S2Image
 from conu.backend.docker.client import get_client
 from conu.backend.docker.container import DockerContainer, DockerRunBuilder
 from conu.backend.docker.container_parameters import DockerContainerParameters
+from conu.backend.docker.utils import inspect_to_metadata
 from conu.exceptions import ConuException
 from conu.utils import run_cmd, random_tmp_filename, s2i_command_exists, \
     graceful_get, export_docker_container_to_directory
@@ -113,28 +114,26 @@ class DockerImage(Image):
     """
 
     def __init__(self, repository, tag="latest", identifier=None,
-                 pull_policy=DockerImagePullPolicy.IF_NOT_PRESENT,
-                 short_metadata=None):
+                 pull_policy=DockerImagePullPolicy.IF_NOT_PRESENT):
         """
         :param repository: str, image name, examples: "fedora", "registry.fedoraproject.org/fedora",
                             "tomastomecek/sen", "docker.io/tomastomecek/sen"
         :param tag: str, tag of the image, when not specified, "latest" is implied
         :param identifier: str, unique identifier for this image
         :param pull_policy: enum, strategy to apply for pulling the image
-        :param short_metadata: dict, metadata obtained from `docker.APIClient.images()`
         """
         super(DockerImage, self).__init__(repository, tag=tag)
         if not isinstance(tag, (six.string_types, None.__class__)):
             raise ConuException("'tag' is not a string type")
         if not isinstance(pull_policy, DockerImagePullPolicy):
             raise ConuException("'pull_policy' is not an instance of DockerImagePullPolicy")
-        self.tag = self.tag
         if identifier:
             self._id = identifier
         self.d = get_client()
         self.pull_policy = pull_policy
-        # metadata obtained when doing `docker.APIClient().images()`
-        self.short_metadata = short_metadata
+
+        self._inspect_data = None
+        self.metadata = ImageMetadata()
 
         if self.pull_policy == DockerImagePullPolicy.ALWAYS:
             logger.debug("pull policy set to 'always', pulling the image")
@@ -218,17 +217,17 @@ class DockerImage(Image):
 
     def inspect(self, refresh=True):
         """
-        return cached metadata by default
+        provide metadata about the image; flip refresh=True if cached metadata are enough
 
         :param refresh: bool, update the metadata with up to date content
         :return: dict
         """
-        if refresh or not self._metadata:
+        if refresh or not self._inspect_data:
             identifier = self._id or self.get_full_name()
             if not identifier:
                 raise ConuException("This image does not have a valid identifier.")
-            self._metadata = self.d.inspect_image(identifier)
-        return self._metadata
+            self._inspect_data = self.d.inspect_image(identifier)
+        return self._inspect_data
 
     def rmi(self, force=False, via_name=False):
         """
@@ -264,7 +263,8 @@ class DockerImage(Image):
             container_id = fd.read()
         return container_id, response
 
-    def run_via_binary(self, run_command_instance=None, command=None, volumes=None, additional_opts=None, *args, **kwargs):
+    def run_via_binary(self, run_command_instance=None, command=None, volumes=None,
+                       additional_opts=None, **kwargs):
         """
         create a container using this image and run it in background;
         this method is useful to test real user scenarios when users invoke containers using
@@ -279,7 +279,8 @@ class DockerImage(Image):
             * `("/path/to/directory", )`
             * `("/host/path", "/container/path")`
             * `("/host/path", "/container/path", "mode")`
-            * `(conu.Directory('/host/path'), "/container/path")` (source can be also Directory instance)
+            * `(conu.Directory('/host/path'), "/container/path")` (source can be also
+                Directory instance)
 
         :param additional_opts: list of str, additional options for `docker run`
         :return: instance of DockerContainer
@@ -287,8 +288,11 @@ class DockerImage(Image):
 
         logger.info("run container via binary in background")
 
-        if (command is not None or additional_opts is not None) and run_command_instance is not None:
-            raise ConuException("run_command_instance and command parameters cannot be passed into method at same time")
+        if (command is not None or additional_opts is not None) \
+                and run_command_instance is not None:
+            raise ConuException(
+                "run_command_instance and command parameters cannot be passed "
+                "into method at same time")
 
         if run_command_instance is None:
             command = command or []
@@ -296,13 +300,15 @@ class DockerImage(Image):
 
             if (isinstance(command, list) or isinstance(command, tuple) and
                 isinstance(additional_opts, list) or isinstance(additional_opts, tuple)):
-                run_command_instance = DockerRunBuilder(command=command, additional_opts=additional_opts)
+                run_command_instance = DockerRunBuilder(
+                    command=command, additional_opts=additional_opts)
             else:
                 raise ConuException("command and additional_opts needs to be list of str or None")
         else:
             run_command_instance = run_command_instance or DockerRunBuilder()
             if not isinstance(run_command_instance, DockerRunBuilder):
-                raise ConuException("run_command_instance needs to be an instance of DockerRunBuilder")
+                raise ConuException(
+                    "run_command_instance needs to be an instance of DockerRunBuilder")
 
         run_command_instance.image_name = self.get_id()
         run_command_instance.options += ["-d"]
@@ -322,7 +328,9 @@ class DockerImage(Image):
         container_name = self.d.inspect_container(container_id)['Name'][1:]
         return DockerContainer(self, container_id, name=container_name)
 
-    def run_via_binary_in_foreground(self, run_command_instance=None, command=None, volumes=None, additional_opts=None, popen_params=None, container_name=None):
+    def run_via_binary_in_foreground(
+            self, run_command_instance=None, command=None, volumes=None,
+            additional_opts=None, popen_params=None, container_name=None):
         """
         Create a container using this image and run it in foreground;
         this method is useful to test real user scenarios when users invoke containers using
@@ -346,7 +354,8 @@ class DockerImage(Image):
             * `("/path/to/directory", )`
             * `("/host/path", "/container/path")`
             * `("/host/path", "/container/path", "mode")`
-            * `(conu.Directory('/host/path'), "/container/path")` (source can be also Directory instance)
+            * `(conu.Directory('/host/path'), "/container/path")` (source can be also
+                Directory instance)
 
         :param additional_opts: list of str, additional options for `docker run`
         :param popen_params: dict, keyword arguments passed to Popen constructor
@@ -355,8 +364,11 @@ class DockerImage(Image):
         """
         logger.info("run container via binary in foreground")
 
-        if (command is not None or additional_opts is not None) and run_command_instance is not None:
-            raise ConuException("run_command_instance and command parameters cannot be passed into method at same time")
+        if (command is not None or additional_opts is not None) \
+                and run_command_instance is not None:
+            raise ConuException(
+                "run_command_instance and command parameters cannot be "
+                "passed into method at same time")
 
         if run_command_instance is None:
             command = command or []
@@ -364,13 +376,15 @@ class DockerImage(Image):
 
             if (isinstance(command, list) or isinstance(command, tuple) and
                 isinstance(additional_opts, list) or isinstance(additional_opts, tuple)):
-                run_command_instance = DockerRunBuilder(command=command, additional_opts=additional_opts)
+                run_command_instance = DockerRunBuilder(
+                    command=command, additional_opts=additional_opts)
             else:
                 raise ConuException("command and additional_opts needs to be list of str or None")
         else:
             run_command_instance = run_command_instance or DockerRunBuilder()
             if not isinstance(run_command_instance, DockerRunBuilder):
-                raise ConuException("run_command_instance needs to be an instance of DockerRunBuilder")
+                raise ConuException("run_command_instance needs to be an "
+                                    "instance of DockerRunBuilder")
 
         popen_params = popen_params or {}
 
@@ -388,10 +402,13 @@ class DockerImage(Image):
 
         actual_name = self.d.inspect_container(container_id)['Name'][1:]
         if container_name and container_name != actual_name:
-            raise ConuException("Unexpected container name value. Expected = " + str(container_name) + " Actual = " + str(actual_name))
+            raise ConuException(
+                "Unexpected container name value. Expected = "
+                + str(container_name) + " Actual = " + str(actual_name))
         if not container_name:
             container_name = actual_name
-        return DockerContainer(self, container_id, popen_instance=popen_instance, name=container_name)
+        return DockerContainer(
+            self, container_id, popen_instance=popen_instance, name=container_name)
 
     def run_via_api(self, container_params=None):
         """
@@ -571,60 +588,27 @@ class DockerImage(Image):
 
     def get_metadata(self):
         """
-        Convert dictionary returned after docker inspect command into instance of ImageMetadata class
+        Provide metadata about this image.
+
         :return: ImageMetadata, Image metadata instance
         """
-
-        docker_metadata = self.inspect(refresh=True)
-
-        # format of image name from docker inspect:
-        # sha256:8f0e66c924c0c169352de487a3c2463d82da24e9442fc097dddaa5f800df7129
-        identifier = docker_metadata['Id'].split(':')[1]
-
-        # format of Environment Variables from docker inspect:
-        # ['DISTTAG=f26container', 'FGC=f26']
-        env_variables = dict()
-        for env_variable in docker_metadata['Config']['Env']:
-            splits = env_variable.split("=", 1)
-            name = splits[0]
-            value = splits[1] if len(splits) > 1 else None
-            if value is not None:
-                env_variables.update({name: value})
-
-        try:
-            exposed_ports = list(docker_metadata['Config']['ExposedPorts'].keys())
-        except KeyError:
-            exposed_ports = None
-
-        image_metadata = ImageMetadata(name=docker_metadata['RepoTags'][0],
-                                       identifier=identifier,
-                                       labels=docker_metadata['Config']['Labels'],
-                                       command=docker_metadata['Config']['Cmd'],
-                                       creation_timestamp=docker_metadata['Created'],
-                                       env_variables=env_variables,
-                                       exposed_ports=exposed_ports,
-                                       image_names=docker_metadata['RepoTags'])
-
-        return image_metadata
+        return inspect_to_metadata(self.metadata, self.inspect(refresh=True))
 
 
 class S2IDockerImage(DockerImage, S2Image):
     def __init__(self, repository, tag="latest",  identifier=None,
-                 pull_policy=DockerImagePullPolicy.IF_NOT_PRESENT,
-                 short_metadata=None):
+                 pull_policy=DockerImagePullPolicy.IF_NOT_PRESENT):
         """
         :param repository: str, image name, examples: "fedora", "registry.fedoraproject.org/fedora",
                             "tomastomecek/sen", "docker.io/tomastomecek/sen"
         :param tag: str, tag of the image, when not specified, "latest" is implied
         :param identifier: str, unique identifier for this image
         :param pull_policy: enum, strategy to apply for pulling the image
-        :param short_metadata: dict, metadata obtained from `docker.APIClient.images()`
         """
         super(S2IDockerImage, self).__init__(repository,
                                              tag=tag,
                                              identifier=identifier,
-                                             pull_policy=pull_policy,
-                                             short_metadata=short_metadata)
+                                             pull_policy=pull_policy)
         self._s2i_exists = None
 
     def _s2i_command(self, args):
