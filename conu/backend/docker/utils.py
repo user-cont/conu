@@ -107,7 +107,7 @@ def inspect_to_container_metadata(c_metadata_object, inspect_data, image_instanc
     c_metadata_object.status = status
     c_metadata_object.port_mappings = port_mappings
     c_metadata_object.hostname = graceful_get(inspect_data, 'Config', 'Hostname')
-    raw_networks = graceful_get(inspect_data, "NetworkSettings", "Networks")
+    raw_networks = graceful_get(inspect_data, "NetworkSettings", "Networks").values()
     if raw_networks:
         c_metadata_object.ipv4_addresses = [
             graceful_get(x, "IPAddress")
