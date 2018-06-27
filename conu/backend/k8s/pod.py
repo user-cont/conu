@@ -24,14 +24,13 @@ import random
 import string
 import getpass
 
-from kubernetes import client, config
+from kubernetes import client
 from kubernetes.client.rest import ApiException
 
 from conu.utils.probes import Probe
 from conu.exceptions import ConuException
+from conu.backend.k8s.client import get_core_api
 
-config.load_kube_config()
-api = client.CoreV1Api()
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +51,7 @@ class Pod(object):
         self.namespace = namespace
         self.spec = spec
         self.phase = None
+        self.core_api = get_core_api()
 
     def delete(self):
         """
@@ -61,7 +61,7 @@ class Pod(object):
         body = client.V1DeleteOptions()
 
         try:
-            status = api.delete_namespaced_pod(self.name, self.namespace, body)
+            status = self.core_api.delete_namespaced_pod(self.name, self.namespace, body)
             logger.info("Deleting Pod %s in namespace %s", self.name, self.namespace)
             self.phase = PodPhase.TERMINATING
         except ApiException as e:
@@ -78,7 +78,7 @@ class Pod(object):
         https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1PodStatus.md
         """
         try:
-            api_response = api.read_namespaced_pod_status(self.name, self.namespace)
+            api_response = self.core_api.read_namespaced_pod_status(self.name, self.namespace)
         except ApiException as e:
             raise ConuException(
                 "Exception when calling Kubernetes API - read_namespaced_pod_status: %s\n" % e)
