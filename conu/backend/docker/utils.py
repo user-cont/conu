@@ -1,8 +1,13 @@
 """
 utility functions for related to docker
 """
+import logging
+
 from conu.apidefs.metadata import ContainerStatus
 from conu.utils import graceful_get
+
+
+logger = logging.getLogger(__name__)
 
 
 def inspect_to_metadata(metadata_object, inspect_data):
@@ -93,16 +98,19 @@ def inspect_to_container_metadata(c_metadata_object, inspect_data, image_instanc
 
     for key, value in raw_port_mappings.items():
         for item in value:
-            if key in port_mappings.keys():
-                if item['HostPort'] is not '':
-                    port_mappings[key].append(int(item['HostPort']))
-                else:
-                    port_mappings[key].append(None)
+            logger.debug("parsing ports: key = %s, item = %s", key, item)
+            li = port_mappings.get(key, [])
+            raw_host_port = item['HostPort']
+            if raw_host_port == "":
+                int_port = None
             else:
-                if item['HostPort'] is not '':
-                    port_mappings.update({key: [int(item['HostPort'])]})
-                else:
-                    port_mappings.update({key: [None]})
+                try:
+                    int_port = int(raw_host_port)
+                except ValueError as ex:
+                    logger.error("could not parse port: %s", ex)
+                    continue
+            li.append(int_port)
+            port_mappings.update({key: li})
 
     c_metadata_object.status = status
     c_metadata_object.port_mappings = port_mappings
