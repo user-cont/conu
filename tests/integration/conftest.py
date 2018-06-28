@@ -24,8 +24,6 @@ import os
 import logging
 import subprocess
 
-from conu.apidefs.backend import set_logging
-
 # fails when doing absolute import
 from tests.constants import FEDORA_MINIMAL_REPOSITORY_DIGEST
 from ..constants import FEDORA_MINIMAL_IMAGE, THE_HELPER_IMAGE, FEDORA_REPOSITORY, S2I_IMAGE
@@ -33,7 +31,6 @@ from ..constants import FEDORA_MINIMAL_IMAGE, THE_HELPER_IMAGE, FEDORA_REPOSITOR
 import pytest
 
 
-set_logging("conu.tests", level=logging.DEBUG)
 log = logging.getLogger("conu.tests")
 
 
