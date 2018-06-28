@@ -152,3 +152,4 @@ class TestNspawnBackend(object):
         cont.execute(["rm", "-f", os.path.join("/opt", filename)])
         assert not os.path.exists(host_fn)
         os.rmdir(dirname)
+

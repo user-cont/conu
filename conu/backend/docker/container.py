@@ -658,4 +658,3 @@ class DockerContainer(Container):
 
         return self.metadata
 
-
