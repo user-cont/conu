@@ -29,7 +29,7 @@ from conu.backend.nspawn.backend import NspawnBackend
 from conu.utils import mkdtemp, run_cmd
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("conu.tests")
 image_name = "Fedora-Cloud-Base-27-1.6.x86_64"
 url = "https://download.fedoraproject.org/pub/fedora/linux/development/28/CloudImages/" \
     "x86_64/images/Fedora-Cloud-Base-28-20180310.n.0.x86_64.raw.xz"
