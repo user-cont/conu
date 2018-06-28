@@ -45,3 +45,8 @@ def test_level_setting(caplog):
     assert r.module == "backend"
     assert r.msg == "conu version: %s"
     assert r.levelno == 10
+
+
+def test_logger_has_single_handler():
+    logger = logging.getLogger('conu')
+    assert len(logger.handlers) == 1

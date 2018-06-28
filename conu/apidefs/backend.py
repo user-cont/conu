@@ -68,13 +68,14 @@ def set_logging(
     # logger.propagate = False
     logger.setLevel(level)
 
-    handler_kwargs = handler_kwargs or {}
-    handler = handler_class(**handler_kwargs)
-    handler.setLevel(level)
-
-    formatter = logging.Formatter(format, date_format)
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
+    # don't readd handler
+    if not [x for x in logger.handlers if isinstance(x, handler_class)]:
+        handler_kwargs = handler_kwargs or {}
+        handler = handler_class(**handler_kwargs)
+        handler.setLevel(level)
+        formatter = logging.Formatter(format, date_format)
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
 
     return logger
 
