@@ -35,7 +35,7 @@ from conu.backend.docker.container_parameters import DockerContainerParameters
 from conu.apidefs.filesystem import Filesystem
 from conu.apidefs.metadata import ContainerMetadata
 from conu.backend.docker.client import get_client
-from conu.backend.docker.utils import inspect_to_metadata
+from conu.backend.docker.utils import inspect_to_container_metadata
 from conu.exceptions import ConuException
 from conu.utils import check_port, run_cmd, export_docker_container_to_directory, graceful_get
 from conu.utils.probes import Probe
@@ -333,6 +333,7 @@ class DockerContainer(Container):
 
         :return: list of str
         """
+        self.get_metadata()  # force update of metadata, we should probably do this better
         return self.metadata.ipv4_addresses
 
     def get_IPv6s(self):
@@ -343,6 +344,7 @@ class DockerContainer(Container):
 
         :return: list of str
         """
+        self.get_metadata()  # force update of metadata, we should probably do this better
         return self.metadata.ipv6_addresses
 
     def get_ports(self):
@@ -652,49 +654,7 @@ class DockerContainer(Container):
         :return: ContainerMetadata, container metadata instance
         """
         inspect_data = self.inspect(refresh=True)
-        inspect_to_metadata(self.metadata, inspect_data)
-
-        # format of image name from docker inspect:
-        # sha256:8f0e66c924c0c169352de487a3c2463d82da24e9442fc097dddaa5f800df7129
-        image = Image(inspect_data['Image'].split(':')[1])
-
-        status = ContainerStatus.get_from_docker(
-            graceful_get(inspect_data, "State", "Status"),
-            graceful_get(inspect_data, "State", "ExitCode"),
-        )
-
-        # format of Port mappings from docker inspect:
-        # {'12345/tcp': [
-        #   {'HostIp': '0.0.0.0', 'HostPort': '123'},
-        #   {'HostIp': '0.0.0.0', 'HostPort': '1234'}]}
-        port_mappings = dict()
-
-        raw_port_mappings = graceful_get(inspect_data, 'HostConfig', 'PortBindings') or {}
-
-        for key, value in raw_port_mappings.items():
-            for item in value:
-                if key in port_mappings.keys():
-                    if item['HostPort'] is not '':
-                        port_mappings[key].append(int(item['HostPort']))
-                    else:
-                        port_mappings[key].append(None)
-                else:
-                    if item['HostPort'] is not '':
-                        port_mappings.update({key: [int(item['HostPort'])]})
-                    else:
-                        port_mappings.update({key: [None]})
-
-        self.metadata.status = status
-        self.metadata.port_mappings = port_mappings
-        self.metadata.hostname = graceful_get(inspect_data, 'Config', 'Hostname')
-        self.metadata.ipv4_addresses = self.get_IPv4s()
-        self.metadata.ipv6_addresses = self.get_IPv6s()
-        self.metadata.image = image
-        name = graceful_get(inspect_data, "Name")
-        if name:
-            name = name[1:] if name.startswith("/") else name  # remove / at the beginning
-            self.metadata.name = name
+        inspect_to_container_metadata(self.metadata, inspect_data, self.image)
 
         return self.metadata
-
 

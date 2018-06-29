@@ -25,10 +25,9 @@ from kubernetes.client.rest import ApiException
 
 from conu.utils.probes import Probe
 from conu.backend.k8s.pod import Pod
+from conu.backend.k8s.client import get_apps_api
 from conu.exceptions import ConuException
 
-config.load_kube_config()
-api = client.AppsV1Api()
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +60,8 @@ class Deployment(object):
 
         self.body = client.V1Deployment(spec=self.spec, metadata=self.metadata)
 
+        self.api = get_apps_api()
+
         if create_in_cluster:
             self.create_in_cluster()
 
@@ -73,7 +74,7 @@ class Deployment(object):
         body = client.V1DeleteOptions()
 
         try:
-            status = api.delete_namespaced_deployment(self.name, self.namespace, body)
+            status = self.api.delete_namespaced_deployment(self.name, self.namespace, body)
 
             logger.info("Deleting Deployment %s in namespace: %s", self.name, self.namespace)
         except ApiException as e:
@@ -89,7 +90,7 @@ class Deployment(object):
         :return: V1DeploymentStatus, https://git.io/vhKE3
         """
         try:
-            api_response = api.read_namespaced_deployment_status(self.name, self.namespace)
+            api_response = self.api.read_namespaced_deployment_status(self.name, self.namespace)
         except ApiException as e:
             raise ConuException(
                 "Exception when calling Kubernetes API - "
@@ -121,7 +122,7 @@ class Deployment(object):
     def create_in_cluster(self):
 
         try:
-            api.create_namespaced_deployment(self.namespace, self.body)
+            self.api.create_namespaced_deployment(self.namespace, self.body)
         except ApiException as e:
             raise ConuException(
                 "Exception when calling Kubernetes API - create_namespaced_deployment: %s\n" % e)

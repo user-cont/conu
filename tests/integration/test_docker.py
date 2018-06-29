@@ -429,7 +429,7 @@ def test_layers():
 
 
 def test_container_metadata():
-    with DockerBackend() as backend:
+    with DockerBackend(logging_level=10) as backend:
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
 
         c = image.run_via_binary(
@@ -439,7 +439,6 @@ def test_container_metadata():
                                                                '-p', '1234:12345',
                                                                '-p', '123:12345',
                                                                '-p', '8080',
-                                                               '-p', '444:8080',
                                                                '--hostname', 'my_hostname',
                                                                '-e', 'ENV1=my_env',
                                                                '-e', 'ASD=',
@@ -449,9 +448,9 @@ def test_container_metadata():
                                                                ])
         )
 
-        container_metadata = c.get_metadata()
-
         try:
+            container_metadata = c.get_metadata()
+
             assert container_metadata.command == ["cat"]
             assert container_metadata.name == "my_container"
             assert container_metadata.env_variables["ENV1"] == "my_env"
@@ -459,7 +458,9 @@ def test_container_metadata():
             assert container_metadata.env_variables["A"] == "B=C=D"
             assert container_metadata.hostname == "my_hostname"
             assert "XYZ" not in list(container_metadata.env_variables.keys())
-            assert container_metadata.port_mappings == {'12345/tcp': [1234, 123], '8080/tcp': [None, 444]}
+            assert '12345/tcp' in container_metadata.port_mappings
+            assert container_metadata.port_mappings['12345/tcp'] == [1234, 123]
+            assert '8080/tcp' in container_metadata.port_mappings
             assert container_metadata.exposed_ports == ["12345/tcp", "8080/tcp"]
             assert container_metadata.labels["testlabel1"] == "testvalue1"
             assert container_metadata.status == ContainerStatus.RUNNING
