@@ -120,7 +120,10 @@ class Deployment(object):
         Probe(timeout=timeout, fnc=self.all_pods_ready, expected_retval=True).run()
 
     def create_in_cluster(self):
-
+        """
+        call Kubernetes API and create Service in cluster, raise ConuExeption if API call fail
+        :return: None
+        """
         try:
             self.api.create_namespaced_deployment(self.namespace, self.body)
         except ApiException as e:

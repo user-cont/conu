@@ -104,6 +104,10 @@ class Service(object):
         return self.spec.cluster_ip
 
     def create_in_cluster(self):
+        """
+        call Kubernetes API and create Service in cluster, raise ConuExeption if API call fail
+        :return: None
+        """
         try:
             api.create_namespaced_service(self.namespace, self.body)
         except ApiException as e:

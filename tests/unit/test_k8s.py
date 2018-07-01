@@ -14,6 +14,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""
+Tests for Kubernetes backend
+"""
+
 from conu.backend.k8s.utils import k8s_ports_to_metadata_ports, metadata_ports_to_k8s_ports
 
 
