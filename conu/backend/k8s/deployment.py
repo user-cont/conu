@@ -20,7 +20,7 @@ Implementation of a Kubernetes deployment
 
 import logging
 
-from kubernetes import client, config
+from kubernetes import client
 from kubernetes.client.rest import ApiException
 
 from conu.utils.probes import Probe

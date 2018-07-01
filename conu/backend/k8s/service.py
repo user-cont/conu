@@ -20,13 +20,11 @@ Implementation of a Kubernetes service
 
 import logging
 
-from kubernetes import client, config
+from kubernetes import client
 from kubernetes.client.rest import ApiException
 from conu.exceptions import ConuException
 from conu.backend.k8s.utils import metadata_ports_to_k8s_ports
-
-config.load_kube_config()
-api = client.CoreV1Api()
+from conu.backend.k8s.client import get_core_api
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +55,8 @@ class Service(object):
 
         self.body = client.V1Service(spec=self.spec, metadata=self.metadata)
 
+        self.api = get_core_api()
+
         if create_in_cluster:
             self.create_in_cluster()
 
@@ -69,7 +69,7 @@ class Service(object):
         body = client.V1DeleteOptions()
 
         try:
-            status = api.delete_namespaced_service(self.name, self.namespace, body)
+            status = self.api.delete_namespaced_service(self.name, self.namespace, body)
 
             logger.info(
                 "Deleting Service %s in namespace: %s", self.name, self.namespace)
@@ -88,7 +88,7 @@ class Service(object):
         """
 
         try:
-            api_response = api.read_namespaced_service_status(self.name, self.namespace)
+            api_response = self.api.read_namespaced_service_status(self.name, self.namespace)
         except ApiException as e:
             raise ConuException(
                 "Exception when calling Kubernetes API - read_namespaced_service_status: %s\n" % e)
@@ -109,7 +109,7 @@ class Service(object):
         :return: None
         """
         try:
-            api.create_namespaced_service(self.namespace, self.body)
+            self.api.create_namespaced_service(self.namespace, self.body)
         except ApiException as e:
             raise ConuException(
                 "Exception when calling Kubernetes API - create_namespaced_service: {}\n".format(e))
