@@ -250,10 +250,12 @@ Let's run it and look at the logs:
 $ python3 examples/k8s_deployment.py
 ```
 ```
-10:46:18.609 backend.py        INFO   conu has initiated, welcome to the party!
-10:46:18.750 deployment.py     INFO   Creating Deployment nginx-deployment in namespace: namespace-e7p9
-10:47:18.775 deployment.py     INFO   All pods are ready for deployment nginx-deployment in namespace: namespace-e7p9
-10:47:18.794 deployment.py     INFO   Deleting Deployment nginx-deployment in namespace: namespace-e7p9
+11:35:04.753 backend.py        INFO   conu has initiated, welcome to the party!
+11:35:04.850 backend.py        INFO   Creating namespace: namespace-ty1a
+11:35:04.885 deployment.py     INFO   Creating Deployment nginx-deployment in namespace: namespace-ty1a
+11:36:04.910 deployment.py     INFO   All pods are ready for deployment nginx-deployment in namespace: namespace-ty1a
+11:36:04.923 deployment.py     INFO   Deleting Deployment nginx-deployment in namespace: namespace-ty1a
+11:36:04.935 backend.py        INFO   Deleting namespace: namespace-ty1a
 ```
 
 # Real examples

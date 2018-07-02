@@ -31,6 +31,8 @@ from conu.backend.k8s.client import get_core_api, get_apps_api
 
 from kubernetes import client
 
+logger = logging.getLogger(__name__)
+
 
 # let this class inherit docstring from parent
 class K8sBackend(Backend):
@@ -104,6 +106,8 @@ class K8sBackend(Backend):
 
         self.core_api.create_namespace(namespace)
 
+        logger.info("Creating namespace: %s", name)
+
         return name
 
     def delete_namespace(self, name):
@@ -112,4 +116,6 @@ class K8sBackend(Backend):
         :param name: str, namespace to delete
         """
         self.core_api.delete_namespace(name, client.V1DeleteOptions())
+
+        logger.info("Deleting namespace: %s", name)
 
