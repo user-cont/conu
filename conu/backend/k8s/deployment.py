@@ -128,6 +128,8 @@ class Deployment(object):
 
         if self.get_status().replicas and self.get_status().ready_replicas:
             if self.get_status().replicas == self.get_status().ready_replicas:
+                logger.info("All pods are ready for deployment %s in namespace: %s",
+                            self.name, self.namespace)
                 return True
 
         return False
@@ -135,7 +137,7 @@ class Deployment(object):
     def wait(self, timeout=15):
         """
         block until all replicas are not ready, raises an exc ProbeTimeout if timeout is reached
-        :param timeout: int or float (seconds), time to wait for pod to run
+        :param timeout: int or float (seconds), time to wait for pods to run
         :return: None
         """
 

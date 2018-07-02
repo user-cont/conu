@@ -184,6 +184,77 @@ $ python3 examples/readme_webserver.py
 
 The test passed! The logs should be easy to read, so you should have pretty good overview of what happened.
 
+# Kubernetes
+
+## Use conu with minikube locally
+
+If you want to test your images in Kubernetes locally, you will need to run kubernetes cluster on your host. We recommend to use minikube, for installation follow instructions in [minikube github repository](https://github.com/kubernetes/minikube).
+
+After just run:
+```bash
+$ minikube start --extra-config=apiserver.admission-control=""
+```
+
+## Kubernetes example
+
+```bash
+$ cat examples/k8s_deployment.py
+```
+
+```python
+from conu.backend.k8s.backend import K8sBackend
+from conu.backend.k8s.deployment import Deployment
+
+with K8sBackend() as k8s_backend:
+    namespace = k8s_backend.create_namespace()
+
+    template = """
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: nginx-deployment
+      labels:
+        app: nginx
+    spec:
+      replicas: 3
+      selector:
+        matchLabels:
+          app: nginx
+      template:
+        metadata:
+          labels:
+            app: nginx
+        spec:
+          containers:
+          - name: nginx
+            image: nginx:1.7.9
+            ports:
+            - containerPort: 80
+    """
+
+    test_deployment = Deployment(namespace=namespace, from_template=template,
+                                 create_in_cluster=True)
+
+    try:
+        test_deployment.wait(200)
+        assert test_deployment.all_pods_ready()
+    finally:
+        test_deployment.delete()
+        k8s_backend.delete_namespace(namespace)
+
+```
+
+Let's run it and look at the logs:
+
+``` bash
+$ python3 examples/k8s_deployment.py
+```
+```
+10:46:18.609 backend.py        INFO   conu has initiated, welcome to the party!
+10:46:18.750 deployment.py     INFO   Creating Deployment nginx-deployment in namespace: namespace-e7p9
+10:47:18.775 deployment.py     INFO   All pods are ready for deployment nginx-deployment in namespace: namespace-e7p9
+10:47:18.794 deployment.py     INFO   Deleting Deployment nginx-deployment in namespace: namespace-e7p9
+```
 
 # Real examples
 
