@@ -18,6 +18,8 @@
 Tests for Kubernetes backend
 """
 
+import urllib3
+
 from conu import DockerBackend
 from conu.backend.k8s.backend import K8sBackend
 from conu.backend.k8s.pod import PodPhase
@@ -26,7 +28,6 @@ from conu.backend.k8s.deployment import Deployment
 
 from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
 
-import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
@@ -60,7 +61,6 @@ def test_database_deployment():
             postgres_image_metadata = postgres_image.get_metadata()
 
             # set up env variables
-
             db_env_variables = {"POSTGRESQL_USER": "user",
                                 "POSTGRESQL_PASSWORD": "pass",
                                 "POSTGRESQL_DATABASE": "db"}
@@ -133,7 +133,6 @@ def test_list_deployments():
             postgres_image_metadata = postgres_image.get_metadata()
 
             # set up env variables
-
             db_env_variables = {"POSTGRESQL_USER": "user",
                                 "POSTGRESQL_PASSWORD": "pass",
                                 "POSTGRESQL_DATABASE": "db"}
@@ -153,3 +152,43 @@ def test_list_deployments():
             finally:
                 db_deployment.delete()
                 k8s_backend.delete_namespace(namespace)
+
+
+def test_deployment_from_template():
+    with K8sBackend() as k8s_backend:
+
+        namespace = k8s_backend.create_namespace()
+
+        template = """
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: nginx-deployment
+          labels:
+            app: nginx
+        spec:
+          replicas: 3
+          selector:
+            matchLabels:
+              app: nginx
+          template:
+            metadata:
+              labels:
+                app: nginx
+            spec:
+              containers:
+              - name: nginx
+                image: nginx:1.7.9
+                ports:
+                - containerPort: 80
+        """
+
+        test_deployment = Deployment(namespace=namespace, from_template=template,
+                                     create_in_cluster=True)
+
+        try:
+            test_deployment.wait(200)
+            assert test_deployment.all_pods_ready()
+        finally:
+            test_deployment.delete()
+            k8s_backend.delete_namespace(namespace)

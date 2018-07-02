@@ -19,6 +19,7 @@ Implementation of a Kubernetes deployment
 """
 
 import logging
+import yaml
 
 from kubernetes import client
 from kubernetes.client.rest import ApiException
@@ -34,8 +35,8 @@ logger = logging.getLogger(__name__)
 
 class Deployment(object):
 
-    def __init__(self, name, selector, labels, image_metadata, namespace='default',
-                 create_in_cluster=False):
+    def __init__(self, name=None, selector=None, labels=None, image_metadata=None,
+                 namespace='default', create_in_cluster=False, from_template=None):
         """
         Utility functions for kubernetes deployments.
 
@@ -45,20 +46,41 @@ class Deployment(object):
         :param labels: dict, dict of labels
         :param image_metadata: ImageMetadata
         :param namespace: str, name of the namespace
+        :param create_in_cluster: bool, if True deployment is created in Kubernetes cluster
+        :param from_template: str, deployment template, example:
+        - https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
         """
-        self.name = name
+
         self.namespace = namespace
 
-        self.pod = Pod.create(image_metadata)
+        if (from_template is not None) and (name is not None or selector is not None or
+                                            labels is not None or image_metadata is not None):
+            raise ConuException(
+                'from_template cannot be passed to constructor at the same time with'
+                ' name, selector, labels or image_metadata')
+        elif from_template is not None:
+            self.body = yaml.load(from_template)
 
-        self.spec = client.V1DeploymentSpec(selector=client.V1LabelSelector(match_labels=selector),
-                                            template=client.V1PodTemplateSpec(
-                                                metadata=client.V1ObjectMeta(labels=selector),
-                                                spec=self.pod.spec))
+            self.name = self.body['metadata']['name']
 
-        self.metadata = client.V1ObjectMeta(name=self.name, namespace=self.namespace, labels=labels)
+        elif (name is not None and selector is not None and
+              labels is not None and image_metadata is not None):
+            self.name = name
+            self.pod = Pod.create(image_metadata)
 
-        self.body = client.V1Deployment(spec=self.spec, metadata=self.metadata)
+            self.spec = client.V1DeploymentSpec(
+                selector=client.V1LabelSelector(match_labels=selector),
+                template=client.V1PodTemplateSpec(metadata=client.V1ObjectMeta(labels=selector),
+                                                  spec=self.pod.spec))
+
+            self.metadata = client.V1ObjectMeta(name=self.name, namespace=self.namespace,
+                                                labels=labels)
+
+            self.body = client.V1Deployment(spec=self.spec, metadata=self.metadata)
+        else:
+            raise ConuException(
+                'to create deployment you need to specify template or'
+                ' properties: name, selector, labels, image_metadata')
 
         self.api = get_apps_api()
 
