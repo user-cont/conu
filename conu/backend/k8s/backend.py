@@ -118,4 +118,3 @@ class K8sBackend(Backend):
         self.core_api.delete_namespace(name, client.V1DeleteOptions())
 
         logger.info("Deleting namespace: %s", name)
-
