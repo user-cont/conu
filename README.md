@@ -190,7 +190,7 @@ The test passed! The logs should be easy to read, so you should have pretty good
 
 If you want to test your images in Kubernetes locally, you will need to run kubernetes cluster on your host. We recommend to use minikube, for installation follow instructions in [minikube github repository](https://github.com/kubernetes/minikube).
 
-After just run:
+After that, run minikube like this:
 ```bash
 $ minikube start --extra-config=apiserver.admission-control=""
 ```
@@ -206,6 +206,7 @@ from conu.backend.k8s.backend import K8sBackend
 from conu.backend.k8s.deployment import Deployment
 
 with K8sBackend() as k8s_backend:
+    # create namespace with random name
     namespace = k8s_backend.create_namespace()
 
     template = """

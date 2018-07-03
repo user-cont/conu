@@ -105,7 +105,8 @@ class Service(object):
 
     def create_in_cluster(self):
         """
-        call Kubernetes API and create Service in cluster, raise ConuExeption if API call fail
+        call Kubernetes API and create this Service in cluster,
+        raise ConuExeption if the API call fails
         :return: None
         """
         try:
