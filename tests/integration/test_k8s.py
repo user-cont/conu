@@ -18,8 +18,6 @@
 Tests for Kubernetes backend
 """
 
-import pytest
-
 from conu import DockerBackend
 from conu.backend.k8s.backend import K8sBackend
 from conu.backend.k8s.pod import PodPhase
@@ -32,7 +30,6 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-@pytest.mark.xfail
 def test_pod():
     with K8sBackend() as k8s_backend:
 
@@ -52,7 +49,6 @@ def test_pod():
                 k8s_backend.delete_namespace(namespace)
 
 
-@pytest.mark.xfail
 def test_database_deployment():
     with K8sBackend() as k8s_backend:
 
@@ -90,7 +86,6 @@ def test_database_deployment():
                 k8s_backend.delete_namespace(namespace)
 
 
-@pytest.mark.xfail
 def test_list_pods():
     with K8sBackend() as k8s_backend:
 
@@ -127,7 +122,6 @@ def test_list_services():
             k8s_backend.delete_namespace(namespace)
 
 
-@pytest.mark.xfail
 def test_list_deployments():
     with K8sBackend() as k8s_backend:
 
