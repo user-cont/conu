@@ -14,6 +14,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""
+utility functions related to kubernetes
+"""
 from kubernetes import client
 
 
@@ -37,7 +40,6 @@ def k8s_ports_to_metadata_ports(k8s_ports):
 
 def metadata_ports_to_k8s_ports(ports):
     """
-
     :param ports: list of str, list of exposed ports, example:
             - ['1234/tcp', '8080/udp']
     :return: list of V1ServicePort

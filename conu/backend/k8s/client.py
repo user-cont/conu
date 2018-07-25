@@ -26,6 +26,11 @@ apps_api = None
 
 
 def get_core_api():
+    """
+    Create instance of Core V1 API of kubernetes:
+    https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/CoreV1Api.md
+    :return: instance of client
+    """
     global core_api
 
     if core_api is None:
@@ -36,6 +41,11 @@ def get_core_api():
 
 
 def get_apps_api():
+    """
+    Create instance of Apps V1 API of kubernetes:
+    https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/AppsV1Api.md
+    :return: instance of client
+    """
     global apps_api
 
     if apps_api is None:
@@ -43,4 +53,3 @@ def get_apps_api():
         apps_api = client.AppsV1Api()
 
     return apps_api
-

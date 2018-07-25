@@ -14,6 +14,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""
+This is backend for kubernetes
+"""
 import string
 import random
 import logging
@@ -27,6 +30,8 @@ from conu.apidefs.metadata import ImageMetadata
 from conu.backend.k8s.client import get_core_api, get_apps_api
 
 from kubernetes import client
+
+logger = logging.getLogger(__name__)
 
 
 # let this class inherit docstring from parent
@@ -101,6 +106,8 @@ class K8sBackend(Backend):
 
         self.core_api.create_namespace(namespace)
 
+        logger.info("Creating namespace: %s", name)
+
         return name
 
     def delete_namespace(self, name):
@@ -110,3 +117,4 @@ class K8sBackend(Backend):
         """
         self.core_api.delete_namespace(name, client.V1DeleteOptions())
 
+        logger.info("Deleting namespace: %s", name)
