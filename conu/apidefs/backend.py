@@ -123,10 +123,10 @@ class Backend(object):
         self.logger.info("conu has initiated, welcome to the party!")
         self.logger.debug("conu version: %s", version.__version__)
 
+        self.cleanup = cleanup or [CleanupPolicy.NOTHING]
+
         if CleanupPolicy.NOTHING in self.cleanup and len(self.cleanup) != 1:
             raise ConuException("Cleanup policy NOTHING cannot be combined with other values")
-
-        self.cleanup = cleanup or [CleanupPolicy.NOTHING]
 
     def list_containers(self):
         """

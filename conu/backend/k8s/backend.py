@@ -59,10 +59,10 @@ class K8sBackend(Backend):
 
         self.managed_namespaces = []
 
+        self.cleanup = cleanup or [K8sCleanupPolicy.NOTHING]
+
         if K8sCleanupPolicy.NOTHING in self.cleanup and len(self.cleanup) != 1:
             raise ConuException("Cleanup policy NOTHING cannot be combined with other values")
-
-        self.cleanup = cleanup or [K8sCleanupPolicy.NOTHING]
 
     def list_pods(self):
         """
@@ -126,6 +126,7 @@ class K8sBackend(Backend):
         """
         Delete namespace with specific name
         :param name: str, namespace to delete
+        :return: None
         """
         self.core_api.delete_namespace(name, client.V1DeleteOptions())
 

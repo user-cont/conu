@@ -48,7 +48,7 @@ test-in-container:
 	@# use it like this: `make test-in-container TEST_TARGET=tests/integration/test_utils.py`
 	$(eval kubedir := $(shell mktemp -d /tmp/tmp.conu-kube-XXXXX))
 	sed -e s#"${HOME}"#/root#g ${HOME}/.kube/config > $(kubedir)/config
-	docker run --net=host --rm -v /dev:/dev:ro -v /var/lib/docker:/var/lib/docker:ro --security-opt label=disable --cap-add SYS_ADMIN -ti -v /var/run/docker.sock:/var/run/docker.sock -v $(CURDIR):/src -v $(CURDIR)/pytest-container.ini:/src/pytest.ini -v ${HOME}/.minikube:/root/.minikube -v $(kubedir):/root/.kube $(TEST_IMAGE_NAME) make exec-test
+	docker run --net=host --rm -v /dev:/dev:ro -v /var/lib/docker:/var/lib/docker:ro --security-opt label=disable --cap-add SYS_ADMIN -ti -v /var/run/docker.sock:/var/run/docker.sock -v $(CURDIR):/src -v $(CURDIR)/pytest-container.ini:/src/pytest.ini -v ${HOME}/.minikube:/root/.minikube -v $(kubedir):/root/.kube $(TEST_IMAGE_NAME) make exec-test TEST_TARGET=$(TEST_TARGET)
 
 test-in-vm:
 	vagrant up --provision

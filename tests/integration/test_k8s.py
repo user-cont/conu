@@ -22,9 +22,11 @@ import urllib3
 
 from conu import DockerBackend
 from conu.backend.k8s.backend import K8sBackend
+from conu.backend.k8s.backend import K8sCleanupPolicy
 from conu.backend.k8s.pod import PodPhase
 from conu.backend.k8s.service import Service
 from conu.backend.k8s.deployment import Deployment
+from conu.backend.k8s.client import get_core_api
 
 from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
 
@@ -192,3 +194,34 @@ def test_deployment_from_template():
         finally:
             test_deployment.delete()
             k8s_backend.delete_namespace(namespace)
+
+
+def test_cleanup():
+
+    api = get_core_api()
+
+    # take just namespaces that are not in terminating state
+    number_of_namespaces = len(
+        [item for item in api.list_namespace().items if item.status.phase != "Terminating"])
+
+    with K8sBackend(cleanup=[K8sCleanupPolicy.NAMESPACES]) as k8s_backend:
+
+        # create two namespaces
+        _ = k8s_backend.create_namespace()
+        _ = k8s_backend.create_namespace()
+
+    # cleanup should delete two namespaces created with k8s backend
+    assert len(
+        [item for item in api.list_namespace().items
+         if item.status.phase != "Terminating"]) == number_of_namespaces
+
+    with K8sBackend() as k8s_backend:
+
+        # create two namespaces
+        _ = k8s_backend.create_namespace()
+        _ = k8s_backend.create_namespace()
+
+    # no cleanup - namespaces are not deleted after work with backend is finished
+    assert len(
+        [item for item in api.list_namespace().items
+         if item.status.phase != "Terminating"]) == number_of_namespaces + 2
