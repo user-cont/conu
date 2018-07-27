@@ -59,6 +59,9 @@ class K8sBackend(Backend):
 
         self.managed_namespaces = []
 
+        if K8sCleanupPolicy.NOTHING in self.cleanup and len(self.cleanup) != 1:
+            raise ConuException("Cleanup policy NOTHING cannot be combined with other values")
+
         self.cleanup = cleanup or [K8sCleanupPolicy.NOTHING]
 
     def list_pods(self):
@@ -133,9 +136,7 @@ class K8sBackend(Backend):
         Method for cleaning according to object cleanup policy value
         :return: None
         """
-        if K8sCleanupPolicy.NOTHING in self.cleanup and len(self.cleanup) != 1:
-            raise ConuException("Cleanup policy NOTHING cannot be combined with other values")
-        elif K8sCleanupPolicy.NAMESPACES in self.cleanup:
+        if K8sCleanupPolicy.NAMESPACES in self.cleanup:
             self.cleanup_namespaces()
         elif K8sCleanupPolicy.EVERYTHING in self.cleanup:
             self.cleanup_pods()
