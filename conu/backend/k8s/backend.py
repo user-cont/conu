@@ -57,7 +57,7 @@ class K8sBackend(Backend):
         self.core_api = get_core_api()
         self.apps_api = get_apps_api()
 
-        self.namespaces = []
+        self.managed_namespaces = []
 
         self.cleanup = cleanup or [K8sCleanupPolicy.NOTHING]
 
@@ -115,7 +115,7 @@ class K8sBackend(Backend):
         logger.info("Creating namespace: %s", name)
 
         # save all namespaces created with this backend
-        self.namespaces.append(name)
+        self.managed_namespaces.append(name)
 
         return name
 
@@ -154,7 +154,7 @@ class K8sBackend(Backend):
         Delete all namespaces created by this backend
         :return: None
         """
-        for namespace in self.namespaces:
+        for namespace in self.managed_namespaces:
             self.delete_namespace(namespace)
 
     def cleanup_pods(self):
@@ -165,7 +165,7 @@ class K8sBackend(Backend):
         pods = self.list_pods()
 
         for pod in pods:
-            if pod.namespace in self.namespaces:
+            if pod.namespace in self.managed_namespaces:
                 pod.delete()
 
     def cleanup_services(self):
@@ -176,7 +176,7 @@ class K8sBackend(Backend):
         services = self.list_services()
 
         for service in services:
-            if service.namespace in self.namespaces:
+            if service.namespace in self.managed_namespaces:
                 service.delete()
 
     def cleanup_deployments(self):
@@ -187,7 +187,7 @@ class K8sBackend(Backend):
         deployments = self.list_deployments()
 
         for deployment in deployments:
-            if deployment.namespace in self.namespaces:
+            if deployment.namespace in self.managed_namespaces:
                 deployment.delete()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
