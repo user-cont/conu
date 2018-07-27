@@ -123,6 +123,9 @@ class Backend(object):
         self.logger.info("conu has initiated, welcome to the party!")
         self.logger.debug("conu version: %s", version.__version__)
 
+        if CleanupPolicy.NOTHING in self.cleanup and len(self.cleanup) != 1:
+            raise ConuException("Cleanup policy NOTHING cannot be combined with other values")
+
         self.cleanup = cleanup or [CleanupPolicy.NOTHING]
 
     def list_containers(self):
@@ -182,10 +185,12 @@ class Backend(object):
         raise NotImplementedError("cleanup_images method is not implemented")
 
     def _clean(self):
+        """
+        Method for cleaning according to object cleanup policy value
 
-        if CleanupPolicy.NOTHING in self.cleanup and len(self.cleanup) != 1:
-            raise ConuException("Cleanup policy NOTHING cannot be combined with other values")
-        elif CleanupPolicy.EVERYTHING in self.cleanup:
+        :return: None
+        """
+        if CleanupPolicy.EVERYTHING in self.cleanup:
                 self.cleanup_containers()
                 self.cleanup_volumes()
                 self.cleanup_images()
