@@ -19,7 +19,6 @@ Utilities related to manipulate docker images.
 """
 from __future__ import print_function, unicode_literals
 
-import json
 import logging
 import os
 import shutil
@@ -185,9 +184,8 @@ class DockerImage(Image):
 
         :return: None
         """
-        for json_s in self.d.pull(repository=self.name, tag=self.tag, stream=True):
-            logger.debug(json_s)
-            json_e = json.loads(json_s)
+        for json_e in self.d.pull(repository=self.name, tag=self.tag, stream=True, decode=True):
+            logger.debug(json_e)
             status = graceful_get(json_e, "status")
             if status:
                 logger.info(status)
