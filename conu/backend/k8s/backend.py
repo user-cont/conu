@@ -20,6 +20,7 @@ This is backend for kubernetes
 import string
 import random
 import logging
+import enum
 
 from conu.apidefs.backend import Backend
 from conu.backend.k8s.pod import Pod
@@ -28,6 +29,7 @@ from conu.backend.k8s.deployment import Deployment
 from conu.backend.k8s.utils import k8s_ports_to_metadata_ports
 from conu.apidefs.metadata import ImageMetadata
 from conu.backend.k8s.client import get_core_api, get_apps_api
+from conu.exceptions import ConuException
 
 from kubernetes import client
 
@@ -37,16 +39,16 @@ logger = logging.getLogger(__name__)
 # let this class inherit docstring from parent
 class K8sBackend(Backend):
 
-    def __init__(self, logging_level=logging.INFO, logging_kwargs=None):
+    def __init__(self, logging_level=logging.INFO, logging_kwargs=None, cleanup=None):
         """
         This method serves as a configuration interface for conu.
 
         :param logging_level: int, control logger verbosity: see logging.{DEBUG,INFO,ERROR}
         :param logging_kwargs: dict, additional keyword arguments for logger set up, for more info
                                 see docstring of set_logging function
-        :param cleanup: list, list of cleanup policy values, examples:
+        :param cleanup: list, list of k8s cleanup policy values, examples:
             - [CleanupPolicy.EVERYTHING]
-            - [CleanupPolicy.VOLUMES, CleanupPolicy.TMP_DIRS]
+            - [CleanupPolicy.PODS, CleanupPolicy.SERVICES]
             - [CleanupPolicy.NOTHING]
         """
         super(K8sBackend, self).__init__(
@@ -54,6 +56,13 @@ class K8sBackend(Backend):
 
         self.core_api = get_core_api()
         self.apps_api = get_apps_api()
+
+        self.managed_namespaces = []
+
+        self.cleanup = cleanup or [K8sCleanupPolicy.NOTHING]
+
+        if K8sCleanupPolicy.NOTHING in self.cleanup and len(self.cleanup) != 1:
+            raise ConuException("Cleanup policy NOTHING cannot be combined with other values")
 
     def list_pods(self):
         """
@@ -108,13 +117,102 @@ class K8sBackend(Backend):
 
         logger.info("Creating namespace: %s", name)
 
+        # save all namespaces created with this backend
+        self.managed_namespaces.append(name)
+
         return name
 
     def delete_namespace(self, name):
         """
         Delete namespace with specific name
         :param name: str, namespace to delete
+        :return: None
         """
         self.core_api.delete_namespace(name, client.V1DeleteOptions())
 
         logger.info("Deleting namespace: %s", name)
+
+    def _clean(self):
+        """
+        Method for cleaning according to object cleanup policy value
+        :return: None
+        """
+        if K8sCleanupPolicy.NAMESPACES in self.cleanup:
+            self.cleanup_namespaces()
+        elif K8sCleanupPolicy.EVERYTHING in self.cleanup:
+            self.cleanup_pods()
+            self.cleanup_services()
+            self.cleanup_deployments()
+        else:
+            if K8sCleanupPolicy.PODS in self.cleanup:
+                self.cleanup_pods()
+            if K8sCleanupPolicy.SERVICES in self.cleanup:
+                self.cleanup_services()
+            if K8sCleanupPolicy.DEPLOYMENTS in self.cleanup:
+                self.cleanup_deployments()
+
+    def cleanup_namespaces(self):
+        """
+        Delete all namespaces created by this backend
+        :return: None
+        """
+        for namespace in self.managed_namespaces:
+            self.delete_namespace(namespace)
+
+    def cleanup_pods(self):
+        """
+        Delete all pods created in namespaces associated with this backend
+        :return: None
+        """
+        pods = self.list_pods()
+
+        for pod in pods:
+            if pod.namespace in self.managed_namespaces:
+                pod.delete()
+
+    def cleanup_services(self):
+        """
+        Delete all services created in namespaces associated with this backend
+        :return: None
+        """
+        services = self.list_services()
+
+        for service in services:
+            if service.namespace in self.managed_namespaces:
+                service.delete()
+
+    def cleanup_deployments(self):
+        """
+        Delete all deployments created in namespaces associated with this backend
+        :return: None
+        """
+        deployments = self.list_deployments()
+
+        for deployment in deployments:
+            if deployment.namespace in self.managed_namespaces:
+                deployment.delete()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._clean()
+
+
+class K8sCleanupPolicy(enum.Enum):
+    """
+    This Enum defines the policy for cleanup.
+
+    * NOTHING - clean nothing
+    * EVERYTHING - delete just objects in all namespaces
+    associated with this backend - (pods, service, deployments)
+    * NAMESPACES - delete all namespaces associated with this backend and
+     objects in these namespaces (pods, service, deployments)
+    * PODS - delete all pods in namespaces associated with this backend
+    * SERVICES - delete all services in namespaces associated with this backend
+    * DEPLOYMENTS - delete all deployments in namespaces associated with this backend
+    """
+
+    NOTHING = 0
+    EVERYTHING = 1
+    NAMESPACES = 2
+    PODS = 3
+    SERVICES = 4
+    DEPLOYMENTS = 5
