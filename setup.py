@@ -30,8 +30,15 @@ except ImportError:
 
 
 def get_requirements():
+    packages = []
+
     with open("./requirements.txt") as fd:
-        return [line for line in fd.readlines() if not line.startswith('-i')]
+        for line in fd.readlines():
+            if not line or line.startswith('-i'):
+                continue
+            packages.append(line.split(';', 1)[0])
+
+    return packages
 
 
 data_files = {}
