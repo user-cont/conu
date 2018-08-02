@@ -31,7 +31,7 @@ except ImportError:
 
 def get_requirements():
     with open("./requirements.txt") as fd:
-        return fd.readlines()
+        return [line for line in fd.readlines() if not line.startswith('-i')]
 
 
 data_files = {}
