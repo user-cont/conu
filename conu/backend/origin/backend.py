@@ -19,12 +19,17 @@ import subprocess
 import string
 import random
 import os.path
+import requests
+
+from requests.exceptions import ConnectionError
 
 from conu.backend.k8s.backend import K8sBackend
 from conu.backend.docker.backend import DockerBackend
 from conu.exceptions import ConuException
 from conu.utils import oc_command_exists, run_cmd
 from conu.backend.origin.constants import REGISTRY
+from conu.utils.http_client import get_url
+from conu.utils.probes import Probe
 
 
 logger = logging.getLogger(__name__)
@@ -43,6 +48,28 @@ class OpenshiftBackend(K8sBackend):
         """
         super(OpenshiftBackend, self).__init__(
             logging_level=logging_level, logging_kwargs=logging_kwargs)
+
+        # provides HTTP client (requests.Session)
+        self.http_session = requests.Session()
+
+    def http_request(self, path="/", method="GET", host=None, port=None, json=False, data=None):
+        """
+        perform a HTTP request
+
+        :param path: str, path within the reqest, e.g. "/api/version"
+        :param method: str, HTTP method
+        :param host: str, if None, set to 127.0.0.1
+        :param port: str or int, if None, set to 8080
+        :param json: bool, should we expect json?
+        :param data: data to send (can be dict, list, str)
+        :return: dict
+        """
+
+        host = host or '127.0.0.1'
+        port = port or 8080
+        url = get_url(host=host, port=port, path=path)
+
+        return self.http_session.request(method, url, json=json, data=data)
 
     def _oc_command(self, args):
         """
@@ -165,6 +192,41 @@ class OpenshiftBackend(K8sBackend):
             logger.debug(o)
         except subprocess.CalledProcessError as ex:
             raise ConuException("oc start-build failed: %s" % ex)
+
+    def request_service(self, app_name, expected_output=None):
+        """
+        Make request on service of app. If there is connection error function return False.
+        :param app_name: str, name of app
+        :param expected_output: str, If not None method will check output returned from request
+               and try to find matching string.
+        :return: bool, True if connection was established False if there was connection error
+        """
+        ip = [service.get_ip() for service in self.list_services()
+              if service.metadata.name == app_name][0]
+        try:
+            output = self.http_request(host=ip)
+            if expected_output is not None:
+                if expected_output not in output.text:
+                    raise ConuException(
+                        "Connection to service established, but didn't match expected output")
+                else:
+                    logger.info("Connection to service established and return expected output!")
+            return True
+        except ConnectionError:
+            return False
+
+    def wait_for_service(self, app_name, expected_output=None, timeout=100):
+        """
+        Block until service is not ready to accept requests,
+        raises an exc ProbeTimeout if timeout is reached
+        :param app_name: str, name of app
+        :param expected_output: If not None method will check output returned from request
+               and try to find matching string.
+        :param timeout: int or float (seconds), time to wait for pod to run
+        :return: None
+        """
+        Probe(timeout=timeout, fnc=self.request_service,
+              app_name=app_name, expected_output=expected_output, expected_retval=True).run()
 
     def login_registry(self):
         """
