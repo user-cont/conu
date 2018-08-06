@@ -14,6 +14,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""
+This is backend for OpenShift
+"""
+
 import logging
 import subprocess
 import string

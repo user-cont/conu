@@ -14,4 +14,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""
+This is constants used in origin backend
+"""
+
 REGISTRY = "172.30.1.1:5000"
