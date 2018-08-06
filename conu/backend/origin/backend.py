@@ -228,6 +228,16 @@ class OpenshiftBackend(K8sBackend):
         Probe(timeout=timeout, fnc=self.request_service,
               app_name=app_name, expected_output=expected_output, expected_retval=True).run()
 
+    def clean_project(self):
+        """
+        Delete all objects in current project in OpenShift cluster
+        :return: None
+        """
+        try:
+            run_cmd(self._oc_command(["delete", "all", "--all"]))
+        except subprocess.CalledProcessError as ex:
+            raise ConuException("Cleanup failed: %s" % ex)
+
     def login_registry(self):
         """
         Login into docker daemon in OpenshiftCluster
