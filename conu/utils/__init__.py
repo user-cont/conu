@@ -209,6 +209,16 @@ def s2i_command_exists():
     )
 
 
+def oc_command_exists():
+    return command_exists(
+        "oc",
+        ["oc", "version"],
+        "oc command doesn't seem to be available on your system. Usually it's available in "
+        "'origin' or 'origin-clients' package. For more info, please"
+        "consult the upstream documentation available at 'https://github.com/openshift/origin'."
+    )
+
+
 def chcon_command_exists():
     return command_exists(
         "chcon",
