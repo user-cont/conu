@@ -16,6 +16,9 @@
 
 import logging
 import subprocess
+import string
+import random
+import os.path
 
 from conu.backend.k8s.backend import K8sBackend
 from conu.backend.docker.backend import DockerBackend
@@ -50,6 +53,118 @@ class OpenshiftBackend(K8sBackend):
         """
         oc_command_exists()
         return ["oc"] + args
+
+    def new_app(self, image, source=None, template=None, name_in_template=None,
+                other_images=None, oc_new_app_args=None, project=None):
+        """
+        Deploy app in OpenShift cluster using 'oc new-app'
+        :param image: image to be used as builder image
+        :param source: source used to extend the image, can be path or url
+        :param template: str, url or local path to a template to use
+        :param name_in_template: dict, {repository:tag} image name used in the template
+        :param other_images: list of dict, some templates need other image to be pushed into the
+               OpenShift registry, specify them in this parameter as list of dict [{<image>:<tag>}],
+               where "<image>" is DockerImage and "<tag>" is a tag under which the image should be
+               available in the OpenShift registry.
+        :param oc_new_app_args: additional parameters for the `oc new-app`
+        :param project: project where app should be created
+        :return: str, name of app
+        """
+
+        if template is not None and source is not None:
+            raise ConuException('cannot combine template parameter with source parameter')
+
+        random_string = ''.join(
+            random.choice(string.ascii_lowercase + string.digits) for _ in range(4))
+        name = 'app-{random_string}'.format(random_string=random_string)
+
+        oc_new_app_args = oc_new_app_args or []
+
+        if template is not None:
+            if name_in_template is None:
+                raise ConuException('You need to specify name_in_template')
+
+            self._create_app_from_template(image, name, template, name_in_template,
+                                           other_images, oc_new_app_args, project)
+
+        else:
+            new_image = OpenshiftBackend.push_to_registry(image, image.name.split('/')[-1],
+                                                          image.tag, project)
+
+            c = self._oc_command(
+                ["new-app"] + oc_new_app_args + [new_image.name + "~" + source] +
+                ["-n"] + [project] + ["--name=%s" % name])
+
+            logger.info("Creating new app in project %s" % project)
+
+            try:
+                o = run_cmd(c, return_output=True)
+                logger.debug(o)
+            except subprocess.CalledProcessError as ex:
+                raise ConuException("oc new-app failed: %s" % ex)
+
+            if os.path.isdir(source):
+                c = self._oc_command(["start-build"] + [name] + ["--from-dir=%s" % source])
+
+                logger.info("Build application from local source in project %s" % project)
+
+                try:
+                    o = run_cmd(c, return_output=True)
+                    logger.debug(o)
+                except subprocess.CalledProcessError as ex:
+                    raise ConuException("oc start-build failed: %s" % ex)
+
+        return name
+
+    def _create_app_from_template(self, image, name, template, name_in_template,
+                                  other_images, oc_new_app_args, project):
+        """
+        Helper function to create app from template
+        :param image: image to be used as builder image
+        :param template: str, url or local path to a template to use
+        :param name_in_template: dict, {repository:tag} image name used in the template
+        :param other_images: list of dict, some templates need other image to be pushed into the
+               OpenShift registry, specify them in this parameter as list of dict [{<image>:<tag>}],
+               where "<image>" is DockerImage and "<tag>" is a tag under which the image should be
+               available in the OpenShift registry.
+        :param oc_new_app_args: additional parameters for the `oc new-app`
+        :param project: project where app should be created
+        :return: None
+        """
+        # push images to registry
+        repository, tag = list(name_in_template.items())[0]
+        OpenshiftBackend.push_to_registry(image, repository, tag, project)
+
+        other_images = other_images or []
+
+        for o in other_images:
+            image, tag = list(o.items())[0]
+            OpenshiftBackend.push_to_registry(image, tag.split(':')[0], tag.split(':')[1],
+                                              project)
+
+        oc_new_app_args += ["-p", "NAME=%s" % name, "-p", "NAMESPACE=%s" % project]
+
+        c = self._oc_command(["new-app"] + [template] + oc_new_app_args + ["-n"] + [project])
+
+        logger.info("Creating new app in project %s" % project)
+
+        try:
+            # ignore status because sometimes oc new-app can fail when image
+            # is already pushed in register
+            o = run_cmd(c, return_output=True, ignore_status=True)
+            logger.debug(o)
+        except subprocess.CalledProcessError as ex:
+            raise ConuException("oc new-app failed: %s" % ex)
+
+        c = self._oc_command(["start-build"] + [name])
+
+        logger.info("Build application from local source in project %s" % project)
+
+        try:
+            o = run_cmd(c, return_output=True)
+            logger.debug(o)
+        except subprocess.CalledProcessError as ex:
+            raise ConuException("oc start-build failed: %s" % ex)
 
     def login_registry(self):
         """
