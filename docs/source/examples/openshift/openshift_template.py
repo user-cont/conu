@@ -28,4 +28,4 @@ with OpenshiftBackend(logging_level=logging.DEBUG) as openshift_backend:
                 app_name=app_name,
                 expected_output='Welcome to your Django application on OpenShift')
         finally:
-            openshift_backend.clean_project()
+            openshift_backend.clean_project(app_name)

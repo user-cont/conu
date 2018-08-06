@@ -42,7 +42,7 @@ def test_oc_s2i_remote():
                     app_name=app_name,
                     expected_output='Welcome to your Django application on OpenShift')
             finally:
-                openshift_backend.clean_project()
+                openshift_backend.clean_project(app_name)
 
 
 @pytest.mark.skip(reason="no way of currently testing this")
@@ -63,7 +63,7 @@ def test_oc_s2i_local():
                     app_name=app_name,
                     expected_output="Hello World from standalone WSGI application!")
             finally:
-                openshift_backend.clean_project()
+                openshift_backend.clean_project(app_name)
 
 
 @pytest.mark.skip(reason="no way of currently testing this")
@@ -91,4 +91,4 @@ def test_oc_s2i_template():
                     app_name=app_name,
                     expected_output='Welcome to your Django application on OpenShift')
             finally:
-                openshift_backend.clean_project()
+                openshift_backend.clean_project(app_name)

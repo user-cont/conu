@@ -203,7 +203,7 @@ class OpenshiftBackend(K8sBackend):
         """
         ip = [service.get_ip() for service in self.list_services()
               if service.name == app_name][0]
-        
+
         try:
             output = self.http_request(host=ip)
             if expected_output is not None:
@@ -226,16 +226,22 @@ class OpenshiftBackend(K8sBackend):
         :param timeout: int or float (seconds), time to wait for pod to run
         :return: None
         """
+        logger.info('Waiting for service to get ready')
         Probe(timeout=timeout, fnc=self.request_service,
               app_name=app_name, expected_output=expected_output, expected_retval=True).run()
 
-    def clean_project(self):
+    def clean_project(self, app_name):
         """
         Delete all objects in current project in OpenShift cluster
         :return: None
         """
+        logger.info('Deleting app')
         try:
-            run_cmd(self._oc_command(["delete", "all", "--all"]))
+            o = run_cmd(self._oc_command(["delete", "all", "-l app=%s" % app_name]),
+                        return_output=True)
+            o_lines = o.split('\n')
+            for line in o_lines:
+                logger.info(line)
         except subprocess.CalledProcessError as ex:
             raise ConuException("Cleanup failed: %s" % ex)
 

@@ -21,4 +21,4 @@ with OpenshiftBackend(logging_level=logging.DEBUG) as openshift_backend:
                 app_name=app_name,
                 expected_output="Hello World from standalone WSGI application!")
         finally:
-            openshift_backend.clean_project()
+            openshift_backend.clean_project(app_name)

@@ -23,4 +23,4 @@ with OpenshiftBackend(logging_level=logging.DEBUG) as openshift_backend:
                 expected_output='Welcome to your Django application on OpenShift',
                 timeout=300)
         finally:
-            openshift_backend.clean_project()
+            openshift_backend.clean_project(app_name)
