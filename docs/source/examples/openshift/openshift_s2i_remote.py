@@ -1,3 +1,5 @@
+import logging
+
 from conu.backend.origin.backend import OpenshiftBackend
 from conu.backend.docker.backend import DockerBackend
 

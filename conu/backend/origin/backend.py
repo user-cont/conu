@@ -202,9 +202,15 @@ class OpenshiftBackend(K8sBackend):
         :return: bool, True if connection was established False if there was connection error
         """
         ip = [service.get_ip() for service in self.list_services()
-              if service.metadata.name == app_name][0]
+              if service.name == app_name][0]
+        print('ip %s\n' % ip)
+
+        for s in self.list_services():
+            print(s.name + '\n')
+
         try:
             output = self.http_request(host=ip)
+            print('Output: %s\n' % output)
             if expected_output is not None:
                 if expected_output not in output.text:
                     raise ConuException(

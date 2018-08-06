@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 class Service(object):
 
     def __init__(self, name, ports, namespace='default', labels=None, selector=None,
-                 create_in_cluster=False):
+                 create_in_cluster=False, spec=None):
         """
         Utility functions for kubernetes services.
 
