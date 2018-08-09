@@ -263,7 +263,7 @@ $ python3 examples/k8s_deployment.py
 
 ## Use conu for testing locally
 
-If you want to test your images in Openshift locally, you need to run OpenShift cluster on your host. You can install it by following instructions in [openshift/origin github repository](https://github.com/openshift/origin/issues/5259) or [minishift](https://github.com/minishift/minishift)
+If you want to test your images in Openshift locally, you need to run OpenShift cluster on your host. You can install it by following instructions in [openshift/origin github repository](https://github.com/openshift/origin/) or [minishift](https://github.com/minishift/minishift)
 
 After that, you may need to setup cluster, here is example setup:
 ``` bash
@@ -277,6 +277,8 @@ oadm policy add-cluster-role-to-user admin developer
 oadm policy add-cluster-role-to-user cluster-admin developer
 oc login -u developer -p developer
 ```
+
+For more information, why do you need to grant all these rights to user see [accessing registry](﻿﻿https://docs.openshift.com/container-platform/3.3/install_config/registry/accessing_registry.html#access-user-prerequisites)
 
 ## OpenShift example
 ``` bash

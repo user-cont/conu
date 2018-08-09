@@ -30,7 +30,7 @@ def test_oc_s2i_remote():
         with DockerBackend() as backend:
             python_image = backend.ImageClass("centos/python-36-centos7")
 
-            openshift_backend.login_registry()
+            openshift_backend.login_to_registry('developer')
 
             app_name = openshift_backend.new_app(
                 python_image,
@@ -52,7 +52,7 @@ def test_oc_s2i_local():
         with DockerBackend() as backend:
             python_image = backend.ImageClass("centos/python-36-centos7")
 
-            openshift_backend.login_registry()
+            openshift_backend.login_to_registry('developer')
 
             app_name = openshift_backend.new_app(python_image,
                                                  source="examples/openshift/standalone-test-app",
@@ -74,7 +74,7 @@ def test_oc_s2i_template():
             python_image = backend.ImageClass("centos/python-36-centos7", tag="latest")
             psql_image = backend.ImageClass("centos/postgresql-96-centos7", tag="9.6")
 
-            openshift_backend.login_registry()
+            openshift_backend.login_to_registry('developer')
 
             app_name = openshift_backend.new_app(
                 image=python_image,

@@ -8,7 +8,7 @@ with OpenshiftBackend(logging_level=logging.DEBUG) as openshift_backend:
         python_image = backend.ImageClass("centos/python-36-centos7")
 
         # docker login inside OpenShift internal registry
-        openshift_backend.login_registry()
+        openshift_backend.login_to_registry('developer')
 
         # create new app from local source in OpenShift cluster
         app_name = openshift_backend.new_app(python_image,

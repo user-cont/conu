@@ -105,9 +105,10 @@ class OpenshiftBackend(K8sBackend):
         if template is not None and source is not None:
             raise ConuException('cannot combine template parameter with source parameter')
 
+        # app name is generated randomly
         random_string = ''.join(
             random.choice(string.ascii_lowercase + string.digits) for _ in range(4))
-        name = 'app-{random_string}'.format(random_string=random_string)
+        name = 'app-{image}-{random_string}'.format(image=image.name, random_string=random_string)
 
         oc_new_app_args = oc_new_app_args or []
 
@@ -249,14 +250,14 @@ class OpenshiftBackend(K8sBackend):
         except subprocess.CalledProcessError as ex:
             raise ConuException("Cleanup failed: %s" % ex)
 
-    def login_registry(self):
+    def login_to_registry(self, username):
         """
         Login into docker daemon in OpenshiftCluster
         :return:
         """
         with DockerBackend() as backend:
             token = self.get_token()
-            backend.login('developer', password=token, registry=REGISTRY, reauth=True)
+            backend.login(username, password=token, registry=REGISTRY, reauth=True)
 
     def get_token(self):
         """

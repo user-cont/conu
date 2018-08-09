@@ -9,7 +9,7 @@ with OpenshiftBackend(logging_level=logging.DEBUG) as openshift_backend:
         psql_image = backend.ImageClass("centos/postgresql-96-centos7", tag="9.6")
 
         # docker login inside OpenShift internal registry
-        openshift_backend.login_registry()
+        openshift_backend.login_to_registry('developer')
 
         # create new app from remote source in OpenShift cluster
         app_name = openshift_backend.new_app(
