@@ -17,8 +17,8 @@
 """
 Tests for OpenShift backend
 """
-import pytest
 import logging
+import pytest
 from conu.backend.origin.backend import OpenshiftBackend
 from conu.backend.docker.backend import DockerBackend
 

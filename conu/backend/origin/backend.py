@@ -127,7 +127,7 @@ class OpenshiftBackend(K8sBackend):
                 ["new-app"] + oc_new_app_args + [new_image.name + "~" + source] +
                 ["-n"] + [project] + ["--name=%s" % name])
 
-            logger.info("Creating new app in project %s" % project)
+            logger.info("Creating new app in project %s", project)
 
             try:
                 o = run_cmd(c, return_output=True)
@@ -141,8 +141,7 @@ class OpenshiftBackend(K8sBackend):
                 logger.info("Build application from local source in project %s", project)
 
                 try:
-                    o = run_cmd(c, return_output=True)
-                    logger.debug(o)
+                    run_cmd(c)
                 except subprocess.CalledProcessError as ex:
                     raise ConuException("oc start-build failed: %s" % ex)
 
@@ -193,8 +192,7 @@ class OpenshiftBackend(K8sBackend):
         logger.info("Build application from local source in project %s" % project)
 
         try:
-            o = run_cmd(c, return_output=True)
-            logger.debug(o)
+            run_cmd(c)
         except subprocess.CalledProcessError as ex:
             raise ConuException("oc start-build failed: %s" % ex)
 

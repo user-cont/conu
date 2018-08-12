@@ -4,7 +4,7 @@ from conu.backend.origin.backend import OpenshiftBackend
 from conu.backend.docker.backend import DockerBackend
 
 with OpenshiftBackend(logging_level=logging.DEBUG) as openshift_backend:
-    with DockerBackend() as backend:
+    with DockerBackend(logging_level=logging.DEBUG) as backend:
         # builder image
         python_image = backend.ImageClass("centos/python-36-centos7")
 
