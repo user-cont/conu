@@ -42,16 +42,18 @@ logger = logging.getLogger(__name__)
 # let this class inherit docstring from parent
 class OpenshiftBackend(K8sBackend):
 
-    def __init__(self, logging_level=logging.INFO, logging_kwargs=None):
+    def __init__(self, api_key=None, logging_level=logging.INFO, logging_kwargs=None):
         """
         This method serves as a configuration interface for conu.
 
+        :param api_key: str, Bearer API token
         :param logging_level: int, control logger verbosity: see logging.{DEBUG,INFO,ERROR}
         :param logging_kwargs: dict, additional keyword arguments for logger set up, for more info
                                 see docstring of set_logging function
         """
-        super(OpenshiftBackend, self).__init__(
-            logging_level=logging_level, logging_kwargs=logging_kwargs)
+        super(OpenshiftBackend, self).__init__(api_key,
+                                               logging_level=logging_level,
+                                               logging_kwargs=logging_kwargs)
 
         # provides HTTP client (requests.Session)
         self.http_session = requests.Session()

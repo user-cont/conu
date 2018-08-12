@@ -263,7 +263,7 @@ $ python3 examples/k8s_deployment.py
 
 ## Use conu for testing locally
 
-If you want to test your images in Openshift locally, you need to run OpenShift cluster on your host. You can install it by following instructions in [openshift/origin github repository](https://github.com/openshift/origin/) or [minishift](https://github.com/minishift/minishift)
+If you want to test your images in OpenShift locally, you need to run OpenShift cluster on your host. You can install it by following instructions in [openshift/origin github repository](https://github.com/openshift/origin/) or [minishift](https://github.com/minishift/minishift)
 
 After that, you may need to setup cluster, here is example setup:
 ``` bash
@@ -291,13 +291,16 @@ import logging
 from conu.backend.origin.backend import OpenshiftBackend
 from conu.backend.docker.backend import DockerBackend
 
-with OpenshiftBackend(logging_level=logging.DEBUG) as openshift_backend:
-    with DockerBackend() as backend:
+# insert your API key - oc whoami -t
+API_KEY = '<API KEY>'
+
+with OpenshiftBackend(API_KEY, logging_level=logging.DEBUG) as openshift_backend:
+    with DockerBackend(logging_level=logging.DEBUG) as backend:
         # builder image
         python_image = backend.ImageClass("centos/python-36-centos7")
 
         # docker login inside OpenShift internal registry
-        openshift_backend.login_registry()
+        openshift_backend.login_to_registry('developer')
 
         # create new app from remote source in OpenShift cluster
         app_name = openshift_backend.new_app(python_image,

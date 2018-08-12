@@ -1,7 +1,12 @@
+import logging
+
 from conu.backend.origin.backend import OpenshiftBackend
 from conu.backend.docker.backend import DockerBackend
 
-with OpenshiftBackend(logging_level=logging.DEBUG) as openshift_backend:
+# insert your API key - oc whoami -t
+API_KEY = 'luqIZzSJ8RT33yIi_lo3aNRZlA34wfftYTR0r9zRtw4'
+
+with OpenshiftBackend(api_key=API_KEY, logging_level=logging.DEBUG) as openshift_backend:
     with DockerBackend(logging_level=logging.DEBUG) as backend:
 
         # images that this template uses
