@@ -108,7 +108,7 @@ class OpenshiftBackend(K8sBackend):
         # app name is generated randomly
         random_string = ''.join(
             random.choice(string.ascii_lowercase + string.digits) for _ in range(4))
-        name = 'app-{image}-{random_string}'.format(image=image.name, random_string=random_string)
+        name = 'app-{random_string}'.format(image=image.name, random_string=random_string)
 
         oc_new_app_args = oc_new_app_args or []
 
@@ -138,7 +138,7 @@ class OpenshiftBackend(K8sBackend):
             if os.path.isdir(source):
                 c = self._oc_command(["start-build"] + [name] + ["--from-dir=%s" % source])
 
-                logger.info("Build application from local source in project %s" % project)
+                logger.info("Build application from local source in project %s", project)
 
                 try:
                     o = run_cmd(c, return_output=True)
