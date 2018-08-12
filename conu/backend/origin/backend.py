@@ -136,7 +136,8 @@ class OpenshiftBackend(K8sBackend):
                 raise ConuException("oc new-app failed: %s" % ex)
 
             if os.path.isdir(source):
-                c = self._oc_command(["start-build"] + [name] + ["--from-dir=%s" % source])
+                c = self._oc_command(["-n"] + [project] + ["start-build"] +
+                                     [name] + ["--from-dir=%s" % source])
 
                 logger.info("Build application from local source in project %s", project)
 

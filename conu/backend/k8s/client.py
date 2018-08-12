@@ -19,6 +19,7 @@ singleton instances of kubernetes client
 """
 
 from kubernetes import client, config
+from kubernetes.client.api_client import ApiClient
 
 
 core_api = None
@@ -34,8 +35,10 @@ def get_core_api():
     global core_api
 
     if core_api is None:
+        api_client = ApiClient(header_name="Authorization",
+                               header_value="Bearer luqIZzSJ8RT33yIi_lo3aNRZlA34wfftYTR0r9zRtw4")
         config.load_kube_config()
-        core_api = client.CoreV1Api()
+        core_api = client.CoreV1Api(api_client=api_client)
 
     return core_api
 
