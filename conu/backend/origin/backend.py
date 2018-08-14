@@ -87,11 +87,12 @@ class OpenshiftBackend(K8sBackend):
         oc_command_exists()
         return ["oc"] + args
 
-    def new_app(self, image, source=None, template=None, name_in_template=None,
-                other_images=None, oc_new_app_args=None, project=None):
+    def new_app(self, image, project, source=None, template=None, name_in_template=None,
+                other_images=None, oc_new_app_args=None):
         """
         Deploy app in OpenShift cluster using 'oc new-app'
         :param image: image to be used as builder image
+        :param project: project where app should be created
         :param source: source used to extend the image, can be path or url
         :param template: str, url or local path to a template to use
         :param name_in_template: dict, {repository:tag} image name used in the template
@@ -100,7 +101,6 @@ class OpenshiftBackend(K8sBackend):
                where "<image>" is DockerImage and "<tag>" is a tag under which the image should be
                available in the OpenShift registry.
         :param oc_new_app_args: additional parameters for the `oc new-app`
-        :param project: project where app should be created
         :return: str, name of app
         """
 
@@ -110,7 +110,7 @@ class OpenshiftBackend(K8sBackend):
         # app name is generated randomly
         random_string = ''.join(
             random.choice(string.ascii_lowercase + string.digits) for _ in range(4))
-        name = 'app-{random_string}'.format(image=image.name, random_string=random_string)
+        name = 'app-{random_string}'.format(random_string=random_string)
 
         oc_new_app_args = oc_new_app_args or []
 
@@ -180,7 +180,7 @@ class OpenshiftBackend(K8sBackend):
 
         c = self._oc_command(["new-app"] + [template] + oc_new_app_args + ["-n"] + [project])
 
-        logger.info("Creating new app in project %s" % project)
+        logger.info("Creating new app in project %s", project)
 
         try:
             # ignore status because sometimes oc new-app can fail when image
@@ -192,7 +192,7 @@ class OpenshiftBackend(K8sBackend):
 
         c = self._oc_command(["start-build"] + [name])
 
-        logger.info("Build application from local source in project %s" % project)
+        logger.info("Build application from local source in project %s", project)
 
         try:
             run_cmd(c)

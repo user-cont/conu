@@ -321,7 +321,7 @@ with OpenshiftBackend(API_KEY, logging_level=logging.DEBUG) as openshift_backend
 Let's run it and look at the logs:
 
 ``` bash
-$ python3 examples/oepnshift/openshift_s2i_remote.py
+$ python3 examples/openshift/openshift_s2i_remote.py
 ```
 
 ```
