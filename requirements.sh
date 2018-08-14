@@ -11,6 +11,7 @@ set -x
 # - pip: to have different binaries for Python3 & Python2
 # - pytest: to have different binaries for Python3 & Python2
 # - pyxattr: to not build it from source
+# - devel & gcc: to compile pyxattr if requirements.txt specifies different version than we install here
 
 if [ "${NAME}" == "Fedora" ]; then
     dnf install -y acl docker libselinux-utils \
@@ -19,6 +20,7 @@ if [ "${NAME}" == "Fedora" ]; then
         python3-pip python2-pip \
         python3-pyxattr \
         python3-pytest python2-pytest \
+        gcc python3-devel python2-devel \
         make
 
     # It has different naming in Fedora 27 and Fedora 28
