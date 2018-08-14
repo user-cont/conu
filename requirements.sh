@@ -19,6 +19,7 @@ if [ "${NAME}" == "Fedora" ]; then
         python3-pip python2-pip \
         python3-pyxattr \
         python3-pytest python2-pytest \
+        gcc python3-devel python2-devel \
         make
 
     # It has different naming in Fedora 27 and Fedora 28
