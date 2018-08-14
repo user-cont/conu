@@ -123,13 +123,13 @@ def run_cmd(cmd, return_output=False, ignore_status=False, **kwargs):
     """
     logger.debug('command: "%s"' % ' '.join(cmd))
     try:
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                   universal_newlines=True, **kwargs)
+        output = process.communicate()[0]
+        logger.debug(output)
         if return_output:
-            return subprocess.check_output(cmd,
-                                           stderr=subprocess.STDOUT,
-                                           universal_newlines=True,
-                                           **kwargs)
-        else:
-            subprocess.check_call(cmd, **kwargs)
+            return output
+
     except subprocess.CalledProcessError as cpe:
         if ignore_status:
             if return_output:
