@@ -73,7 +73,7 @@ def test_run_cmd():
     with pytest.raises(subprocess.CalledProcessError) as excinfo:
         ret = run_cmd(["sh", "-c", "exit 5"])
         assert not ret
-    assert 5 == excinfo.value.returncode
+    assert excinfo.value.returncode == 5
 
     ret = run_cmd(["sh", "-c", "exit 5"], ignore_status=True)
-    assert 5 == ret
+    assert ret == 5
