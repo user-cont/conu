@@ -122,22 +122,21 @@ def run_cmd(cmd, return_output=False, ignore_status=False, **kwargs):
     :return: None or str
     """
     logger.debug('command: "%s"' % ' '.join(cmd))
-    try:
-        if return_output:
-            return subprocess.check_output(cmd,
-                                           stderr=subprocess.STDOUT,
-                                           universal_newlines=True,
-                                           **kwargs)
-        else:
-            subprocess.check_call(cmd, **kwargs)
-    except subprocess.CalledProcessError as cpe:
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                               universal_newlines=True, **kwargs)
+    output = process.communicate()[0]
+    logger.debug(output)
+
+    if process.returncode > 0:
         if ignore_status:
             if return_output:
-                return cpe.output
+                return output
             else:
-                return cpe.returncode
+                return process.returncode
         else:
-            raise cpe
+            raise subprocess.CalledProcessError(cmd=cmd, returncode=process.returncode)
+    if return_output:
+        return output
 
 
 def mkstemp(dir=None):
