@@ -63,10 +63,10 @@ def test_check_docker():
 
 
 def test_run_cmd():
-    ret = run_cmd(["sh", "-c", "for x in `seq 1 5`; do echo $x; sleep 1; done"])
+    ret = run_cmd(["sh", "-c", "for x in `seq 1 5`; do echo $x; sleep 0.01; done"])
     assert not ret
 
-    ret = run_cmd(["sh", "-c", "for x in `seq 1 5`; do echo $x; sleep 1; done"],
+    ret = run_cmd(["sh", "-c", "for x in `seq 1 5`; do echo $x; sleep 0.01; done"],
                   return_output=True)
     assert ret == '1\n2\n3\n4\n5\n'
 
