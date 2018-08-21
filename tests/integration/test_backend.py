@@ -15,6 +15,7 @@
 #
 import logging
 import os
+import pytest
 
 from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
 
@@ -24,6 +25,8 @@ from conu.backend.docker.client import get_client
 from conu.fixtures import docker_backend
 
 
+# Remove xfail once https://github.com/user-cont/conu/issues/262 is fixed.
+@pytest.mark.xfail(raises=AssertionError)
 def test_cleanup_containers():
     with DockerBackend(logging_level=logging.DEBUG, cleanup=[CleanupPolicy.CONTAINERS]) as backend:
         # cleaning up from previous runs
