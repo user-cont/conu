@@ -1,5 +1,7 @@
 # conu
 
+[![Build Status](https://ci.centos.org/job/user-cont-conu-master/badge/icon)](https://ci.centos.org/job/user-cont-conu-master/)
+
 `conu` is a library which makes it easy to write tests for your containers
 and is handy when playing with containers inside your code.
 It defines an API to access and manipulate containers,
