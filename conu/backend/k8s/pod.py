@@ -105,14 +105,28 @@ class Pod(object):
 
         return self.phase
 
+    def get_conditions(self):
+        """
+        get conditions through which the pod has or has not passed
+        :return: list of PodCondition enum
+        """
+
+        return [PodCondition.get_from_string(c.type) for c in self.get_status().conditions
+                if c.status == 'True']
+
+    def is_ready(self):
+        if PodCondition.READY in self.get_conditions():
+            return True
+        return False
+
     def wait(self, timeout=15):
         """
-        block until pod is not running, raises an exc ProbeTimeout if timeout is reached
+        block until pod is not ready, raises an exc ProbeTimeout if timeout is reached
         :param timeout: int or float (seconds), time to wait for pod to run
         :return: None
         """
 
-        Probe(timeout=timeout, fnc=self.get_phase, expected_retval=PodPhase.RUNNING).run()
+        Probe(timeout=timeout, fnc=self.is_ready, expected_retval=True).run()
 
     @staticmethod
     def create(image_data):
@@ -191,5 +205,39 @@ class PodPhase(enum.Enum):
             return cls.FAILED
         elif string_phase == 'Unknown':
             return cls.UNKNOWN
+
+        return cls.UNKNOWN
+
+
+class PodCondition(enum.Enum):
+    """
+    https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-conditions
+    """
+
+    SCHEDULED = 0
+    READY = 1
+    INITIALIZED = 2
+    UNSCHEDULABLE = 3
+    CONTAINERS_READY = 4
+    UNKNOWN = 5
+
+    @classmethod
+    def get_from_string(cls, string_condition):
+        """
+        Convert string value obtained from k8s API to PodCondition enum value
+        :param string_condition: str, condition value from Kubernetes API
+        :return: PodCondition
+        """
+
+        if string_condition == 'PodScheduled':
+            return cls.SCHEDULED
+        elif string_condition == 'Ready':
+            return cls.READY
+        elif string_condition == 'Initialized':
+            return cls.INITIALIZED
+        elif string_condition == 'Unschedulable':
+            return cls.UNSCHEDULABLE
+        elif string_condition == 'ContainersReady':
+            return cls.CONTAINERS_READY
 
         return cls.UNKNOWN
