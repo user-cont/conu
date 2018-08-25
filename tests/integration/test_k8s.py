@@ -39,7 +39,7 @@ def test_pod():
         namespace = k8s_backend.create_namespace()
 
         with DockerBackend() as backend:
-            image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+            image = backend.ImageClass('nginx')
 
             pod = image.run_in_pod(namespace=namespace)
 
@@ -95,7 +95,7 @@ def test_list_pods():
 
         with DockerBackend() as backend:
 
-            image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+            image = backend.ImageClass('nginx')
 
             pod = image.run_in_pod(namespace=namespace)
 

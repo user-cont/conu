@@ -93,6 +93,21 @@ class Pod(object):
 
         return self.get_status().pod_ip
 
+    def get_logs(self):
+        """
+        print logs from pod
+        :return: None
+        """
+        try:
+            api_response = self.core_api.read_namespaced_pod_log(self.name, self.namespace)
+        except ApiException as e:
+            raise ConuException(
+                "Exception when calling Kubernetes API - read_namespaced_pod_log: %s\n" % e)
+
+        logger.info("Logs from pod: %s in namespace: %s", self.name, self.namespace)
+        for line in api_response.split('\n'):
+            logger.info(line)
+
     def get_phase(self):
         """
         get phase of the pod
