@@ -99,7 +99,8 @@ class Pod(object):
         :return: None
         """
         try:
-            api_response = self.core_api.read_namespaced_pod_log(self.name, self.namespace)
+            api_response = self.core_api.read_namespaced_pod_log(self.name, self.namespace,
+                                                                 previous=True)
         except ApiException as e:
             raise ConuException(
                 "Exception when calling Kubernetes API - read_namespaced_pod_log: %s\n" % e)
@@ -131,6 +132,7 @@ class Pod(object):
 
     def is_ready(self):
         if PodCondition.READY in self.get_conditions():
+            logger.info("Pod: %s in namespace: %s is ready!", self.name, self.namespace)
             return True
         return False
 
