@@ -128,6 +128,21 @@ class DockerBackend(Backend):
             response.append(d_im)
         return response
 
+    def login(self, username, password=None, email=None, registry=None, reauth=False,
+              dockercfg_path=None):
+        """
+        :param username: The registry username
+        :param password: The plaintext password
+        :param email: The email for the registry account
+        :param registry: URL to the registry, example:
+               - https://index.docker.io/v1/
+        :param reauth: Whether or not to refresh existing authentication on the Docker server.
+        :param dockercfg_path: Use a custom path for the Docker config file
+        :return: None
+        """
+        self.d.login(username, password, email, registry, reauth, dockercfg_path)
+        logger.info("Login to %s succeed", registry)
+
     def cleanup_volumes(self):
         # TODO implement cleaning of docker volumes
         pass

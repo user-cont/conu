@@ -1,0 +1,28 @@
+import logging
+
+from conu.backend.origin.backend import OpenshiftBackend
+from conu.backend.docker.backend import DockerBackend
+
+# insert your API key - oc whoami -t
+API_KEY = 'luqIZzSJ8RT33yIi_lo3aNRZlA34wfftYTR0r9zRtw4'
+
+with OpenshiftBackend(api_key=API_KEY, logging_level=logging.DEBUG) as openshift_backend:
+    with DockerBackend(logging_level=logging.DEBUG) as backend:
+        # builder image
+        python_image = backend.ImageClass("centos/python-36-centos7")
+
+        # docker login inside OpenShift internal registry
+        openshift_backend.login_to_registry('developer')
+
+        # create new app from local source in OpenShift cluster
+        app_name = openshift_backend.new_app(python_image,
+                                             source="examples/openshift/standalone-test-app",
+                                             project='myproject')
+
+        try:
+            # wait until service is ready to accept requests
+            openshift_backend.wait_for_service(
+                app_name=app_name,
+                expected_output="Hello World from standalone WSGI application!")
+        finally:
+            openshift_backend.clean_project(app_name)

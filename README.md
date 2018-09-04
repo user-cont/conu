@@ -261,6 +261,114 @@ $ python3 examples/k8s_deployment.py
 11:36:04.935 backend.py        INFO   Deleting namespace: namespace-ty1a
 ```
 
+# Openshift
+
+## Use conu for testing locally
+
+If you want to test your images in OpenShift locally, you need to run OpenShift cluster on your host. You can install it by following instructions in [openshift/origin github repository](https://github.com/openshift/origin/) or [minishift](https://github.com/minishift/minishift)
+
+After that, you may need to setup cluster, here is example setup:
+``` bash
+oc cluster up --skip-registry-check=true
+oc login -u system:admin
+oadm policy add-role-to-user system:registry developer
+oadm policy add-role-to-user admin developer
+oadm policy add-role-to-user system:image-builder developer
+oadm policy add-cluster-role-to-user cluster-reader developer
+oadm policy add-cluster-role-to-user admin developer
+oadm policy add-cluster-role-to-user cluster-admin developer
+oc login -u developer -p developer
+```
+
+For more information, why do you need to grant all these rights to user see [accessing registry](﻿﻿https://docs.openshift.com/container-platform/3.3/install_config/registry/accessing_registry.html#access-user-prerequisites)
+
+## OpenShift example
+``` bash
+$ cat examples/oepnshift/openshift_s2i_remote.py
+```
+
+```python
+import logging
+
+from conu.backend.origin.backend import OpenshiftBackend
+from conu.backend.docker.backend import DockerBackend
+
+# insert your API key - oc whoami -t
+API_KEY = '<API KEY>'
+
+with OpenshiftBackend(API_KEY, logging_level=logging.DEBUG) as openshift_backend:
+    with DockerBackend(logging_level=logging.DEBUG) as backend:
+        # builder image
+        python_image = backend.ImageClass("centos/python-36-centos7")
+
+        # docker login inside OpenShift internal registry
+        openshift_backend.login_to_registry('developer')
+
+        # create new app from remote source in OpenShift cluster
+        app_name = openshift_backend.new_app(python_image,
+                                             source="https://github.com/openshift/django-ex.git",
+                                             project='myproject')
+
+        try:
+            # wait until service is ready to accept requests
+            openshift_backend.wait_for_service(
+                app_name=app_name,
+                expected_output='Welcome to your Django application on OpenShift',
+                timeout=300)
+        finally:
+            openshift_backend.clean_project(app_name)
+
+```
+
+Let's run it and look at the logs:
+
+``` bash
+$ python3 examples/openshift/openshift_s2i_remote.py
+```
+
+```
+07:39:42.185 backend.py        INFO   conu has initiated, welcome to the party!
+07:39:42.185 backend.py        DEBUG  conu version: 0.4.0
+07:39:42.296 backend.py        INFO   conu has initiated, welcome to the party!
+07:39:42.377 __init__.py       INFO   docker environment info: 'Client:\n Version:         1.13.1\n API version:     1.26\n Package version: docker-1.13.1-59.gitaf6b32b.fc27.x86_64\n Go version:      go1.9.6\n Git commit:      30c1ca9-unsupported\n Built:           Tue Jun 12 19:29:50 2018\n OS/Arch:         linux/amd64\n\nServer:\n Version:         1.13.1\n API version:     1.26 (minimum version 1.12)\n Package version: docker-1.13.1-59.gitaf6b32b.fc27.x86_64\n Go version:      go1.9.6\n Git commit:      30c1ca9-unsupported\n Built:           Tue Jun 12 19:29:50 2018\n OS/Arch:         linux/amd64\n Experimental:    false\n'
+07:39:42.412 backend.py        INFO   conu has initiated, welcome to the party!
+07:39:42.791 backend.py        INFO   Login to 172.30.1.1:5000 succeed
+07:39:43.080 image.py          INFO   The push refers to a repository [172.30.1.1:5000/myproject/python-36-centos7]
+07:39:43.086 image.py          INFO   Preparing
+07:39:43.086 image.py          INFO   Preparing
+07:39:43.086 image.py          INFO   Preparing
+07:39:43.086 image.py          INFO   Preparing
+07:39:43.086 image.py          INFO   Preparing
+07:39:43.087 image.py          INFO   Preparing
+07:39:43.087 image.py          INFO   Preparing
+07:39:43.087 image.py          INFO   Preparing
+07:39:43.087 image.py          INFO   Preparing
+07:39:43.117 image.py          INFO   Waiting
+07:39:43.120 image.py          INFO   Waiting
+07:39:43.121 image.py          INFO   Waiting
+07:39:43.121 image.py          INFO   Waiting
+07:39:43.261 image.py          INFO   Layer already exists
+07:39:43.361 image.py          INFO   Layer already exists
+07:39:43.365 image.py          INFO   Layer already exists
+07:39:43.366 image.py          INFO   Layer already exists
+07:39:43.412 image.py          INFO   Layer already exists
+07:39:43.413 image.py          INFO   Layer already exists
+07:39:43.472 image.py          INFO   Layer already exists
+07:39:43.515 image.py          INFO   Layer already exists
+07:39:43.522 image.py          INFO   Layer already exists
+07:39:43.747 image.py          INFO   latest: digest: sha256:7ab4d97b2f68a261dc32fe75dfa9aa8990e258f6f911f13a2c165b228eff45d2 size: 2211
+07:39:43.749 backend.py        INFO   Creating new app in project myproject
+07:39:44.305 backend.py        INFO   Waiting for service to get ready
+07:40:32.534 backend.py        INFO   Connection to service established and return expected output!
+07:40:33.487 backend.py        INFO   Deleting app
+07:40:35.872 backend.py        INFO   buildconfig "app-45yb" deleted
+07:40:35.872 backend.py        INFO   imagestream "app-45yb" deleted
+07:40:35.872 backend.py        INFO   deploymentconfig "app-45yb" deleted
+07:40:35.872 backend.py        INFO   service "app-45yb" deleted
+07:40:35.872 backend.py        INFO   pod "app-45yb-1-nscg0" deleted
+
+```
+
 # Real examples
 
 - [postgresql image](https://github.com/container-images/postgresql/tree/master/test)

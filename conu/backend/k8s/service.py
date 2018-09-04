@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 class Service(object):
 
     def __init__(self, name, ports, namespace='default', labels=None, selector=None,
-                 create_in_cluster=False):
+                 create_in_cluster=False, spec=None):
         """
         Utility functions for kubernetes services.
 
@@ -51,7 +51,7 @@ class Service(object):
         exposed_ports = metadata_ports_to_k8s_ports(self.ports)
 
         self.metadata = client.V1ObjectMeta(name=self.name, namespace=self.namespace, labels=labels)
-        self.spec = client.V1ServiceSpec(ports=exposed_ports, selector=selector)
+        self.spec = spec or client.V1ServiceSpec(ports=exposed_ports, selector=selector)
 
         self.body = client.V1Service(spec=self.spec, metadata=self.metadata)
 

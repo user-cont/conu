@@ -24,6 +24,8 @@ from kubernetes import client, config
 core_api = None
 apps_api = None
 
+API_KEY = None
+
 
 def get_core_api():
     """
@@ -35,7 +37,14 @@ def get_core_api():
 
     if core_api is None:
         config.load_kube_config()
-        core_api = client.CoreV1Api()
+        if API_KEY is not None:
+            # Configure API key authorization: BearerToken
+            configuration = client.Configuration()
+            configuration.api_key['authorization'] = API_KEY
+            configuration.api_key_prefix['authorization'] = 'Bearer'
+            core_api = client.CoreV1Api(client.ApiClient(configuration))
+        else:
+            core_api = client.CoreV1Api()
 
     return core_api
 
@@ -50,6 +59,12 @@ def get_apps_api():
 
     if apps_api is None:
         config.load_kube_config()
-        apps_api = client.AppsV1Api()
+        if API_KEY is not None:
+            # Configure API key authorization: BearerToken
+            configuration = client.Configuration()
+            configuration.api_key['authorization'] = API_KEY
+            configuration.api_key_prefix['authorization'] = 'Bearer'
+        else:
+            apps_api = client.AppsV1Api()
 
     return apps_api

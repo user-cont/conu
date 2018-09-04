@@ -28,7 +28,7 @@ from conu.backend.k8s.service import Service
 from conu.backend.k8s.deployment import Deployment
 from conu.backend.k8s.utils import k8s_ports_to_metadata_ports
 from conu.apidefs.metadata import ImageMetadata
-from conu.backend.k8s.client import get_core_api, get_apps_api
+import conu.backend.k8s.client as k8s_client
 from conu.exceptions import ConuException
 
 from kubernetes import client
@@ -39,10 +39,11 @@ logger = logging.getLogger(__name__)
 # let this class inherit docstring from parent
 class K8sBackend(Backend):
 
-    def __init__(self, logging_level=logging.INFO, logging_kwargs=None, cleanup=None):
+    def __init__(self, api_key=None, logging_level=logging.INFO, logging_kwargs=None, cleanup=None):
         """
         This method serves as a configuration interface for conu.
 
+        :param api_key: str, Bearer API token
         :param logging_level: int, control logger verbosity: see logging.{DEBUG,INFO,ERROR}
         :param logging_kwargs: dict, additional keyword arguments for logger set up, for more info
                                 see docstring of set_logging function
@@ -54,8 +55,9 @@ class K8sBackend(Backend):
         super(K8sBackend, self).__init__(
             logging_level=logging_level, logging_kwargs=logging_kwargs)
 
-        self.core_api = get_core_api()
-        self.apps_api = get_apps_api()
+        k8s_client.API_KEY = api_key
+        self.core_api = k8s_client.get_core_api()
+        self.apps_api = k8s_client.get_apps_api()
 
         self.managed_namespaces = []
 
@@ -84,7 +86,7 @@ class K8sBackend(Backend):
         return [Service(name=s.metadata.name,
                         ports=k8s_ports_to_metadata_ports(s.spec.ports),
                         namespace=s.metadata.namespace,
-                        labels=s.metadata.labels, selector=s.spec.selector)
+                        labels=s.metadata.labels, selector=s.spec.selector, spec=s.spec)
                 for s in self.core_api.list_service_for_all_namespaces(watch=False).items]
 
     def list_deployments(self):
