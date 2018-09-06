@@ -28,7 +28,6 @@ from conu.backend.k8s.service import Service
 from conu.backend.k8s.deployment import Deployment
 from conu.backend.k8s.client import get_core_api
 
-from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
