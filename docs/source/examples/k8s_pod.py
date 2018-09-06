@@ -14,6 +14,7 @@ with K8sBackend(api_key=API_KEY, logging_level=logging.DEBUG) as k8s_backend:
         image = backend.ImageClass('nginx')
 
         pod = image.run_in_pod(namespace=namespace)
+
         try:
             pod.get_logs()
             pod.wait(200)

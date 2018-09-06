@@ -64,6 +64,7 @@ def get_apps_api():
             configuration = client.Configuration()
             configuration.api_key['authorization'] = API_KEY
             configuration.api_key_prefix['authorization'] = 'Bearer'
+            apps_api = client.AppsV1Api(client.ApiClient(configuration))
         else:
             apps_api = client.AppsV1Api()
 

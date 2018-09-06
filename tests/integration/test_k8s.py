@@ -27,13 +27,15 @@ from conu.backend.k8s.pod import PodPhase
 from conu.backend.k8s.service import Service
 from conu.backend.k8s.deployment import Deployment
 from conu.backend.k8s.client import get_core_api
+from conu.utils import run_cmd
 
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def test_pod():
-    with K8sBackend() as k8s_backend:
+    api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
+    with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
 
@@ -53,7 +55,8 @@ def test_pod():
 
 
 def test_database_deployment():
-    with K8sBackend() as k8s_backend:
+    api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
+    with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
 
