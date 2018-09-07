@@ -4,6 +4,7 @@ from conu.backend.k8s.pod import PodPhase
 
 import logging
 
+# insert your API key
 API_KEY = "M0XufKHjTsl87t1A4y7Vp0qAYSiKq8n7QauYI3sAHcU"
 with K8sBackend(api_key=API_KEY, logging_level=logging.DEBUG) as k8s_backend:
 

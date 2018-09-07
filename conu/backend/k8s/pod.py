@@ -104,7 +104,9 @@ class Pod(object):
             for line in api_response.split('\n'):
                 logger.info(line)
         except ApiException as e:
-            logger.info("Cannot get pod logs because of exeption during calling Kubernetes API %s\n", e)
+            # no reason to throw exception when logs cannot be obtain, just notify user
+            logger.info("Cannot get pod logs because of "
+                        "exception during calling Kubernetes API %s\n", e)
 
     def get_phase(self):
         """
@@ -120,14 +122,19 @@ class Pod(object):
 
     def get_conditions(self):
         """
-        get conditions through which the pod has or has not passed
-        :return: list of PodCondition enum
+        get conditions through which the pod has passed
+        :return: list of PodCondition enum or empty list
         """
 
+        # filter just values that are true (means that pod has that condition right now)
         return [PodCondition.get_from_string(c.type) for c in self.get_status().conditions
                 if c.status == 'True']
 
     def is_ready(self):
+        """
+        Check if pod is in READY condition
+        :return: bool
+        """
         if PodCondition.READY in self.get_conditions():
             logger.info("Pod: %s in namespace: %s is ready!", self.name, self.namespace)
             return True

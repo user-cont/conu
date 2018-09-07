@@ -44,6 +44,7 @@ def test_pod():
 
             try:
                 pod.wait(200)
+                assert pod.is_ready()
                 assert pod.get_phase() == PodPhase.RUNNING
             finally:
                 pod.delete()
