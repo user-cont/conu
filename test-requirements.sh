@@ -7,23 +7,22 @@ source /etc/os-release
 set -x
 
 if [ "${NAME}" == "Fedora" ]; then
-    dnf install -y docker make
+    dnf install -y docker origin make
 elif [ "${NAME}" == "CentOS Linux" ]; then
-    yum install -y docker make
+    yum install -y docker origin make
 fi
 
 setenforce 0
 systemctl start docker
-curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube
-curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.10.0/bin/linux/amd64/kubectl && chmod +x kubectl && mv kubectl /usr/local/bin/
-
-
-export MINIKUBE_WANTUPDATENOTIFICATION=false
-export MINIKUBE_WANTREPORTERRORPROMPT=false
-export MINIKUBE_HOME=$HOME
-export CHANGE_MINIKUBE_NONE_USER=true
-mkdir -p $HOME/.kube
-touch $HOME/.kube/config
-
-export KUBECONFIG=$HOME/.kube/config
-./minikube start --vm-driver=none --extra-config=apiserver.admission-control="" --extra-config=kubelet.cgroup-driver=systemd --kubernetes-version=v1.10.0
+touch /etc/docker/daemon.json
+echo '{"insecure-registries" : [ "172.30.0.0/16" ]}' > /etc/docker/daemon.json
+systemctl restart docker
+oc cluster status || oc cluster up --version v3.9.0
+oc login -u system:admin
+oc adm policy add-role-to-user system:registry developer
+oc adm policy add-role-to-user admin developer -n openshift
+oc adm policy add-role-to-user system:image-builder developer
+oc adm policy add-cluster-role-to-user cluster-reader developer
+oc adm policy add-cluster-role-to-user admin developer
+oc adm policy add-cluster-role-to-user cluster-admin developer
+oc login -u developer -p developer

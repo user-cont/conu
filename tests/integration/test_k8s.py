@@ -16,9 +16,18 @@
 
 """
 Tests for Kubernetes backend
+
+FIXME
+In all tests we are using `time.sleep(30)` after creating namespace now. Reason is that it takes
+some time for new namespace to generate API tokens for service accounts.
+
+More information can be found in this issue:
+
+https://github.com/openshift/origin/issues/18472
 """
 
 import urllib3
+import time
 
 from conu import DockerBackend
 from conu.backend.k8s.backend import K8sBackend
@@ -38,9 +47,10 @@ def test_pod():
     with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
+        time.sleep(30)
 
         with DockerBackend() as backend:
-            image = backend.ImageClass('nginx')
+            image = backend.ImageClass("openshift/hello-openshift")
 
             pod = image.run_in_pod(namespace=namespace)
 
@@ -59,6 +69,7 @@ def test_database_deployment():
     with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
+        time.sleep(30)
 
         with DockerBackend() as backend:
             postgres_image = backend.ImageClass("centos/postgresql-10-centos7")
@@ -92,13 +103,15 @@ def test_database_deployment():
 
 
 def test_list_pods():
-    with K8sBackend() as k8s_backend:
+    api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
+    with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
+        time.sleep(30)
 
         with DockerBackend() as backend:
 
-            image = backend.ImageClass('nginx')
+            image = backend.ImageClass("openshift/hello-openshift")
 
             pod = image.run_in_pod(namespace=namespace)
 
@@ -111,9 +124,11 @@ def test_list_pods():
 
 
 def test_list_services():
-    with K8sBackend() as k8s_backend:
+    api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
+    with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
+        time.sleep(30)
 
         labels = {"app": "postgres"}
 
@@ -128,9 +143,11 @@ def test_list_services():
 
 
 def test_list_deployments():
-    with K8sBackend() as k8s_backend:
+    api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
+    with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
+        time.sleep(30)
 
         with DockerBackend() as backend:
             postgres_image = backend.ImageClass("centos/postgresql-10-centos7")
@@ -160,32 +177,32 @@ def test_list_deployments():
 
 
 def test_deployment_from_template():
-    with K8sBackend() as k8s_backend:
+    api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
+    with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
+        time.sleep(30)
 
         template = """
         apiVersion: apps/v1
         kind: Deployment
         metadata:
-          name: nginx-deployment
+          name: hello-world
           labels:
-            app: nginx
+            app: hello-world
         spec:
           replicas: 3
           selector:
             matchLabels:
-              app: nginx
+              app: hello-world
           template:
             metadata:
               labels:
-                app: nginx
+                app: hello-world
             spec:
               containers:
-              - name: nginx
-                image: nginx:1.7.9
-                ports:
-                - containerPort: 80
+              - name: hello-openshift
+                image: openshift/hello-openshift
         """
 
         test_deployment = Deployment(namespace=namespace, from_template=template,
@@ -207,22 +224,25 @@ def test_cleanup():
     number_of_namespaces = len(
         [item for item in api.list_namespace().items if item.status.phase != "Terminating"])
 
-    with K8sBackend(cleanup=[K8sCleanupPolicy.NAMESPACES]) as k8s_backend:
+    api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
+    with K8sBackend(api_key=api_key, cleanup=[K8sCleanupPolicy.NAMESPACES]) as k8s_backend:
 
         # create two namespaces
         _ = k8s_backend.create_namespace()
         _ = k8s_backend.create_namespace()
+        time.sleep(30)
 
     # cleanup should delete two namespaces created with k8s backend
     assert len(
         [item for item in api.list_namespace().items
          if item.status.phase != "Terminating"]) == number_of_namespaces
 
-    with K8sBackend() as k8s_backend:
+    with K8sBackend(api_key=api_key) as k8s_backend:
 
         # create two namespaces
         _ = k8s_backend.create_namespace()
         _ = k8s_backend.create_namespace()
+        time.sleep(30)
 
     # no cleanup - namespaces are not deleted after work with backend is finished
     assert len(

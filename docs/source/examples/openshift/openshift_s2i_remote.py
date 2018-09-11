@@ -2,11 +2,10 @@ import logging
 
 from conu.backend.origin.backend import OpenshiftBackend
 from conu.backend.docker.backend import DockerBackend
+from conu.utils import run_cmd
 
-# insert your API key - oc whoami -t
-API_KEY = 'M0XufKHjTsl87t1A4y7Vp0qAYSiKq8n7QauYI3sAHcU'
-
-with OpenshiftBackend(api_key=API_KEY, logging_level=logging.DEBUG) as openshift_backend:
+api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
+with OpenshiftBackend(api_key=api_key, logging_level=logging.DEBUG) as openshift_backend:
     with DockerBackend(logging_level=logging.DEBUG) as backend:
         # builder image
         python_image = backend.ImageClass("centos/python-36-centos7")

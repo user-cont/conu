@@ -24,6 +24,7 @@ import string
 import random
 import os.path
 import requests
+import time
 
 from requests.exceptions import ConnectionError
 
@@ -178,7 +179,8 @@ class OpenshiftBackend(K8sBackend):
 
         oc_new_app_args += ["-p", "NAME=%s" % name, "-p", "NAMESPACE=%s" % project]
 
-        c = self._oc_command(["new-app"] + [template] + oc_new_app_args + ["-n"] + [project])
+        c = self._oc_command(["new-app"] + [template] + oc_new_app_args + ["-n"] + [project]
+                             + ["--name=%s" % name])
 
         logger.info("Creating new app in project %s", project)
 
@@ -193,6 +195,10 @@ class OpenshiftBackend(K8sBackend):
         c = self._oc_command(["start-build"] + [name])
 
         logger.info("Build application from local source in project %s", project)
+
+        # FIXME wait for deployment to be ready for build, see upstream issue:
+        # https://github.com/user-cont/conu/issues/274
+        time.sleep(30)
 
         try:
             run_cmd(c)

@@ -18,14 +18,14 @@
 Tests for OpenShift backend
 """
 import logging
-import pytest
 from conu.backend.origin.backend import OpenshiftBackend
 from conu.backend.docker.backend import DockerBackend
+from conu.utils import run_cmd
 
 
-@pytest.mark.skip(reason="no way of currently testing this")
 def test_oc_s2i_remote():
-    with OpenshiftBackend() as openshift_backend:
+    api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
+    with OpenshiftBackend(api_key=api_key) as openshift_backend:
 
         with DockerBackend() as backend:
             python_image = backend.ImageClass("centos/python-36-centos7")
@@ -45,9 +45,9 @@ def test_oc_s2i_remote():
                 openshift_backend.clean_project(app_name)
 
 
-@pytest.mark.skip(reason="no way of currently testing this")
 def test_oc_s2i_local():
-    with OpenshiftBackend(logging_level=logging.DEBUG) as openshift_backend:
+    api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
+    with OpenshiftBackend(api_key=api_key, logging_level=logging.DEBUG) as openshift_backend:
 
         with DockerBackend() as backend:
             python_image = backend.ImageClass("centos/python-36-centos7")
@@ -66,9 +66,9 @@ def test_oc_s2i_local():
                 openshift_backend.clean_project(app_name)
 
 
-@pytest.mark.skip(reason="no way of currently testing this")
 def test_oc_s2i_template():
-    with OpenshiftBackend(logging_level=logging.DEBUG) as openshift_backend:
+    api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
+    with OpenshiftBackend(api_key=api_key, logging_level=logging.DEBUG) as openshift_backend:
 
         with DockerBackend() as backend:
             python_image = backend.ImageClass("centos/python-36-centos7", tag="latest")
