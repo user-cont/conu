@@ -96,17 +96,20 @@ class Pod(object):
     def get_logs(self):
         """
         print logs from pod
-        :return: None
+        :return: str or None
         """
         try:
             api_response = self.core_api.read_namespaced_pod_log(self.name, self.namespace)
             logger.info("Logs from pod: %s in namespace: %s", self.name, self.namespace)
             for line in api_response.split('\n'):
                 logger.info(line)
+            return api_response
         except ApiException as e:
             # no reason to throw exception when logs cannot be obtain, just notify user
             logger.info("Cannot get pod logs because of "
                         "exception during calling Kubernetes API %s\n", e)
+
+        return None
 
     def get_phase(self):
         """
