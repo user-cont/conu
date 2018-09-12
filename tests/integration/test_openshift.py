@@ -40,7 +40,8 @@ def test_oc_s2i_remote():
             try:
                 openshift_backend.wait_for_service(
                     app_name=app_name,
-                    expected_output='Welcome to your Django application on OpenShift')
+                    expected_output='Welcome to your Django application on OpenShift',
+                    timeout=300)
             finally:
                 openshift_backend.clean_project(app_name)
 
@@ -61,7 +62,8 @@ def test_oc_s2i_local():
             try:
                 openshift_backend.wait_for_service(
                     app_name=app_name,
-                    expected_output="Hello World from standalone WSGI application!")
+                    expected_output="Hello World from standalone WSGI application!",
+                    timeout=300)
             finally:
                 openshift_backend.clean_project(app_name)
 
@@ -89,6 +91,8 @@ def test_oc_s2i_template():
             try:
                 openshift_backend.wait_for_service(
                     app_name=app_name,
-                    expected_output='Welcome to your Django application on OpenShift')
+                    expected_output='Welcome to your Django application on OpenShift',
+                    timeout=300)
             finally:
-                openshift_backend.clean_project(app_name)
+                # pass name from template as argument
+                openshift_backend.clean_project('django-psql-example')
