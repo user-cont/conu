@@ -82,7 +82,7 @@ def test_oc_s2i_template():
                 image=python_image,
                 template="https://raw.githubusercontent.com/sclorg/django-ex"
                          "/master/openshift/templates/django-postgresql.json",
-                oc_new_app_args=["-p", "SOURCE_REPOSITORY_REF=master",  "-p", "PYTHON_VERSION=3.6",
+                oc_new_app_args=["-p", "SOURCE_REPOSITORY_REF=master", "-p", "PYTHON_VERSION=3.6",
                                  "-p", "POSTGRESQL_VERSION=9.6"],
                 name_in_template={"python": "3.6"},
                 other_images=[{psql_image: "postgresql:9.6"}],
