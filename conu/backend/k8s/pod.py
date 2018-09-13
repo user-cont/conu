@@ -93,6 +93,24 @@ class Pod(object):
 
         return self.get_status().pod_ip
 
+    def get_logs(self):
+        """
+        print logs from pod
+        :return: str or None
+        """
+        try:
+            api_response = self.core_api.read_namespaced_pod_log(self.name, self.namespace)
+            logger.info("Logs from pod: %s in namespace: %s", self.name, self.namespace)
+            for line in api_response.split('\n'):
+                logger.info(line)
+            return api_response
+        except ApiException as e:
+            # no reason to throw exception when logs cannot be obtain, just notify user
+            logger.info("Cannot get pod logs because of "
+                        "exception during calling Kubernetes API %s\n", e)
+
+        return None
+
     def get_phase(self):
         """
         get phase of the pod
@@ -105,14 +123,34 @@ class Pod(object):
 
         return self.phase
 
+    def get_conditions(self):
+        """
+        get conditions through which the pod has passed
+        :return: list of PodCondition enum or empty list
+        """
+
+        # filter just values that are true (means that pod has that condition right now)
+        return [PodCondition.get_from_string(c.type) for c in self.get_status().conditions
+                if c.status == 'True']
+
+    def is_ready(self):
+        """
+        Check if pod is in READY condition
+        :return: bool
+        """
+        if PodCondition.READY in self.get_conditions():
+            logger.info("Pod: %s in namespace: %s is ready!", self.name, self.namespace)
+            return True
+        return False
+
     def wait(self, timeout=15):
         """
-        block until pod is not running, raises an exc ProbeTimeout if timeout is reached
+        block until pod is not ready, raises an exc ProbeTimeout if timeout is reached
         :param timeout: int or float (seconds), time to wait for pod to run
         :return: None
         """
 
-        Probe(timeout=timeout, fnc=self.get_phase, expected_retval=PodPhase.RUNNING).run()
+        Probe(timeout=timeout, fnc=self.is_ready, expected_retval=True).run()
 
     @staticmethod
     def create(image_data):
@@ -191,5 +229,39 @@ class PodPhase(enum.Enum):
             return cls.FAILED
         elif string_phase == 'Unknown':
             return cls.UNKNOWN
+
+        return cls.UNKNOWN
+
+
+class PodCondition(enum.Enum):
+    """
+    https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-conditions
+    """
+
+    SCHEDULED = 0
+    READY = 1
+    INITIALIZED = 2
+    UNSCHEDULABLE = 3
+    CONTAINERS_READY = 4
+    UNKNOWN = 5
+
+    @classmethod
+    def get_from_string(cls, string_condition):
+        """
+        Convert string value obtained from k8s API to PodCondition enum value
+        :param string_condition: str, condition value from Kubernetes API
+        :return: PodCondition
+        """
+
+        if string_condition == 'PodScheduled':
+            return cls.SCHEDULED
+        elif string_condition == 'Ready':
+            return cls.READY
+        elif string_condition == 'Initialized':
+            return cls.INITIALIZED
+        elif string_condition == 'Unschedulable':
+            return cls.UNSCHEDULABLE
+        elif string_condition == 'ContainersReady':
+            return cls.CONTAINERS_READY
 
         return cls.UNKNOWN

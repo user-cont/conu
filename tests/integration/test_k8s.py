@@ -28,7 +28,6 @@ from conu.backend.k8s.service import Service
 from conu.backend.k8s.deployment import Deployment
 from conu.backend.k8s.client import get_core_api
 
-from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -39,12 +38,13 @@ def test_pod():
         namespace = k8s_backend.create_namespace()
 
         with DockerBackend() as backend:
-            image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+            image = backend.ImageClass('nginx')
 
             pod = image.run_in_pod(namespace=namespace)
 
             try:
                 pod.wait(200)
+                assert pod.is_ready()
                 assert pod.get_phase() == PodPhase.RUNNING
             finally:
                 pod.delete()
@@ -95,7 +95,7 @@ def test_list_pods():
 
         with DockerBackend() as backend:
 
-            image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+            image = backend.ImageClass('nginx')
 
             pod = image.run_in_pod(namespace=namespace)
 
