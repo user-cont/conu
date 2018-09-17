@@ -23,8 +23,8 @@ import subprocess
 import string
 import random
 import os.path
-import requests
 import time
+import requests
 
 from requests.exceptions import ConnectionError
 
@@ -32,7 +32,7 @@ from conu.backend.k8s.backend import K8sBackend
 from conu.backend.docker.backend import DockerBackend
 from conu.exceptions import ConuException
 from conu.utils import oc_command_exists, run_cmd
-from conu.backend.origin.constants import REGISTRY
+from conu.backend.origin.constants import PORT
 from conu.utils.http_client import get_url
 from conu.utils.probes import Probe
 
@@ -259,12 +259,13 @@ class OpenshiftBackend(K8sBackend):
 
     def login_to_registry(self, username):
         """
-        Login into docker daemon in OpenshiftCluster
+        Login into docker daemon in OpenShift cluster
         :return:
         """
         with DockerBackend() as backend:
             token = self.get_token()
-            backend.login(username, password=token, registry=REGISTRY, reauth=True)
+            backend.login(username, password=token,
+                          registry=OpenshiftBackend.get_internal_registry_ip(), reauth=True)
 
     def get_token(self):
         """
@@ -286,4 +287,19 @@ class OpenshiftBackend(K8sBackend):
         :param project: str, oc project
         :return: DockerImage, new docker image
         """
-        return image.push("%s/%s/%s" % (REGISTRY, project, repository), tag=tag)
+        return image.push("%s/%s/%s" % (OpenshiftBackend.get_internal_registry_ip(),
+                                        project, repository), tag=tag)
+
+    @staticmethod
+    def get_internal_registry_ip():
+        """
+        Search for `docker-registry` IP
+        :return: str, ip address
+        """
+        with OpenshiftBackend() as origin_backend:
+            services = origin_backend.list_services()
+            for service in services:
+                if service.name == 'docker-registry':
+                    logger.debug("Internal docker-registry IP: {}".format(
+                            "{ip}:{port}".format(ip=service.get_ip(), port=PORT)))
+                    return "{ip}:{port}".format(ip=service.get_ip(), port=PORT)

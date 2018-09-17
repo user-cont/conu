@@ -26,8 +26,8 @@ More information can be found in this issue:
 https://github.com/openshift/origin/issues/18472
 """
 
-import urllib3
 import time
+import urllib3
 
 from conu import DockerBackend
 from conu.backend.k8s.backend import K8sBackend

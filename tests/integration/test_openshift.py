@@ -25,9 +25,9 @@ from conu.utils import run_cmd
 
 def test_oc_s2i_remote():
     api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
-    with OpenshiftBackend(api_key=api_key) as openshift_backend:
+    with OpenshiftBackend(api_key=api_key, logging_level=logging.DEBUG) as openshift_backend:
 
-        with DockerBackend() as backend:
+        with DockerBackend(logging_level=logging.DEBUG) as backend:
             python_image = backend.ImageClass("centos/python-36-centos7")
 
             openshift_backend.login_to_registry('developer')
@@ -50,7 +50,7 @@ def test_oc_s2i_local():
     api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
     with OpenshiftBackend(api_key=api_key, logging_level=logging.DEBUG) as openshift_backend:
 
-        with DockerBackend() as backend:
+        with DockerBackend(logging_level=logging.DEBUG) as backend:
             python_image = backend.ImageClass("centos/python-36-centos7")
 
             openshift_backend.login_to_registry('developer')
@@ -72,7 +72,7 @@ def test_oc_s2i_template():
     api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
     with OpenshiftBackend(api_key=api_key, logging_level=logging.DEBUG) as openshift_backend:
 
-        with DockerBackend() as backend:
+        with DockerBackend(logging_level=logging.DEBUG) as backend:
             python_image = backend.ImageClass("centos/python-36-centos7", tag="latest")
             psql_image = backend.ImageClass("centos/postgresql-96-centos7", tag="9.6")
 
