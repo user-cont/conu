@@ -17,6 +17,7 @@ systemctl start docker
 touch /etc/docker/daemon.json
 echo '{"insecure-registries" : [ "172.30.0.0/16" ]}' > /etc/docker/daemon.json
 systemctl restart docker
+systemctl stop firewalld # firewall on CentOS does not allow docker login into OpenShift registry
 curl -Lo openshift.tar.gz https://github.com/openshift/origin/releases/download/v3.9.0/openshift-origin-server-v3.9.0-191fece-linux-64bit.tar.gz
 tar -zxf openshift.tar.gz
 mv -v openshift-origin-server-v3.9.0-191fece-linux-64bit/* /sbin/

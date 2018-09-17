@@ -300,6 +300,8 @@ class OpenshiftBackend(K8sBackend):
             services = origin_backend.list_services()
             for service in services:
                 if service.name == 'docker-registry':
-                    logger.debug("Internal docker-registry IP: {}".format(
-                            "{ip}:{port}".format(ip=service.get_ip(), port=PORT)))
+                    logger.debug("Internal docker-registry IP: %s",
+                                 "{ip}:{port}".format(ip=service.get_ip(), port=PORT))
                     return "{ip}:{port}".format(ip=service.get_ip(), port=PORT)
+        return None
+

@@ -1,22 +1,19 @@
 # 0.5.0
 
-## Breaking changes
-
-* We implemented openshift `origin` and `k8s` backend as part of GSoC 2018.
-
 ## New Features
 
 * Docker image now have method `run_via_api()`
-* Support for three k8s primitives - Pod, Service, Deployment
-* Centos CI, thanks to @jpopelka
+* We have introduced OpenShift `origin` and Kubernetes `k8s` backends.
+* Support for three k8s primitives - `Pod`, `Service`, `Deployment`
+* CentOS CI, thanks to @jpopelka
 * Docker backend now has `push()` and `login()` methods
-* `oc_new_app()` method in origin backend
-* automatic updates of dependencies using [kebechet bot](https://github.com/thoth-station/kebechet), thanks to @fridex
-* codacy hook, thanks to @lachmanfrantisek
-* Examples for Openshift and k8s backend
+* Origin backend has `oc_new_app()` method
+* Automatic updates of dependencies using [kebechet bot](https://github.com/thoth-station/kebechet), thanks to @fridex
+* Codacy hook, thanks to @lachmanfrantisek
+* Examples for origin and k8s backends
 
 ## Fixes
-[Use Popen in run_cmd and pipe outputs to logger](https://github.com/user-cont/conu/pull/263), thanks to @SkullTech
+* [Use Popen in run_cmd and pipe outputs to logger](https://github.com/user-cont/conu/pull/263), thanks to @SkullTech
 
 
 # 0.4.0
