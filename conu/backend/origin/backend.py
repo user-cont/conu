@@ -304,4 +304,3 @@ class OpenshiftBackend(K8sBackend):
                                  "{ip}:{port}".format(ip=service.get_ip(), port=PORT))
                     return "{ip}:{port}".format(ip=service.get_ip(), port=PORT)
         return None
-
