@@ -160,3 +160,9 @@ def test_image_dir_is_present(docker_image):
         assert not fs.directory_is_present("/etc/voldemort")
         with pytest.raises(IOError):
             fs.directory_is_present("/etc/passwd")
+
+
+@pytest.mark.selinux
+def test_selinux_context(docker_image):
+    with docker_image.mount() as fs:
+        assert fs.get_selinux_context("/etc/shadow")

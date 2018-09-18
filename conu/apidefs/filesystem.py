@@ -17,8 +17,13 @@
 import logging
 import os
 import shutil
-import xattr
 from tempfile import mkdtemp
+
+try:
+    import xattr
+    HAS_XATTR = True
+except ImportError:
+    HAS_XATTR = False
 
 from conu.exceptions import ConuException
 
@@ -154,11 +159,16 @@ class Filesystem(object):
 
     def get_selinux_context(self, file_path):
         """
-        return a permissions for 'file_path'
+        Get SELinux file context of the selected file.
 
         :param file_path: str, path to the file
-        :return: str
+        :return: str, name of the SELinux file context
         """
         # what if SELinux is not enabled?
         p = self.p(file_path)
+        if not HAS_XATTR:
+            raise RuntimeError("'xattr' python module is not available, hence we cannot "
+                               "determine the SELinux context for this file. "
+                               "In Fedora this module is available as python3-pyxattr -- "
+                               "other distributions may follow similar naming scheme.")
         return xattr.get(p, "security.selinux")
