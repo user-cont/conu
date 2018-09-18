@@ -18,11 +18,8 @@ if [ "${NAME}" == "Fedora" ]; then
         source-to-image \
         origin-clients \
         python3-pip python2-pip \
-        python3-pyxattr \
+        python3-pyxattr python2-pyxattr \
         python3-pytest python2-pytest \
         gcc python3-devel python2-devel \
         make
-
-    # It has different naming in Fedora 27 and Fedora 28
-    dnf install -y python2-pyxattr || dnf install -y pyxattr
 fi
