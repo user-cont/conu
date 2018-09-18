@@ -3,6 +3,5 @@ requests
 six
 docker
 kubernetes >= 6.0.0
-pyxattr
 # conu/fixtures/
 pytest
