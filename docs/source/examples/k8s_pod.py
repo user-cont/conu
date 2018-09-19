@@ -3,9 +3,9 @@ import logging
 from conu.backend.k8s.backend import K8sBackend
 from conu.backend.docker.backend import DockerBackend
 from conu.backend.k8s.pod import PodPhase
-from conu.utils import run_cmd
+from conu.utils import get_oc_api_token
 
-api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
+api_key = get_oc_api_token()
 with K8sBackend(api_key=api_key, logging_level=logging.DEBUG) as k8s_backend:
 
     namespace = k8s_backend.create_namespace()

@@ -20,9 +20,9 @@ Create deployment using template and check if all pods are ready
 import time
 from conu.backend.k8s.backend import K8sBackend
 from conu.backend.k8s.deployment import Deployment
-from conu.utils import run_cmd
+from conu.utils import get_oc_api_token
 
-api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
+api_key = get_oc_api_token()
 with K8sBackend(api_key=api_key) as k8s_backend:
 
     namespace = k8s_backend.create_namespace()

@@ -2,9 +2,9 @@ import logging
 
 from conu.backend.origin.backend import OpenshiftBackend
 from conu.backend.docker.backend import DockerBackend
-from conu.utils import run_cmd
+from conu.utils import get_oc_api_token
 
-api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
+api_key = get_oc_api_token()
 with OpenshiftBackend(api_key=api_key, logging_level=logging.DEBUG) as openshift_backend:
     with DockerBackend(logging_level=logging.DEBUG) as backend:
         # builder image

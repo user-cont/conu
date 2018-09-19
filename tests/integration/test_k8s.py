@@ -36,14 +36,14 @@ from conu.backend.k8s.pod import PodPhase
 from conu.backend.k8s.service import Service
 from conu.backend.k8s.deployment import Deployment
 from conu.backend.k8s.client import get_core_api
-from conu.utils import run_cmd
+from conu.utils import get_oc_api_token
 
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def test_pod():
-    api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
+    api_key = get_oc_api_token()
     with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
@@ -65,7 +65,7 @@ def test_pod():
 
 
 def test_database_deployment():
-    api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
+    api_key = get_oc_api_token()
     with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
@@ -103,7 +103,7 @@ def test_database_deployment():
 
 
 def test_list_pods():
-    api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
+    api_key = get_oc_api_token()
     with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
@@ -124,7 +124,7 @@ def test_list_pods():
 
 
 def test_list_services():
-    api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
+    api_key = get_oc_api_token()
     with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
@@ -143,7 +143,7 @@ def test_list_services():
 
 
 def test_list_deployments():
-    api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
+    api_key = get_oc_api_token()
     with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
@@ -177,7 +177,7 @@ def test_list_deployments():
 
 
 def test_deployment_from_template():
-    api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
+    api_key = get_oc_api_token()
     with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
@@ -224,7 +224,7 @@ def test_cleanup():
     number_of_namespaces = len(
         [item for item in api.list_namespace().items if item.status.phase != "Terminating"])
 
-    api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
+    api_key = get_oc_api_token()
     with K8sBackend(api_key=api_key, cleanup=[K8sCleanupPolicy.NAMESPACES]) as k8s_backend:
 
         # create two namespaces

@@ -35,6 +35,7 @@ from conu.utils import oc_command_exists, run_cmd
 from conu.backend.origin.constants import PORT
 from conu.utils.http_client import get_url
 from conu.utils.probes import Probe
+from conu.utils import get_oc_api_token
 
 
 logger = logging.getLogger(__name__)
@@ -257,26 +258,16 @@ class OpenshiftBackend(K8sBackend):
         except subprocess.CalledProcessError as ex:
             raise ConuException("Cleanup failed: %s" % ex)
 
-    def login_to_registry(self, username):
+    @staticmethod
+    def login_to_registry(username):
         """
         Login into docker daemon in OpenShift cluster
         :return:
         """
         with DockerBackend() as backend:
-            token = self.get_token()
+            token = get_oc_api_token()
             backend.login(username, password=token,
                           registry=OpenshiftBackend.get_internal_registry_ip(), reauth=True)
-
-    def get_token(self):
-        """
-        Get token of user logged in OpenShift cluster
-        :return: str
-        """
-        try:
-            return run_cmd(
-                self._oc_command(["whoami", "-t"]), return_output=True).rstrip()  # remove '\n'
-        except subprocess.CalledProcessError as ex:
-            raise ConuException("oc whoami -t failed: %s" % ex)
 
     @staticmethod
     def push_to_registry(image, repository, tag, project):

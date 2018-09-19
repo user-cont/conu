@@ -20,17 +20,17 @@ Tests for OpenShift backend
 import logging
 from conu.backend.origin.backend import OpenshiftBackend
 from conu.backend.docker.backend import DockerBackend
-from conu.utils import run_cmd
+from conu.utils import get_oc_api_token
 
 
 def test_oc_s2i_remote():
-    api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
+    api_key = get_oc_api_token()
     with OpenshiftBackend(api_key=api_key, logging_level=logging.DEBUG) as openshift_backend:
 
         with DockerBackend(logging_level=logging.DEBUG) as backend:
             python_image = backend.ImageClass("centos/python-36-centos7")
 
-            openshift_backend.login_to_registry('developer')
+            OpenshiftBackend.login_to_registry('developer')
 
             app_name = openshift_backend.new_app(
                 python_image,
@@ -47,13 +47,13 @@ def test_oc_s2i_remote():
 
 
 def test_oc_s2i_local():
-    api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
+    api_key = get_oc_api_token()
     with OpenshiftBackend(api_key=api_key, logging_level=logging.DEBUG) as openshift_backend:
 
         with DockerBackend(logging_level=logging.DEBUG) as backend:
             python_image = backend.ImageClass("centos/python-36-centos7")
 
-            openshift_backend.login_to_registry('developer')
+            OpenshiftBackend.login_to_registry('developer')
 
             app_name = openshift_backend.new_app(python_image,
                                                  source="examples/openshift/standalone-test-app",
@@ -69,14 +69,14 @@ def test_oc_s2i_local():
 
 
 def test_oc_s2i_template():
-    api_key = run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()
+    api_key = get_oc_api_token()
     with OpenshiftBackend(api_key=api_key, logging_level=logging.DEBUG) as openshift_backend:
 
         with DockerBackend(logging_level=logging.DEBUG) as backend:
             python_image = backend.ImageClass("centos/python-36-centos7", tag="latest")
             psql_image = backend.ImageClass("centos/postgresql-96-centos7", tag="9.6")
 
-            openshift_backend.login_to_registry('developer')
+            OpenshiftBackend.login_to_registry('developer')
 
             app_name = openshift_backend.new_app(
                 image=python_image,
