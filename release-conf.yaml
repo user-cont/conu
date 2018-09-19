@@ -6,7 +6,7 @@ python_versions:
 fedora: true
 # list of fedora branches bot should release on. Master is always implied
 fedora_branches:
+  - f29
   - f28
-  - f27
 # whether to allow bot to make PRs based on issues
 trigger_on_issue: true
