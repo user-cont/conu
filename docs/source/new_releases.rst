@@ -1,23 +1,9 @@
 How to release conu
 ===================
 
-This document covers the release process of conu.
-
- * Create a new pull request. **DO NOT** name the branch with the version, it would confuse git. Better name is `0.2.0-release`.
-
- * Prepare new entry for CHANGELOG.md (run :code:`make release`, `tito` will help).
-
- * Update version in
-
-   * Makefile (`VERSION`)
-   * conu/version.py
-   * conu.spec
-
- * Merge the pull request.
-
- * Create new release on github, copy the changelog in there.
-
- * Automation should kick in (and release conu on PyPI).
-
- * Build conu in COPR.
+We are using awesome [release-bot](https://github.com/user-cont/release-bot) for new conu releases.
+If you want to make new release:
+    * create new issue with title `x.y.z release` and wait for release bot to create new PR.
+    * *polish CHANGELOG.md* and merge if tests are passing.
+    * Sit down, relax and watch how release bot is doing the hard work.
 

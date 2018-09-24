@@ -20,7 +20,8 @@ conu gathers utilities that come in handy when creating tests, provides nice log
 Contribution
 =============
 
-In case of issues, questions and suggestions, please, file an issue or pull request on https://github.com/fedora-modularity/conu where conu is stored and maintained.
+In case of issues, questions and suggestions, please, file an issue or pull request on https://github.com/user-cont/conu where conu is stored and maintained.
+Before you open issue or pull request please read our contribution guide https://github.com/user-cont/conu/blob/master/CONTRIBUTING.md .
 
 .. toctree::
    :maxdepth: 2

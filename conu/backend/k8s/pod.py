@@ -73,6 +73,7 @@ class Pod(object):
 
     def get_status(self):
         """
+
         get status of the Pod
         :return: V1PodStatus,
         https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1PodStatus.md
