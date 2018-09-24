@@ -32,7 +32,7 @@ Extends acts as s2i binary. It extends builder image in form of :class:`conu.bac
    :end-line: 28
 
 Run image in pod
------------------------------------
+----------------
 Run image inside k8s :class:`conu.backend.k8s.pod.Pod`
 
 .. include:: examples/k8s_pod.py
@@ -41,11 +41,11 @@ Run image inside k8s :class:`conu.backend.k8s.pod.Pod`
    :end-line: 42
 
 Deploy new application in OpenShift using remote source
------------------------------------
+-------------------------------------------------------
 
-Build and deploy new application in OpenShift using centos/python-36-centos7 image and remote source.
+Build and deploy new application in OpenShift using ``centos/python-36-centos7`` image and remote source.
 
-.. include:: examples/openshift_s2i_remote.py
+.. include:: examples/openshift/openshift_s2i_remote.py
    :code: python
    :start-line: 16
    :end-line: 45

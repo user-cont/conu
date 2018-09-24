@@ -42,7 +42,7 @@ class Service(object):
                 - ['1234/tcp', '8080/udp']
         :param labels: dict, dict of labels
         :param selector: dict, route service traffic to pods with label keys and
-         values matching this selector
+        values matching this selector
         """
         self.name = name
         self.namespace = namespace
@@ -84,7 +84,7 @@ class Service(object):
         """
         get status of service
         :return: V1ServiceStatus,
-         https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1ServiceStatus.md
+        https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1ServiceStatus.md
         """
 
         try:

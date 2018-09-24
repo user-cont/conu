@@ -17,6 +17,7 @@ class Metadata(object):
             - ["python3", "-m", "http.server", "--bind", "0.0.0.0", "8080"]
         :param creation_timestamp: str, creation time of object instance
         :param env_variables: dict, {name: value}
+
         """
 
         self.name = name

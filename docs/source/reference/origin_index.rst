@@ -1,7 +1,7 @@
 Backend - OpenShift
-=================
+===================
 
-.. autoclass:: conu.backend.k8s.backend.OpenshiftBackend
+.. autoclass:: conu.backend.origin.backend.OpenshiftBackend
    :members:
    :inherited-members:
    :show-inheritance:
