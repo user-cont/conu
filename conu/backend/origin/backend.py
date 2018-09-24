@@ -23,7 +23,6 @@ import subprocess
 import string
 import random
 import os.path
-import time
 import requests
 
 from requests.exceptions import ConnectionError
@@ -34,7 +33,7 @@ from conu.exceptions import ConuException
 from conu.utils import oc_command_exists, run_cmd
 from conu.backend.origin.constants import PORT
 from conu.utils.http_client import get_url
-from conu.utils.probes import Probe
+from conu.utils.probes import Probe, ProbeTimeout
 from conu.utils import get_oc_api_token
 
 
@@ -146,9 +145,11 @@ class OpenshiftBackend(K8sBackend):
                 logger.info("Build application from local source in project %s", project)
 
                 try:
-                    run_cmd(c)
-                except subprocess.CalledProcessError as ex:
-                    raise ConuException("oc start-build failed: %s" % ex)
+                    Probe(timeout=-1, pause=5, count=2,
+                          expected_exceptions=subprocess.CalledProcessError,
+                          expected_retval=None, fnc=run_cmd, cmd=c).run()
+                except ProbeTimeout as e:
+                    raise ConuException("Cannot start build of application: %s" % e)
 
         return name
 
@@ -197,14 +198,11 @@ class OpenshiftBackend(K8sBackend):
 
         logger.info("Build application from local source in project %s", project)
 
-        # FIXME wait for deployment to be ready for build, see upstream issue:
-        # https://github.com/user-cont/conu/issues/274
-        time.sleep(30)
-
         try:
-            run_cmd(c)
-        except subprocess.CalledProcessError as ex:
-            raise ConuException("oc start-build failed: %s" % ex)
+            Probe(timeout=-1, pause=5, count=2, expected_exceptions=subprocess.CalledProcessError,
+                  expected_retval=None, fnc=run_cmd, cmd=c).run()
+        except ProbeTimeout as e:
+            raise ConuException("Cannot start build of application: %s" % e)
 
     def request_service(self, app_name, expected_output=None):
         """
@@ -261,7 +259,7 @@ class OpenshiftBackend(K8sBackend):
     @staticmethod
     def login_to_registry(username):
         """
-        Login into docker daemon in OpenShift cluster
+        Login within docker daemon to docker registry running in this OpenShift cluster
         :return:
         """
         with DockerBackend() as backend:
