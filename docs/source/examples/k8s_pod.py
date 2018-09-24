@@ -1,12 +1,12 @@
+import logging 
+
 from conu.backend.k8s.backend import K8sBackend
 from conu.backend.docker.backend import DockerBackend
 from conu.backend.k8s.pod import PodPhase
+from conu.utils import get_oc_api_token
 
-import logging
-
-# insert your API key
-API_KEY = "M0XufKHjTsl87t1A4y7Vp0qAYSiKq8n7QauYI3sAHcU"
-with K8sBackend(api_key=API_KEY, logging_level=logging.DEBUG) as k8s_backend:
+api_key = get_oc_api_token()
+with K8sBackend(api_key=api_key, logging_level=logging.DEBUG) as k8s_backend:
 
     namespace = k8s_backend.create_namespace()
 
@@ -14,6 +14,7 @@ with K8sBackend(api_key=API_KEY, logging_level=logging.DEBUG) as k8s_backend:
         image = backend.ImageClass('nginx')
 
         pod = image.run_in_pod(namespace=namespace)
+
         try:
             pod.get_logs()
             pod.wait(200)

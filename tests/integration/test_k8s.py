@@ -27,18 +27,20 @@ from conu.backend.k8s.pod import PodPhase
 from conu.backend.k8s.service import Service
 from conu.backend.k8s.deployment import Deployment
 from conu.backend.k8s.client import get_core_api
+from conu.utils import get_oc_api_token
 
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def test_pod():
-    with K8sBackend() as k8s_backend:
+    api_key = get_oc_api_token()
+    with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
 
         with DockerBackend() as backend:
-            image = backend.ImageClass('nginx')
+            image = backend.ImageClass("openshift/hello-openshift")
 
             pod = image.run_in_pod(namespace=namespace)
 
@@ -53,7 +55,8 @@ def test_pod():
 
 
 def test_database_deployment():
-    with K8sBackend() as k8s_backend:
+    api_key = get_oc_api_token()
+    with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
 
@@ -89,13 +92,14 @@ def test_database_deployment():
 
 
 def test_list_pods():
-    with K8sBackend() as k8s_backend:
+    api_key = get_oc_api_token()
+    with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
 
         with DockerBackend() as backend:
 
-            image = backend.ImageClass('nginx')
+            image = backend.ImageClass("openshift/hello-openshift")
 
             pod = image.run_in_pod(namespace=namespace)
 
@@ -108,7 +112,8 @@ def test_list_pods():
 
 
 def test_list_services():
-    with K8sBackend() as k8s_backend:
+    api_key = get_oc_api_token()
+    with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
 
@@ -125,7 +130,8 @@ def test_list_services():
 
 
 def test_list_deployments():
-    with K8sBackend() as k8s_backend:
+    api_key = get_oc_api_token()
+    with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
 
@@ -157,7 +163,8 @@ def test_list_deployments():
 
 
 def test_deployment_from_template():
-    with K8sBackend() as k8s_backend:
+    api_key = get_oc_api_token()
+    with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
 
@@ -165,24 +172,22 @@ def test_deployment_from_template():
         apiVersion: apps/v1
         kind: Deployment
         metadata:
-          name: nginx-deployment
+          name: hello-world
           labels:
-            app: nginx
+            app: hello-world
         spec:
           replicas: 3
           selector:
             matchLabels:
-              app: nginx
+              app: hello-world
           template:
             metadata:
               labels:
-                app: nginx
+                app: hello-world
             spec:
               containers:
-              - name: nginx
-                image: nginx:1.7.9
-                ports:
-                - containerPort: 80
+              - name: hello-openshift
+                image: openshift/hello-openshift
         """
 
         test_deployment = Deployment(namespace=namespace, from_template=template,
@@ -204,7 +209,8 @@ def test_cleanup():
     number_of_namespaces = len(
         [item for item in api.list_namespace().items if item.status.phase != "Terminating"])
 
-    with K8sBackend(cleanup=[K8sCleanupPolicy.NAMESPACES]) as k8s_backend:
+    api_key = get_oc_api_token()
+    with K8sBackend(api_key=api_key, cleanup=[K8sCleanupPolicy.NAMESPACES]) as k8s_backend:
 
         # create two namespaces
         _ = k8s_backend.create_namespace()
@@ -215,7 +221,7 @@ def test_cleanup():
         [item for item in api.list_namespace().items
          if item.status.phase != "Terminating"]) == number_of_namespaces
 
-    with K8sBackend() as k8s_backend:
+    with K8sBackend(api_key=api_key) as k8s_backend:
 
         # create two namespaces
         _ = k8s_backend.create_namespace()

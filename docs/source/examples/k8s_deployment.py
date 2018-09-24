@@ -17,12 +17,16 @@
 """
 Create deployment using template and check if all pods are ready
 """
-
+import time
 from conu.backend.k8s.backend import K8sBackend
 from conu.backend.k8s.deployment import Deployment
+from conu.utils import get_oc_api_token
 
-with K8sBackend() as k8s_backend:
+api_key = get_oc_api_token()
+with K8sBackend(api_key=api_key) as k8s_backend:
+
     namespace = k8s_backend.create_namespace()
+    time.sleep(30)
 
     template = """
     apiVersion: apps/v1

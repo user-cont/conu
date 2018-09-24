@@ -30,8 +30,10 @@ from conu.backend.k8s.utils import k8s_ports_to_metadata_ports
 from conu.apidefs.metadata import ImageMetadata
 import conu.backend.k8s.client as k8s_client
 from conu.exceptions import ConuException
+from conu.utils.probes import Probe
 
 from kubernetes import client
+from kubernetes.client.rest import ApiException
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +124,29 @@ class K8sBackend(Backend):
         # save all namespaces created with this backend
         self.managed_namespaces.append(name)
 
+        # wait for namespace to be ready
+        Probe(timeout=30, pause=5, expected_retval=True,
+              fnc=self._namespace_ready, namespace=name).run()
+
         return name
+
+    def _namespace_ready(self, namespace):
+        """
+        Check if API tokens for service accounts are generated
+        :param namespace: str, namespace
+        :return: bool
+        """
+        try:
+            secrets = self.core_api.list_namespaced_secret(namespace=namespace)
+            if len(secrets.items) > 0:
+                # API tokens for service accounts are generated
+                logger.info("Namespace is ready!")
+                return True
+        except ApiException as e:
+            raise ConuException(
+                "Exception when calling Kubernetes API %s\n" % e)
+
+        return False
 
     def delete_namespace(self, name):
         """

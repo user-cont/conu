@@ -2,14 +2,14 @@ import logging
 
 from conu.backend.origin.backend import OpenshiftBackend
 from conu.backend.docker.backend import DockerBackend
+from conu.utils import get_oc_api_token
 
-# insert your API key - oc whoami -t
-API_KEY = 'luqIZzSJ8RT33yIi_lo3aNRZlA34wfftYTR0r9zRtw4'
 
-with OpenshiftBackend(api_key=API_KEY, logging_level=logging.DEBUG) as openshift_backend:
-    with DockerBackend(logging_level=logging.DEBUG) as backend:
+api_key = get_oc_api_token()
+with OpenshiftBackend(api_key=api_key, logging_level=logging.DEBUG) as openshift_backend:
 
-        # images that this template uses
+    with DockerBackend() as backend:
+        # images which this template uses
         python_image = backend.ImageClass("centos/python-36-centos7", tag="latest")
         psql_image = backend.ImageClass("centos/postgresql-96-centos7", tag="9.6")
 
@@ -31,6 +31,7 @@ with OpenshiftBackend(api_key=API_KEY, logging_level=logging.DEBUG) as openshift
             # wait until service is ready to accept requests
             openshift_backend.wait_for_service(
                 app_name=app_name,
-                expected_output='Welcome to your Django application on OpenShift')
+                expected_output='Welcome to your Django application on OpenShift',
+                timeout=300)
         finally:
             openshift_backend.clean_project(app_name)

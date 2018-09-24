@@ -352,3 +352,16 @@ def export_docker_container_to_directory(client, container, path):
         raise ConuException("Failed to unpack the archive.")
 
     logger.debug("image is unpacked")
+
+
+def get_oc_api_token():
+    """
+    Get token of user logged in OpenShift cluster
+    :return: str, API token
+    """
+    oc_command_exists()
+
+    try:
+        return run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()  # remove '\n'
+    except subprocess.CalledProcessError as ex:
+        raise ConuException("oc whoami -t failed: %s" % ex)

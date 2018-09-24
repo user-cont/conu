@@ -31,9 +31,10 @@ from conu.backend.k8s.backend import K8sBackend
 from conu.backend.docker.backend import DockerBackend
 from conu.exceptions import ConuException
 from conu.utils import oc_command_exists, run_cmd
-from conu.backend.origin.constants import REGISTRY
+from conu.backend.origin.constants import PORT
 from conu.utils.http_client import get_url
-from conu.utils.probes import Probe
+from conu.utils.probes import Probe, ProbeTimeout
+from conu.utils import get_oc_api_token
 
 
 logger = logging.getLogger(__name__)
@@ -144,9 +145,11 @@ class OpenshiftBackend(K8sBackend):
                 logger.info("Build application from local source in project %s", project)
 
                 try:
-                    run_cmd(c)
-                except subprocess.CalledProcessError as ex:
-                    raise ConuException("oc start-build failed: %s" % ex)
+                    Probe(timeout=-1, pause=5, count=2,
+                          expected_exceptions=subprocess.CalledProcessError,
+                          expected_retval=None, fnc=run_cmd, cmd=c).run()
+                except ProbeTimeout as e:
+                    raise ConuException("Cannot start build of application: %s" % e)
 
         return name
 
@@ -178,7 +181,8 @@ class OpenshiftBackend(K8sBackend):
 
         oc_new_app_args += ["-p", "NAME=%s" % name, "-p", "NAMESPACE=%s" % project]
 
-        c = self._oc_command(["new-app"] + [template] + oc_new_app_args + ["-n"] + [project])
+        c = self._oc_command(["new-app"] + [template] + oc_new_app_args + ["-n"] + [project]
+                             + ["--name=%s" % name])
 
         logger.info("Creating new app in project %s", project)
 
@@ -195,9 +199,10 @@ class OpenshiftBackend(K8sBackend):
         logger.info("Build application from local source in project %s", project)
 
         try:
-            run_cmd(c)
-        except subprocess.CalledProcessError as ex:
-            raise ConuException("oc start-build failed: %s" % ex)
+            Probe(timeout=-1, pause=5, count=2, expected_exceptions=subprocess.CalledProcessError,
+                  expected_retval=None, fnc=run_cmd, cmd=c).run()
+        except ProbeTimeout as e:
+            raise ConuException("Cannot start build of application: %s" % e)
 
     def request_service(self, app_name, expected_output=None):
         """
@@ -251,25 +256,16 @@ class OpenshiftBackend(K8sBackend):
         except subprocess.CalledProcessError as ex:
             raise ConuException("Cleanup failed: %s" % ex)
 
-    def login_to_registry(self, username):
+    @staticmethod
+    def login_to_registry(username):
         """
-        Login into docker daemon in OpenshiftCluster
+        Login within docker daemon to docker registry running in this OpenShift cluster
         :return:
         """
         with DockerBackend() as backend:
-            token = self.get_token()
-            backend.login(username, password=token, registry=REGISTRY, reauth=True)
-
-    def get_token(self):
-        """
-        Get token of user logged in OpenShift cluster
-        :return: str
-        """
-        try:
-            return run_cmd(
-                self._oc_command(["whoami", "-t"]), return_output=True).rstrip()  # remove '\n'
-        except subprocess.CalledProcessError as ex:
-            raise ConuException("oc whoami -t failed: %s" % ex)
+            token = get_oc_api_token()
+            backend.login(username, password=token,
+                          registry=OpenshiftBackend.get_internal_registry_ip(), reauth=True)
 
     @staticmethod
     def push_to_registry(image, repository, tag, project):
@@ -280,4 +276,20 @@ class OpenshiftBackend(K8sBackend):
         :param project: str, oc project
         :return: DockerImage, new docker image
         """
-        return image.push("%s/%s/%s" % (REGISTRY, project, repository), tag=tag)
+        return image.push("%s/%s/%s" % (OpenshiftBackend.get_internal_registry_ip(),
+                                        project, repository), tag=tag)
+
+    @staticmethod
+    def get_internal_registry_ip():
+        """
+        Search for `docker-registry` IP
+        :return: str, ip address
+        """
+        with OpenshiftBackend() as origin_backend:
+            services = origin_backend.list_services()
+            for service in services:
+                if service.name == 'docker-registry':
+                    logger.debug("Internal docker-registry IP: %s",
+                                 "{ip}:{port}".format(ip=service.get_ip(), port=PORT))
+                    return "{ip}:{port}".format(ip=service.get_ip(), port=PORT)
+        return None

@@ -502,7 +502,7 @@ class DockerImage(Image):
             raise ConuException("Exception when calling CoreV1Api->create_namespaced_pod: %s\n" % e)
 
         logger.info(
-            "Starting Pod %s in namespace %s" % (pod_instance.metadata.namespace, namespace))
+            "Starting Pod %s in namespace %s" % (pod_instance.metadata.name, namespace))
 
         return Pod(name=pod_instance.metadata.name,
                    namespace=pod_instance.metadata.namespace,
