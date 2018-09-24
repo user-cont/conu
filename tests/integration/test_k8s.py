@@ -16,17 +16,8 @@
 
 """
 Tests for Kubernetes backend
-
-FIXME
-In all tests we are using `time.sleep(30)` after creating namespace now. Reason is that it takes
-some time for new namespace to generate API tokens for service accounts.
-
-More information can be found in this issue:
-
-https://github.com/openshift/origin/issues/18472
 """
 
-import time
 import urllib3
 
 from conu import DockerBackend
@@ -47,7 +38,6 @@ def test_pod():
     with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
-        time.sleep(30)
 
         with DockerBackend() as backend:
             image = backend.ImageClass("openshift/hello-openshift")
@@ -69,7 +59,6 @@ def test_database_deployment():
     with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
-        time.sleep(30)
 
         with DockerBackend() as backend:
             postgres_image = backend.ImageClass("centos/postgresql-10-centos7")
@@ -107,7 +96,6 @@ def test_list_pods():
     with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
-        time.sleep(30)
 
         with DockerBackend() as backend:
 
@@ -128,7 +116,6 @@ def test_list_services():
     with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
-        time.sleep(30)
 
         labels = {"app": "postgres"}
 
@@ -147,7 +134,6 @@ def test_list_deployments():
     with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
-        time.sleep(30)
 
         with DockerBackend() as backend:
             postgres_image = backend.ImageClass("centos/postgresql-10-centos7")
@@ -181,7 +167,6 @@ def test_deployment_from_template():
     with K8sBackend(api_key=api_key) as k8s_backend:
 
         namespace = k8s_backend.create_namespace()
-        time.sleep(30)
 
         template = """
         apiVersion: apps/v1
@@ -230,7 +215,6 @@ def test_cleanup():
         # create two namespaces
         _ = k8s_backend.create_namespace()
         _ = k8s_backend.create_namespace()
-        time.sleep(30)
 
     # cleanup should delete two namespaces created with k8s backend
     assert len(
@@ -242,7 +226,6 @@ def test_cleanup():
         # create two namespaces
         _ = k8s_backend.create_namespace()
         _ = k8s_backend.create_namespace()
-        time.sleep(30)
 
     # no cleanup - namespaces are not deleted after work with backend is finished
     assert len(
