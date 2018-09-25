@@ -2,6 +2,7 @@
 
 CONU_REPOSITORY := docker.io/usercont/conu:dev
 TEST_IMAGE_NAME := conu-tests
+DOCS_IMAGE_NAME := conu-docs
 DOC_EXAMPLE_PATH := "docs/source/examples"
 VERSION := 0.4.0
 
@@ -19,6 +20,12 @@ exec-test:
 	PYTHONPATH=$(CURDIR) pytest-3 $(TEST_TARGET)
 
 check: test
+
+build-docs-container:
+	docker build --network host --tag=$(DOCS_IMAGE_NAME) -f ./Dockerfile.docs .
+
+docs-in-container: build-docs-container
+	docker run --net=host --rm -v $(CURDIR):/src -ti $(DOCS_IMAGE_NAME) bash -c "pip3 install . && make docs"
 
 docs:
 	make -C docs/ html

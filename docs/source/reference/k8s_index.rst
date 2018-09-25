@@ -12,3 +12,6 @@ Backend - Kubernetes
    :members:
    :inherited-members:
    :show-inheritance:
+
+.. autoclass:: conu.backend.k8s.backend.K8sCleanupPolicy
+   :members:

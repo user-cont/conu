@@ -3,10 +3,8 @@ Installation
 
 There are multiple ways of installing conu.
 
-From COPR
----------
-
-At the moment we only support Fedora:
+Fedora
+------
 
 .. code-block:: bash
 
