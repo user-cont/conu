@@ -39,7 +39,7 @@ Please take a few minutes to read GitHub's guide on [How to Contribute to Open S
 
 ### Dependencies
 
-[Kebechet](https://github.com/thoth-station/kebechet) bot keeps our python dependencies fresh and up-to-date. If you want to change or add new dependency please edit [requirements.in](/requirements.in), **NOT** `requirements.txt`, because it is updated automatically according to `requirements.in`.
+[Kebechet](https://github.com/thoth-station/kebechet) bot keeps our python dependencies fresh and up-to-date. If you want to change or add new dependency please edit [requirements.in](/requirements.in), **not** `requirements.txt`, because it is updated automatically based on `requirements.in`.
 
 ### Documentation
 
@@ -47,7 +47,7 @@ If you want to update documentation, find corresponding file in [docs](/docs) fo
 ```
 make docs-in-container
 ```
-and then documentation can be find in [/docs/build/html](/docs/build/html).
+and then documentation can be find in */docs/build/html*.
 
 ### Testing
 
@@ -57,7 +57,10 @@ For testing, we are using [pytest](https://docs.pytest.org/en/latest/) framework
 make test-in-container TEST_TARGET=<PATH>
 ```
 
-Substitute `<PATH>` with path to specific file, for example: `make test-in-container TEST_TARGET=tests/integration/test_k8s.py`
+Substitute `<PATH>` with path to specific file, for example:
+```
+make test-in-container TEST_TARGET=tests/integration/test_k8s.py
+```
 
 You may need to install some test dependencies, check [test-requirements](/test-requirements.sh) for more information.
 
