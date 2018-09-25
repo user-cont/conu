@@ -8,7 +8,7 @@ Fedora
 
 .. code-block:: bash
 
-    dnf install conu
+    dnf install python{2,3}-conu
 
 
 

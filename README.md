@@ -28,7 +28,7 @@ $ pip install --user conu
 If you are running Fedora, we have packaged `conu` in an RPM:
 
 ```
-$ dnf install conu
+$ dnf install python{2,3}-conu
 ```
 
 Please visit [our documentation](http://conu.readthedocs.io/en/latest/installation.html) for more info on installation.
@@ -38,7 +38,7 @@ Please visit [our documentation](http://conu.readthedocs.io/en/latest/installati
 You can try conu also in the container, but you have to:
 - mount docker socket
 - use `--cap-add SYS_ADMIN` for mounting containers/images
-- set `--privileged` option or turn off the selinux to allow access to docker inside the container:
+- set `--privileged` option or turn off the SELinux to allow access to docker inside the container:
 
 ```
 docker run -it --rm \
