@@ -365,3 +365,15 @@ def get_oc_api_token():
         return run_cmd(["oc", "whoami", "-t"], return_output=True).rstrip()  # remove '\n'
     except subprocess.CalledProcessError as ex:
         raise ConuException("oc whoami -t failed: %s" % ex)
+
+
+def is_oc_cluster_running():
+    """
+    Check status of OpenShift cluster
+    :return: bool, True if cluster is running otherwise False
+    """
+    try:
+        run_cmd(["oc", "cluster", "status"])
+        return True
+    except subprocess.CalledProcessError:
+        return False
