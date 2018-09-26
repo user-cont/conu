@@ -44,7 +44,7 @@ class Pod(object):
         :param name: name of pod
         :param namespace: str, namespace in which is pod created
         :param spec: pod spec
-        https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1PodSpec.md
+            https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1PodSpec.md
         """
 
         self.name = name
@@ -73,6 +73,7 @@ class Pod(object):
 
     def get_status(self):
         """
+
         get status of the Pod
         :return: V1PodStatus,
         https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1PodStatus.md
@@ -157,7 +158,7 @@ class Pod(object):
         """
         :param image_data: ImageMetadata
         :return: V1Pod,
-        https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1Pod.md
+            https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1Pod.md
         """
 
         # convert environment variables to Kubernetes objects

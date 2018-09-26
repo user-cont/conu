@@ -48,7 +48,8 @@ class Deployment(object):
         :param namespace: str, name of the namespace
         :param create_in_cluster: bool, if True deployment is created in Kubernetes cluster
         :param from_template: str, deployment template, example:
-        - https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
+               - https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
+
         """
 
         self.namespace = namespace

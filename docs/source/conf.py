@@ -61,7 +61,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'conu'
-copyright = '2017 Red Hat, Inc'
+copyright = '2018 Red Hat, Inc'
 author = 'Red Hat'
 
 import conu.version

@@ -37,6 +37,72 @@ Never contributed to an open-source project before?  No problem!  We're excited 
 
 Please take a few minutes to read GitHub's guide on [How to Contribute to Open Source](https://opensource.guide/how-to-contribute/).  It's a quick read, and it's a great way to introduce yourself to how things work behind the scenes in open-source projects
 
+### Dependencies
+
+[Kebechet](https://github.com/thoth-station/kebechet) bot keeps our python dependencies fresh and up-to-date. If you want to change or add new dependency please edit [requirements.in](/requirements.in), **not** `requirements.txt`, because it is updated automatically based on `requirements.in`.
+
+### Documentation
+
+If you want to update documentation, find corresponding file in [docs](/docs) folder. If you want to try changes locally use:
+```
+make docs-in-container
+```
+and then documentation can be find in */docs/build/html*.
+
+### Testing
+
+For testing, we are using [pytest](https://docs.pytest.org/en/latest/) framework. Tests are stored in the [tests](/tests) directory. We recommend to run tests inside docker container using:
+```
+# if TEST_TARGET is empty whole test suite is executed
+make test-in-container TEST_TARGET=<PATH>
+```
+
+Substitute `<PATH>` with path to specific file, for example:
+```
+make test-in-container TEST_TARGET=tests/integration/test_k8s.py
+```
+
+You may need to install some test dependencies, check [test-requirements](/test-requirements.sh) for more information.
+
+### Makefile
+
+Here are some important and useful directives of [Makefile](/Makefile):
+
+Install conu locally:
+```
+make install
+```
+
+Uninstall conu from the system:
+```
+make uninstall
+```
+
+Build new conu docker image:
+```
+make container-image
+```
+
+Run test suite inside docker container:
+```
+make test-in-container
+```
+
+Build documentation locally:
+```
+make docs-in-container
+```
+
+Run whole CI build (recommended on fresh CentOS Virtual machine):
+```
+make centos-ci-test
+```
+
+Install test requirements:
+```
+make install-test-requirements
+```
+
 ### How to contribute code to conu
 
 1. Create a fork of the `conu` repository.
@@ -48,7 +114,7 @@ Please take a few minutes to read GitHub's guide on [How to Contribute to Open S
 
 ### Requirements for Pull Requests
 
-* Please create Pull Requests against the `master` branch. 
+* Please create Pull Requests against the `master` branch.
 * Please make sure that your code complies with [PEP8](https://www.python.org/dev/peps/pep-0008/).
 * One line should not contain more than 100 characters.
 * Make sure that new code is covered by a test case (new or existing one).

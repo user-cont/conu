@@ -1,6 +1,10 @@
 # conu
-
+![PyPI](https://img.shields.io/pypi/v/conu.svg)
+![PyPI - License](https://img.shields.io/pypi/l/conu.svg)
+![PyPI - Status](https://img.shields.io/pypi/status/conu.svg)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/427eb0c5dfc040cea798b23575dba025)](https://www.codacy.com/app/user-cont/conu?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=user-cont/conu&amp;utm_campaign=Badge_Grade)
 [![Build Status](https://ci.centos.org/job/user-cont-conu-master/badge/icon)](https://ci.centos.org/job/user-cont-conu-master/)
+
 
 `conu` is a library which makes it easy to write tests for your containers
 and is handy when playing with containers inside your code.
@@ -24,8 +28,7 @@ $ pip install --user conu
 If you are running Fedora, we have packaged `conu` in an RPM:
 
 ```
-$ dnf copr enable ttomecek/conu
-$ dnf install python{2,3}-conu conu-doc
+$ dnf install python{2,3}-conu
 ```
 
 Please visit [our documentation](http://conu.readthedocs.io/en/latest/installation.html) for more info on installation.
@@ -35,14 +38,14 @@ Please visit [our documentation](http://conu.readthedocs.io/en/latest/installati
 You can try conu also in the container, but you have to:
 - mount docker socket
 - use `--cap-add SYS_ADMIN` for mounting containers/images
-- set `--privileged` option or turn off the selinux to allow access to docker inside the container:
+- set `--privileged` option or turn off the SELinux to allow access to docker inside the container:
 
 ```
 docker run -it --rm \
 -v /var/run/docker.sock:/var/run/docker.sock:z \
 --cap-add SYS_ADMIN \
 --privileged \
-modularitycontainers/conu:0.2.0 python3
+usercont/conu:0.5.0 python3
 ```
 
 ```python
@@ -63,7 +66,7 @@ docker run -it --rm \
 -v $PWD/my_source.py:/app/my_source.py:z \
 --cap-add SYS_ADMIN \
 --privileged \
-modularitycontainers/conu:0.2.0 python3 /app/my_source.py
+usercont/conu:0.5.0 python3 /app/my_source.py
 ```
 
 # Features
@@ -76,6 +79,7 @@ modularitycontainers/conu:0.2.0 python3 /app/my_source.py
 - get selinux context of files in an image
 - extend image using [s2i](https://github.com/openshift/source-to-image)
 - check all packages in image are signed with a key
+- run image inside Kubernetes pod
 
 ## Container
 - kill, get logs, exec a command, mount, remove, start, stop, wait, run - via api or via binary
@@ -106,6 +110,33 @@ modularitycontainers/conu:0.2.0 python3 /app/my_source.py
     - repeat N times
     - delay execution
     - delay between iterations
+
+## Kubernetes
+- create/delete new namespace
+- create/delete Pod
+- create/delete Deployment
+    - with parameters
+    - from template
+- create/delete Service
+- shortcut methods for getting:
+    - pod logs
+    - pod IP
+    - pod phase
+    - pod condition
+    - service IP
+- perform checks whether
+    - pod is ready  
+    - all pods are ready for specific deployment
+
+## OpenShift
+- create new app using `oc new-app` command
+    - support building s2i images from remote repository
+    - support building s2i images from local path
+    - support creating new applications using OpenShift templates
+- push images to internal OpenShift registry
+- request service
+- waiting until service is ready
+- cleanup objects of specific application in current namespace 
 
 # Docker example
 
@@ -194,7 +225,7 @@ If you want to test your images in Kubernetes locally, you will need to run kube
 
 After that, run minikube like this:
 ```bash
-$ minikube start --extra-config=apiserver.admission-control=""
+$ minikube start
 ```
 
 ## Kubernetes example
@@ -206,33 +237,37 @@ $ cat examples/k8s_deployment.py
 ```python
 from conu.backend.k8s.backend import K8sBackend
 from conu.backend.k8s.deployment import Deployment
+from conu.utils import get_oc_api_token
 
-with K8sBackend() as k8s_backend:
-    # create namespace with random name
+# obtain API key from OpenShift cluster. If you are not using OpenShift cluster for kubernetes tests
+# you need to replace `get_oc_api_token()` with your Bearer token. More information here:
+# https://kubernetes.io/docs/reference/access-authn-authz/authentication/
+api_key = get_oc_api_token()
+
+with K8sBackend(api_key=api_key) as k8s_backend:
+
     namespace = k8s_backend.create_namespace()
 
     template = """
     apiVersion: apps/v1
     kind: Deployment
     metadata:
-      name: nginx-deployment
+      name: hello-world
       labels:
-        app: nginx
+        app: hello-world
     spec:
       replicas: 3
       selector:
         matchLabels:
-          app: nginx
+          app: hello-world
       template:
         metadata:
           labels:
-            app: nginx
+            app: hello-world
         spec:
           containers:
-          - name: nginx
-            image: nginx:1.7.9
-            ports:
-            - containerPort: 80
+          - name: hello-openshift
+            image: openshift/hello-openshift
     """
 
     test_deployment = Deployment(namespace=namespace, from_template=template,
@@ -244,7 +279,6 @@ with K8sBackend() as k8s_backend:
     finally:
         test_deployment.delete()
         k8s_backend.delete_namespace(namespace)
-
 ```
 
 Let's run it and look at the logs:
@@ -253,23 +287,24 @@ Let's run it and look at the logs:
 $ python3 examples/k8s_deployment.py
 ```
 ```
-11:35:04.753 backend.py        INFO   conu has initiated, welcome to the party!
-11:35:04.850 backend.py        INFO   Creating namespace: namespace-ty1a
-11:35:04.885 deployment.py     INFO   Creating Deployment nginx-deployment in namespace: namespace-ty1a
-11:36:04.910 deployment.py     INFO   All pods are ready for deployment nginx-deployment in namespace: namespace-ty1a
-11:36:04.923 deployment.py     INFO   Deleting Deployment nginx-deployment in namespace: namespace-ty1a
-11:36:04.935 backend.py        INFO   Deleting namespace: namespace-ty1a
+13:23:09.479 backend.py        INFO   conu has initiated, welcome to the party!
+13:23:09.523 backend.py        INFO   Creating namespace: namespace-m4cz
+13:23:14.557 backend.py        INFO   Namespace is ready!
+13:23:19.562 deployment.py     INFO   Creating Deployment hello-world in namespace: namespace-m4cz
+13:23:27.625 deployment.py     INFO   All pods are ready for deployment hello-world in namespace: namespace-m4cz
+13:23:28.620 deployment.py     INFO   Deleting Deployment hello-world in namespace: namespace-m4cz
+13:23:28.654 backend.py        INFO   Deleting namespace: namespace-m4cz
 ```
 
 # Openshift
 
 ## Use conu for testing locally
 
-If you want to test your images in OpenShift locally, you need to run OpenShift cluster on your host. You can install it by following instructions in [openshift/origin github repository](https://github.com/openshift/origin/) or [minishift](https://github.com/minishift/minishift)
+If you want to test your images in OpenShift locally, you need to run OpenShift cluster on your host. You can install it by following instructions in OpenShift [origin](https://github.com/openshift/origin/) or [minishift](https://github.com/minishift/minishift) github repositories.
 
 After that, you may need to setup cluster, here is example setup:
 ``` bash
-oc cluster up --skip-registry-check=true
+oc cluster up
 oc login -u system:admin
 oadm policy add-role-to-user system:registry developer
 oadm policy add-role-to-user admin developer
@@ -280,7 +315,7 @@ oadm policy add-cluster-role-to-user cluster-admin developer
 oc login -u developer -p developer
 ```
 
-For more information, why do you need to grant all these rights to user see [accessing registry](﻿﻿https://docs.openshift.com/container-platform/3.3/install_config/registry/accessing_registry.html#access-user-prerequisites)
+For more information, why do you need to grant all these rights to user see [accessing registry](https://docs.openshift.com/container-platform/3.3/install_config/registry/accessing_registry.html#access-user-prerequisites)
 
 ## OpenShift example
 ``` bash
@@ -292,17 +327,16 @@ import logging
 
 from conu.backend.origin.backend import OpenshiftBackend
 from conu.backend.docker.backend import DockerBackend
+from conu.utils import get_oc_api_token
 
-# insert your API key - oc whoami -t
-API_KEY = '<API KEY>'
-
-with OpenshiftBackend(API_KEY, logging_level=logging.DEBUG) as openshift_backend:
+api_key = get_oc_api_token()
+with OpenshiftBackend(api_key=api_key, logging_level=logging.DEBUG) as openshift_backend:
     with DockerBackend(logging_level=logging.DEBUG) as backend:
         # builder image
         python_image = backend.ImageClass("centos/python-36-centos7")
 
         # docker login inside OpenShift internal registry
-        openshift_backend.login_to_registry('developer')
+        OpenshiftBackend.login_to_registry('developer')
 
         # create new app from remote source in OpenShift cluster
         app_name = openshift_backend.new_app(python_image,
@@ -327,45 +361,48 @@ $ python3 examples/openshift/openshift_s2i_remote.py
 ```
 
 ```
-07:39:42.185 backend.py        INFO   conu has initiated, welcome to the party!
-07:39:42.185 backend.py        DEBUG  conu version: 0.4.0
-07:39:42.296 backend.py        INFO   conu has initiated, welcome to the party!
-07:39:42.377 __init__.py       INFO   docker environment info: 'Client:\n Version:         1.13.1\n API version:     1.26\n Package version: docker-1.13.1-59.gitaf6b32b.fc27.x86_64\n Go version:      go1.9.6\n Git commit:      30c1ca9-unsupported\n Built:           Tue Jun 12 19:29:50 2018\n OS/Arch:         linux/amd64\n\nServer:\n Version:         1.13.1\n API version:     1.26 (minimum version 1.12)\n Package version: docker-1.13.1-59.gitaf6b32b.fc27.x86_64\n Go version:      go1.9.6\n Git commit:      30c1ca9-unsupported\n Built:           Tue Jun 12 19:29:50 2018\n OS/Arch:         linux/amd64\n Experimental:    false\n'
-07:39:42.412 backend.py        INFO   conu has initiated, welcome to the party!
-07:39:42.791 backend.py        INFO   Login to 172.30.1.1:5000 succeed
-07:39:43.080 image.py          INFO   The push refers to a repository [172.30.1.1:5000/myproject/python-36-centos7]
-07:39:43.086 image.py          INFO   Preparing
-07:39:43.086 image.py          INFO   Preparing
-07:39:43.086 image.py          INFO   Preparing
-07:39:43.086 image.py          INFO   Preparing
-07:39:43.086 image.py          INFO   Preparing
-07:39:43.087 image.py          INFO   Preparing
-07:39:43.087 image.py          INFO   Preparing
-07:39:43.087 image.py          INFO   Preparing
-07:39:43.087 image.py          INFO   Preparing
-07:39:43.117 image.py          INFO   Waiting
-07:39:43.120 image.py          INFO   Waiting
-07:39:43.121 image.py          INFO   Waiting
-07:39:43.121 image.py          INFO   Waiting
-07:39:43.261 image.py          INFO   Layer already exists
-07:39:43.361 image.py          INFO   Layer already exists
-07:39:43.365 image.py          INFO   Layer already exists
-07:39:43.366 image.py          INFO   Layer already exists
-07:39:43.412 image.py          INFO   Layer already exists
-07:39:43.413 image.py          INFO   Layer already exists
-07:39:43.472 image.py          INFO   Layer already exists
-07:39:43.515 image.py          INFO   Layer already exists
-07:39:43.522 image.py          INFO   Layer already exists
-07:39:43.747 image.py          INFO   latest: digest: sha256:7ab4d97b2f68a261dc32fe75dfa9aa8990e258f6f911f13a2c165b228eff45d2 size: 2211
-07:39:43.749 backend.py        INFO   Creating new app in project myproject
-07:39:44.305 backend.py        INFO   Waiting for service to get ready
-07:40:32.534 backend.py        INFO   Connection to service established and return expected output!
-07:40:33.487 backend.py        INFO   Deleting app
-07:40:35.872 backend.py        INFO   buildconfig "app-45yb" deleted
-07:40:35.872 backend.py        INFO   imagestream "app-45yb" deleted
-07:40:35.872 backend.py        INFO   deploymentconfig "app-45yb" deleted
-07:40:35.872 backend.py        INFO   service "app-45yb" deleted
-07:40:35.872 backend.py        INFO   pod "app-45yb-1-nscg0" deleted
+13:29:38.231 backend.py        INFO   conu has initiated, welcome to the party!
+13:29:38.231 backend.py        DEBUG  conu version: 0.5.0
+13:29:38.256 backend.py        INFO   conu has initiated, welcome to the party!
+13:29:38.256 backend.py        DEBUG  conu version: 0.5.0
+13:29:38.314 __init__.py       INFO   docker environment info: 'Client:\n Version:         1.13.1\n API version:     1.26\n Package version: docker-1.13.1-74.git6e3bb8e.el7.centos.x86_64\n Go version:      go1.10.3\n Git commit:      1556cce-unsupported\n Built:           Wed Aug  1 17:21:17 2018\n OS/Arch:         linux/amd64\n\nServer:\n Version:         1.13.1\n API version:     1.26 (minimum version 1.12)\n Package version: docker-1.13.1-74.git6e3bb8e.el7.centos.x86_64\n Go version:      go1.9.4\n Git commit:      6e3bb8e/1.13.1\n Built:           Tue Aug 21 15:23:37 2018\n OS/Arch:         linux/amd64\n Experimental:    false\n'
+13:29:38.326 backend.py        INFO   conu has initiated, welcome to the party!
+13:29:38.584 backend.py        INFO   conu has initiated, welcome to the party!
+13:29:38.656 backend.py        INFO   Login to 172.30.1.1:5000 succeed
+13:29:38.656 backend.py        INFO   conu has initiated, welcome to the party!
+13:29:38.673 image.py          INFO   The push refers to a repository [172.30.1.1:5000/myproject/python-36-centos7]
+13:29:38.689 image.py          INFO   Preparing
+13:29:38.689 image.py          INFO   Preparing
+13:29:38.689 image.py          INFO   Preparing
+13:29:38.690 image.py          INFO   Preparing
+13:29:38.690 image.py          INFO   Preparing
+13:29:38.690 image.py          INFO   Preparing
+13:29:38.690 image.py          INFO   Preparing
+13:29:38.690 image.py          INFO   Preparing
+13:29:38.690 image.py          INFO   Preparing
+13:29:38.700 image.py          INFO   Waiting
+13:29:38.701 image.py          INFO   Waiting
+13:29:38.701 image.py          INFO   Waiting
+13:29:38.701 image.py          INFO   Waiting
+13:29:38.747 image.py          INFO   Layer already exists
+13:29:38.747 image.py          INFO   Layer already exists
+13:29:38.753 image.py          INFO   Layer already exists
+13:29:38.754 image.py          INFO   Layer already exists
+13:29:38.772 image.py          INFO   Layer already exists
+13:29:38.807 image.py          INFO   Layer already exists
+13:29:38.807 image.py          INFO   Layer already exists
+13:29:38.807 image.py          INFO   Layer already exists
+13:29:38.807 image.py          INFO   Layer already exists
+13:29:39.065 image.py          INFO   latest: digest: sha256:51cf14c1d1491c5ab0e902c52740c22d4fff52f95111b97d195d12325a426350 size: 2210
+13:29:39.065 backend.py        INFO   Creating new app in project myproject
+13:29:39.558 backend.py        INFO   Waiting for service to get ready
+13:30:06.768 backend.py        INFO   Connection to service established and return expected output!
+13:30:07.729 backend.py        INFO   Deleting app
+13:30:09.504 backend.py        INFO   deploymentconfig "app-u4ow" deleted
+13:30:09.504 backend.py        INFO   buildconfig "app-u4ow" deleted
+13:30:09.504 backend.py        INFO   imagestream "app-u4ow" deleted
+13:30:09.504 backend.py        INFO   pod "app-u4ow-1-vltwq" deleted
+13:30:09.504 backend.py        INFO   service "app-u4ow" deleted
 
 ```
 
@@ -380,3 +417,12 @@ $ python3 examples/openshift/openshift_s2i_remote.py
 
 # Documentation
 For more info see our documentation at [conu.readthedocs.io](http://conu.readthedocs.io/en/latest/).
+
+# How to release conu
+
+We are using awesome [release-bot](https://github.com/user-cont/release-bot) for new conu releases.
+If you want to make new release:
+
+- create new issue with title `x.y.z release` and wait for release bot to create new PR.
+- polish **CHANGELOG.md** and merge if tests are passing.
+- Sit down, relax and watch how release bot is doing the hard work.

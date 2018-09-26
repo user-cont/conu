@@ -228,9 +228,9 @@ class K8sCleanupPolicy(enum.Enum):
 
     * NOTHING - clean nothing
     * EVERYTHING - delete just objects in all namespaces
-    associated with this backend - (pods, service, deployments)
+        associated with this backend - (pods, service, deployments)
     * NAMESPACES - delete all namespaces associated with this backend and
-     objects in these namespaces (pods, service, deployments)
+        objects in these namespaces (pods, service, deployments)
     * PODS - delete all pods in namespaces associated with this backend
     * SERVICES - delete all services in namespaces associated with this backend
     * DEPLOYMENTS - delete all deployments in namespaces associated with this backend

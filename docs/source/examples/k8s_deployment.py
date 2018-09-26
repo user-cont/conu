@@ -17,39 +17,41 @@
 """
 Create deployment using template and check if all pods are ready
 """
-import time
+import logging
+
 from conu.backend.k8s.backend import K8sBackend
 from conu.backend.k8s.deployment import Deployment
 from conu.utils import get_oc_api_token
 
+# obtain API key from OpenShift cluster. If you are not using OpenShift cluster for kubernetes tests
+# you need to replace `get_oc_api_token()` with your Bearer token. More information here:
+# https://kubernetes.io/docs/reference/access-authn-authz/authentication/
 api_key = get_oc_api_token()
-with K8sBackend(api_key=api_key) as k8s_backend:
+
+with K8sBackend(api_key=api_key, logging_level=logging.DEBUG) as k8s_backend:
 
     namespace = k8s_backend.create_namespace()
-    time.sleep(30)
 
     template = """
     apiVersion: apps/v1
     kind: Deployment
     metadata:
-      name: nginx-deployment
+      name: hello-world
       labels:
-        app: nginx
+        app: hello-world
     spec:
       replicas: 3
       selector:
         matchLabels:
-          app: nginx
+          app: hello-world
       template:
         metadata:
           labels:
-            app: nginx
+            app: hello-world
         spec:
           containers:
-          - name: nginx
-            image: nginx:1.7.9
-            ports:
-            - containerPort: 80
+          - name: hello-openshift
+            image: openshift/hello-openshift
     """
 
     test_deployment = Deployment(namespace=namespace, from_template=template,

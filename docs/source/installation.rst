@@ -3,15 +3,12 @@ Installation
 
 There are multiple ways of installing conu.
 
-From COPR
----------
-
-At the moment we only support Fedora:
+Fedora
+------
 
 .. code-block:: bash
 
-    dnf copr enable ttomecek/conu
-    dnf install python{2,3}-conu conu-doc
+    dnf install python{2,3}-conu
 
 
 
@@ -30,7 +27,7 @@ Clone the upstream git repository:
 
 .. code-block:: bash
 
-   git clone https://github.com/fedora-modularity/conu
+   git clone https://github.com/user-cont/conu
 
 If using Fedora, use the provided helper script to install dependencies:
 
