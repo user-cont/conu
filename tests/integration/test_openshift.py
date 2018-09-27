@@ -23,6 +23,7 @@ import pytest
 
 from conu.backend.origin.backend import OpenshiftBackend
 from conu.backend.docker.backend import DockerBackend
+from conu.backend.origin.registry import login_to_registry
 from conu.utils import get_oc_api_token, oc_command_exists, is_oc_cluster_running
 
 
@@ -37,7 +38,7 @@ class TestOpenshift(object):
             with DockerBackend(logging_level=logging.DEBUG) as backend:
                 python_image = backend.ImageClass("centos/python-36-centos7")
 
-                OpenshiftBackend.login_to_registry('developer')
+                login_to_registry('developer', token=api_key)
 
                 app_name = openshift_backend.new_app(
                     python_image,
@@ -59,7 +60,7 @@ class TestOpenshift(object):
             with DockerBackend(logging_level=logging.DEBUG) as backend:
                 python_image = backend.ImageClass("centos/python-36-centos7")
 
-                OpenshiftBackend.login_to_registry('developer')
+                login_to_registry('developer', token=api_key)
 
                 app_name = openshift_backend.new_app(
                     python_image,
@@ -82,7 +83,7 @@ class TestOpenshift(object):
                 python_image = backend.ImageClass("centos/python-36-centos7", tag="latest")
                 psql_image = backend.ImageClass("centos/postgresql-96-centos7", tag="9.6")
 
-                OpenshiftBackend.login_to_registry('developer')
+                login_to_registry('developer', token=api_key)
 
                 app_name = openshift_backend.new_app(
                     image=python_image,

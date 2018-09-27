@@ -27,14 +27,12 @@ import requests
 
 from requests.exceptions import ConnectionError
 
+from conu.backend.origin.registry import push_to_registry
 from conu.backend.k8s.backend import K8sBackend
-from conu.backend.docker.backend import DockerBackend
 from conu.exceptions import ConuException
 from conu.utils import oc_command_exists, run_cmd
-from conu.backend.origin.constants import PORT
 from conu.utils.http_client import get_url
 from conu.utils.probes import Probe, ProbeTimeout
-from conu.utils import get_oc_api_token
 
 
 logger = logging.getLogger(__name__)
@@ -123,8 +121,7 @@ class OpenshiftBackend(K8sBackend):
                                            other_images, oc_new_app_args, project)
 
         else:
-            new_image = OpenshiftBackend.push_to_registry(image, image.name.split('/')[-1],
-                                                          image.tag, project)
+            new_image = push_to_registry(image, image.name.split('/')[-1], image.tag, project)
 
             c = self._oc_command(
                 ["new-app"] + oc_new_app_args + [new_image.name + "~" + source] +
@@ -170,14 +167,13 @@ class OpenshiftBackend(K8sBackend):
         """
         # push images to registry
         repository, tag = list(name_in_template.items())[0]
-        OpenshiftBackend.push_to_registry(image, repository, tag, project)
+        push_to_registry(image, repository, tag, project)
 
         other_images = other_images or []
 
         for o in other_images:
             image, tag = list(o.items())[0]
-            OpenshiftBackend.push_to_registry(image, tag.split(':')[0], tag.split(':')[1],
-                                              project)
+            push_to_registry(image, tag.split(':')[0], tag.split(':')[1], project)
 
         oc_new_app_args += ["-p", "NAME=%s" % name, "-p", "NAMESPACE=%s" % project]
 
@@ -255,43 +251,3 @@ class OpenshiftBackend(K8sBackend):
                 logger.info(line)
         except subprocess.CalledProcessError as ex:
             raise ConuException("Cleanup failed: %s" % ex)
-
-    @staticmethod
-    def login_to_registry(username, token=None):
-        """
-        Login within docker daemon to docker registry running in this OpenShift cluster
-        :return:
-        """
-
-        token = token or get_oc_api_token()
-
-        with DockerBackend() as backend:
-            backend.login(username, password=token,
-                          registry=OpenshiftBackend.get_internal_registry_ip(), reauth=True)
-
-    @staticmethod
-    def push_to_registry(image, repository, tag, project):
-        """
-        :param image: DockerImage, image to push
-        :param repository: str, new name of image
-        :param tag: str, new tag of image
-        :param project: str, oc project
-        :return: DockerImage, new docker image
-        """
-        return image.push("%s/%s/%s" % (OpenshiftBackend.get_internal_registry_ip(),
-                                        project, repository), tag=tag)
-
-    @staticmethod
-    def get_internal_registry_ip():
-        """
-        Search for `docker-registry` IP
-        :return: str, ip address
-        """
-        with OpenshiftBackend() as origin_backend:
-            services = origin_backend.list_services()
-            for service in services:
-                if service.name == 'docker-registry':
-                    logger.debug("Internal docker-registry IP: %s",
-                                 "{ip}:{port}".format(ip=service.get_ip(), port=PORT))
-                    return "{ip}:{port}".format(ip=service.get_ip(), port=PORT)
-        return None
