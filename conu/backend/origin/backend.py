@@ -63,7 +63,7 @@ class OpenshiftBackend(K8sBackend):
         """
         perform a HTTP request
 
-        :param path: str, path within the reqest, e.g. "/api/version"
+        :param path: str, path within the request, e.g. "/api/version"
         :param method: str, HTTP method
         :param host: str, if None, set to 127.0.0.1
         :param port: str or int, if None, set to 8080
@@ -257,13 +257,15 @@ class OpenshiftBackend(K8sBackend):
             raise ConuException("Cleanup failed: %s" % ex)
 
     @staticmethod
-    def login_to_registry(username):
+    def login_to_registry(username, token=None):
         """
         Login within docker daemon to docker registry running in this OpenShift cluster
         :return:
         """
+
+        token = token or get_oc_api_token()
+
         with DockerBackend() as backend:
-            token = get_oc_api_token()
             backend.login(username, password=token,
                           registry=OpenshiftBackend.get_internal_registry_ip(), reauth=True)
 
