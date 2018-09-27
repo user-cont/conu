@@ -17,8 +17,6 @@
 """
 This is backend for kubernetes
 """
-import string
-import random
 import logging
 import enum
 
@@ -31,6 +29,7 @@ from conu.apidefs.metadata import ImageMetadata
 import conu.backend.k8s.client as k8s_client
 from conu.exceptions import ConuException
 from conu.utils.probes import Probe
+from conu.utils import random_str
 
 from kubernetes import client
 from kubernetes.client.rest import ApiException
@@ -110,10 +109,7 @@ class K8sBackend(Backend):
         Create namespace with random name
         :return: name of new created namespace
         """
-        random_string = ''.join(
-            random.choice(string.ascii_lowercase + string.digits) for _ in range(4))
-
-        name = 'namespace-{random_string}'.format(random_string=random_string)
+        name = 'namespace-{random_string}'.format(random_string=random_str(5))
 
         namespace = client.V1Namespace(metadata=client.V1ObjectMeta(name=name))
 

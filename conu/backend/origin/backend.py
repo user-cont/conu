@@ -20,8 +20,6 @@ This is backend for OpenShift
 
 import logging
 import subprocess
-import string
-import random
 import os.path
 import requests
 
@@ -30,7 +28,7 @@ from requests.exceptions import ConnectionError
 from conu.backend.origin.registry import push_to_registry
 from conu.backend.k8s.backend import K8sBackend
 from conu.exceptions import ConuException
-from conu.utils import oc_command_exists, run_cmd
+from conu.utils import oc_command_exists, run_cmd, random_str
 from conu.utils.http_client import get_url
 from conu.utils.probes import Probe, ProbeTimeout
 
@@ -107,9 +105,7 @@ class OpenshiftBackend(K8sBackend):
             raise ConuException('cannot combine template parameter with source parameter')
 
         # app name is generated randomly
-        random_string = ''.join(
-            random.choice(string.ascii_lowercase + string.digits) for _ in range(4))
-        name = 'app-{random_string}'.format(random_string=random_string)
+        name = 'app-{random_string}'.format(random_string=random_str(5))
 
         oc_new_app_args = oc_new_app_args or []
 
