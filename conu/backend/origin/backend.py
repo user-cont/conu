@@ -132,17 +132,7 @@ class OpenshiftBackend(K8sBackend):
                 raise ConuException("oc new-app failed: %s" % ex)
 
             if os.path.isdir(source):
-                c = self._oc_command(["-n"] + [project] + ["start-build"] +
-                                     [name] + ["--from-dir=%s" % source])
-
-                logger.info("Build application from local source in project %s", project)
-
-                try:
-                    Probe(timeout=-1, pause=5, count=2,
-                          expected_exceptions=subprocess.CalledProcessError,
-                          expected_retval=None, fnc=run_cmd, cmd=c).run()
-                except ProbeTimeout as e:
-                    raise ConuException("Cannot start build of application: %s" % e)
+                self.start_build(name, ["-n", project, "start-build", "--from-dir=%s" % source])
 
         return name
 
@@ -186,9 +176,22 @@ class OpenshiftBackend(K8sBackend):
         except subprocess.CalledProcessError as ex:
             raise ConuException("oc new-app failed: %s" % ex)
 
-        c = self._oc_command(["start-build"] + [name])
+        self.start_build(name)
 
-        logger.info("Build application from local source in project %s", project)
+    def start_build(self, build, args=None):
+        """
+        Start new build, raise exception if build failed
+        :param build: str, name of the build
+        :param args: list of str, another args of 'oc start-build' commands
+        :return: None
+        """
+
+        args = args or []
+
+        c = self._oc_command(["start-build"] + [build] + args)
+
+        logger.info("Executing build %s" % build)
+        logger.info("Build command: %s" % " ".join(c))
 
         try:
             Probe(timeout=-1, pause=5, count=2, expected_exceptions=subprocess.CalledProcessError,
