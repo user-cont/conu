@@ -199,19 +199,22 @@ class OpenshiftBackend(K8sBackend):
         except ProbeTimeout as e:
             raise ConuException("Cannot start build of application: %s" % e)
 
-    def request_service(self, app_name, expected_output=None):
+    def request_service(self, app_name, port, expected_output=None):
         """
         Make request on service of app. If there is connection error function return False.
         :param app_name: str, name of app
         :param expected_output: str, If not None method will check output returned from request
                and try to find matching string.
+        :param port: str or int, port of the service
         :return: bool, True if connection was established False if there was connection error
         """
+
+        # get ip of service
         ip = [service.get_ip() for service in self.list_services()
               if service.name == app_name][0]
 
         try:
-            output = self.http_request(host=ip)
+            output = self.http_request(host=ip, port=port)
             if expected_output is not None:
                 if expected_output not in output.text:
                     raise ConuException(
