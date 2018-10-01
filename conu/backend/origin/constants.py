@@ -18,4 +18,4 @@
 This is constants used in origin backend
 """
 
-PORT = "5000"
+INTERNAL_REGISTRY_PORT = "5000"

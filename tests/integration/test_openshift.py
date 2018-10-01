@@ -85,16 +85,20 @@ class TestOpenshift(object):
 
                 login_to_registry('developer', token=api_key)
 
+                project = 'myproject'
+
                 app_name = openshift_backend.new_app(
                     image=python_image,
                     template="https://raw.githubusercontent.com/sclorg/django-ex"
                              "/master/openshift/templates/django-postgresql.json",
-                    oc_new_app_args=["-p", "SOURCE_REPOSITORY_REF=master", "-p",
+                    oc_new_app_args=["-p", "NAMESPACE=%s" % project,
+                                     "-p", "NAME=django-psql-example",
+                                     "-p", "SOURCE_REPOSITORY_REF=master", "-p",
                                      "PYTHON_VERSION=3.6",
                                      "-p", "POSTGRESQL_VERSION=9.6"],
                     name_in_template={"python": "3.6"},
                     other_images=[{psql_image: "postgresql:9.6"}],
-                    project='myproject')
+                    project=project)
 
                 try:
                     openshift_backend.wait_for_service(

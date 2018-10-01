@@ -18,7 +18,7 @@
 This are the methods helpful while working with OpenShift internal docker registry
 """
 
-from conu.backend.origin.constants import PORT
+from conu.backend.origin.constants import INTERNAL_REGISTRY_PORT
 from conu.backend.docker.backend import DockerBackend
 from conu.utils import get_oc_api_token
 
@@ -57,6 +57,6 @@ def get_internal_registry_ip():
         for service in services:
             if service.name == 'docker-registry':
                 logger.debug("Internal docker-registry IP: %s",
-                             "{ip}:{port}".format(ip=service.get_ip(), port=PORT))
-                return "{ip}:{port}".format(ip=service.get_ip(), port=PORT)
+                             "{ip}:{port}".format(ip=service.get_ip(), port=INTERNAL_REGISTRY_PORT))
+                return "{ip}:{port}".format(ip=service.get_ip(), port=INTERNAL_REGISTRY_PORT)
     return None

@@ -161,8 +161,6 @@ class OpenshiftBackend(K8sBackend):
             image, tag = list(o.items())[0]
             push_to_registry(image, tag.split(':')[0], tag.split(':')[1], project)
 
-        oc_new_app_args += ["-p", "NAME=%s" % name, "-p", "NAMESPACE=%s" % project]
-
         c = self._oc_command(["new-app"] + [template] + oc_new_app_args + ["-n"] + [project]
                              + ["--name=%s" % name])
 
