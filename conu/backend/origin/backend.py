@@ -132,7 +132,7 @@ class OpenshiftBackend(K8sBackend):
                 raise ConuException("oc new-app failed: %s" % ex)
 
             if os.path.isdir(source):
-                self.start_build(name, ["-n", project, "start-build", "--from-dir=%s" % source])
+                self.start_build(name, ["-n", project, "--from-dir=%s" % source])
 
         return name
 
@@ -174,8 +174,6 @@ class OpenshiftBackend(K8sBackend):
         except subprocess.CalledProcessError as ex:
             raise ConuException("oc new-app failed: %s" % ex)
 
-        self.start_build(name)
-
     def start_build(self, build, args=None):
         """
         Start new build, raise exception if build failed
@@ -200,7 +198,7 @@ class OpenshiftBackend(K8sBackend):
     def request_service(self, app_name, port, expected_output=None):
         """
         Make request on service of app. If there is connection error function return False.
-        :param app_name: str, name of app
+        :param app_name: str, name of the app
         :param expected_output: str, If not None method will check output returned from request
                and try to find matching string.
         :param port: str or int, port of the service
@@ -223,19 +221,55 @@ class OpenshiftBackend(K8sBackend):
         except ConnectionError:
             return False
 
-    def wait_for_service(self, app_name, expected_output=None, timeout=100):
+    def wait_for_service(self, app_name, port, expected_output=None, timeout=100):
         """
         Block until service is not ready to accept requests,
         raises an exc ProbeTimeout if timeout is reached
-        :param app_name: str, name of app
+        :param app_name: str, name of the app
+        :param port: str or int, port of the service
         :param expected_output: If not None method will check output returned from request
                and try to find matching string.
         :param timeout: int or float (seconds), time to wait for pod to run
         :return: None
         """
         logger.info('Waiting for service to get ready')
-        Probe(timeout=timeout, fnc=self.request_service,
-              app_name=app_name, expected_output=expected_output, expected_retval=True).run()
+        try:
+
+            Probe(timeout=timeout, fnc=self.request_service, app_name=app_name,
+                  port=port, expected_output=expected_output, expected_retval=True).run()
+        except ProbeTimeout:
+            logger.warning("Timeout: Request to service unsuccessful.")
+            ConuException("Timeout: Request to service unsuccessful.")
+
+    def get_status(self):
+        """
+        Get status of OpenShift cluster, similar to `oc cluster status`
+        :return: str
+        """
+        try:
+            c = self._oc_command(["cluster", "status"])
+            o = run_cmd(c, return_output=True)
+            for line in o.split('\n'):
+                logger.info(line)
+            return o
+        except subprocess.CalledProcessError as ex:
+            raise ConuException("Cannot obtain OpenShift cluster status: %s" % ex)
+
+    def get_logs(self, name):
+        """
+        Get logs from all pods
+        :param name: str, name of app
+        :return: str, cluster status and logs from all pods
+        """
+        logs = self.get_status()
+
+        for pod in self.list_pods():
+            if name in pod.name:  # get just logs from pods related to app
+                pod_logs = pod.get_logs()
+                if pod_logs:
+                    logs += pod_logs
+
+        return logs
 
     def clean_project(self, app_name=None, delete_all=False):
         """

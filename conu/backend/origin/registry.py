@@ -17,10 +17,14 @@
 """
 This are the methods helpful while working with OpenShift internal docker registry
 """
+import logging
 
 from conu.backend.origin.constants import INTERNAL_REGISTRY_PORT
 from conu.backend.docker.backend import DockerBackend
 from conu.utils import get_oc_api_token
+import conu.backend.origin.backend
+
+logger = logging.getLogger(__name__)
 
 
 def login_to_registry(username, token=None):
@@ -52,7 +56,7 @@ def get_internal_registry_ip():
     Search for `docker-registry` IP
     :return: str, ip address
     """
-    with OpenshiftBackend() as origin_backend:
+    with conu.backend.origin.backend.OpenshiftBackend() as origin_backend:
         services = origin_backend.list_services()
         for service in services:
             if service.name == 'docker-registry':
