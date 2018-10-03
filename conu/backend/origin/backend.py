@@ -260,11 +260,29 @@ class OpenshiftBackend(K8sBackend):
         logger.info('Waiting for service to get ready')
         try:
 
-            Probe(timeout=timeout, pause=5, count=10, fnc=self.request_service, app_name=app_name,
+            Probe(timeout=timeout, pause=10, fnc=self.request_service, app_name=app_name,
                   port=port, expected_output=expected_output, expected_retval=True).run()
         except ProbeTimeout:
             logger.warning("Timeout: Request to service unsuccessful.")
             raise ConuException("Timeout: Request to service unsuccessful.")
+
+    def all_pods_are_ready(self, app_name):
+        """
+        Check if all pods are ready for specific app
+        :param app_name: str, name of the app
+        :return: bool
+        """
+        app_pod_exists = False
+        for pod in self.list_pods():
+            if app_name in pod.name and 'build' not in pod.name and 'deploy' not in pod.name:
+                app_pod_exists = True
+                if not pod.is_ready():
+                    return False
+        if app_pod_exists:
+            logger.info("All pods are ready!")
+            return True
+
+        return False
 
     def get_status(self):
         """
