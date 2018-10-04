@@ -24,3 +24,12 @@ FEDORA_MINIMAL_IMAGE = "{}:{}".format(FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_
 S2I_IMAGE = "punchbag"
 
 THE_HELPER_IMAGE = "rudolph"
+
+
+CENTOS_PYTHON_3 = "centos/python-36-centos7"
+CENTOS_MARIADB_10_2 = "centos/mariadb-102-centos7"
+MY_PROJECT = "myproject"
+OC_CLUSTER_USER = "developer"
+CENTOS_POSTGRES_9_6 = "centos/postgresql-96-centos7"
+CENTOS_POSTGRES_9_6_TAG = "9.6"
+DJANGO_POSTGRES_TEMPLATE = "django-psql-example"

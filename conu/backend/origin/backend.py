@@ -72,9 +72,7 @@ class OpenshiftBackend(K8sBackend):
         port = port or 8080
         url = get_url(host=host, port=port, path=path)
 
-        logger.info("Request url: %s" % url)
-
-        return self.http_session.request(method, url, json=json, data=data, verify=False)
+        return self.http_session.request(method, url, json=json, data=data)
 
     def _oc_command(self, args):
         """
@@ -231,13 +229,12 @@ class OpenshiftBackend(K8sBackend):
         if expected_output is not None:
             try:
                 output = self.http_request(host=ip, port=port)
-                logger.info("Requesting service %s with IP address: %s" % (app_name, ip))
-                logger.info("Answer: %s" % output.text)
                 if expected_output not in output.text:
                     raise ConuException(
                         "Connection to service established, but didn't match expected output")
                 else:
                     logger.info("Connection to service established and return expected output!")
+                    return True
             except ConnectionError as e:
                 logger.info("Connection to service failed %s!" % e)
                 return False
