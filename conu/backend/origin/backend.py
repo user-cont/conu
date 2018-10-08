@@ -202,8 +202,8 @@ class OpenshiftBackend(K8sBackend):
 
         c = self._oc_command(["start-build"] + [build] + args)
 
-        logger.info("Executing build %s" % build)
-        logger.info("Build command: %s" % " ".join(c))
+        logger.info("Executing build %s", build)
+        logger.info("Build command: %s", " ".join(c))
 
         try:
             Probe(timeout=-1, pause=5, count=2, expected_exceptions=subprocess.CalledProcessError,
@@ -236,7 +236,7 @@ class OpenshiftBackend(K8sBackend):
                     logger.info("Connection to service established and return expected output!")
                     return True
             except ConnectionError as e:
-                logger.info("Connection to service failed %s!" % e)
+                logger.info("Connection to service failed %s!", e)
                 return False
         elif check_port(port, host=ip):  # check if port is open
             return True
@@ -328,7 +328,7 @@ class OpenshiftBackend(K8sBackend):
             logger.info('Deleting all objects in current project')
         else:
             args = "-l app=%s" % app_name
-            logger.info('Deleting all objects with label app=%s' % app_name)
+            logger.info('Deleting all objects with label app=%s', app_name)
 
         try:
             o = run_cmd(self._oc_command(["delete", "all", args]),
