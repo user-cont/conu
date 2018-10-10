@@ -21,5 +21,9 @@ if [ "${NAME}" == "Fedora" ]; then
         python3-pyxattr python2-pyxattr \
         python3-pytest python2-pytest \
         gcc python3-devel python2-devel \
+        python2-enum34 \
+        python3-requests python2-requests \
+        python3-docker python2-docker \
+        python3-kubernetes python2-kubernetes \
         make
 fi
