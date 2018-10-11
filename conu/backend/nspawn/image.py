@@ -25,14 +25,31 @@ import hashlib
 import glob
 import subprocess
 import time
+
+import shutil
+
+#try:
+#    from urllib import urlopen
+#except:
+    # python3 import
+#    from urllib.request import urlopen
+
+#try:
+#    import lzma
+#except:
+    # python2 does not contain lzma directly
+#    import backports.lzma as lzma
+
 from copy import deepcopy
+
 
 from conu.backend.nspawn import constants
 from conu.backend.nspawn.container import NspawnContainer
+from conu.backend.nspawn.constants import CONU_IMAGES_STORE
 from conu.apidefs.filesystem import Filesystem
 from conu.apidefs.image import Image
 from conu.exceptions import ConuException
-from conu.utils import run_cmd, random_str, convert_kv_to_dict, mkstemp, mkdtemp, command_exists
+from conu.utils import run_cmd, random_str, mkstemp, mkdtemp, command_exists
 from conu.utils.filesystem import Volume
 
 logger = logging.getLogger(__name__)
@@ -75,7 +92,7 @@ class NspawnImageFS(Filesystem):
         # TODO RFE: use libguestfs if possible
         # TODO: allow pass partition number to mount exact partition of disc
         self.loopdevice = run_cmd(
-            ["losetup", "--show", "-f", self.image.get_metadata()["Path"]],
+            ["losetup", "--show", "-f", self.image.local_location],
             return_output=True).strip()
         run_cmd(["partprobe", self.loopdevice])
         partitions = glob.glob("{}*".format(self.loopdevice))
@@ -136,6 +153,7 @@ class NspawnImage(Image):
                 "'pull_policy' is not an instance of ImagePullPolicy")
         self.pull_policy = pull_policy
         self.location = location
+        self.local_location = os.path.join(CONU_IMAGES_STORE, self.name + ("_" + self.tag if self.tag else ""))
         # TODO: move this code to API __init__, will be same for various
         # backends or maybe add there some callback method
         if self.pull_policy == ImagePullPolicy.ALWAYS:
@@ -223,41 +241,39 @@ class NspawnImage(Image):
 
         :return: bool
         """
-        cmd = ["machinectl", "--no-pager", "image-status", self.name]
-        try:
-            run_cmd(cmd, return_output=True)  # ditch output
-            return True
-        except subprocess.CalledProcessError as ex:
-            logger.info("nspawn image %s is not present probably: %s",
-                        self.name, ex.output)
-            return False
+
+        return os.path.exists(self.local_location)
 
     def pull(self):
         """
-        Pull this image from URL. Raises an exception if the image is not found in
-        the registry.
+        Pull this image from URL.
 
         :return: None
         """
-        ident = self.get_id()
-        try:
-            if self._is_local():
-                logger.debug(
-                    "Try to pull local file: {} -> {}".format(self.name, ident))
-                run_cmd(["machinectl", "--no-pager", "--verify=no",
-                         "import-raw", self.location, ident])
+        if not os.path.exists(CONU_IMAGES_STORE):
+            os.makedirs(CONU_IMAGES_STORE)
+        logger.debug(
+            "Try to pull: {} -> {}".format(self.location, self.local_location))
+
+        if not self._is_local():
+            compressed_location = self.local_location + ".xz"
+            run_cmd(["curl", "-o", compressed_location, self.location])
+            run_cmd(["xz", "-d", compressed_location])
+            # TODO: original way removed, because troubles with python2/3 compat and sparse files
+            #with open(self.local_location, mode="wb") as writetofile:
+            #    writetofile.write(lzma.decompress(urlopen(self.location).read()))
+        else:
+            if self.location.endswith("xz"):
+                compressed_location = self.local_location + ".xz"
+                run_cmd(["cp", self.location, compressed_location])
+                run_cmd(["xz", "-d", compressed_location])
+                # TODO: original way removed, because troubles with python2/3 compat and sparse files
+                #with open(self.local_location, mode="wb") as writetofile:
+                #    writetofile.write(lzma.decompress(open(self.location).read()))
             else:
-                logger.debug(
-                    "Try to pull URL: {} -> {}".format(self.name, ident))
-                run_cmd(["machinectl", "--no-pager", "--verify=no",
-                         "pull-raw", self.location, ident])
-                # add sleep after pull-raw to ensure, kernel finished all file ops, and original file is not blocked
-                time.sleep(constants.DEFAULT_SLEEP)
-        except ValueError as error:
-            raise ConuException(
-                "There was an error while pulling the image %s: %s",
-                self.name,
-                error)
+                run_cmd(["cp", self.location, self.local_location])
+                #shutil.copy(self.location, self.local_location)
+
 
     def create_snapshot(self, name, tag):
         """
@@ -267,7 +283,7 @@ class NspawnImage(Image):
         :param tag: str - tag for image
         :return: NspawnImage instance
         """
-        source = self.get_metadata()["Path"]
+        source = self.local_location
         logger.debug("Create Snapshot: %s -> %s" % (source, name))
         # FIXME: actually create the snapshot via clone command
         if name and tag:
@@ -307,10 +323,7 @@ class NspawnImage(Image):
             if not ident:
                 raise ConuException(
                     "This image does not have a valid identifier.")
-            self._metadata = convert_kv_to_dict(
-                run_cmd(
-                    ["machinectl", "--no-pager", "--output=export", "show-image", ident],
-                    return_output=True))
+            self._metadata = dict()
         return self._metadata
 
     def rmi(self, force=False, via_name=False):
@@ -321,7 +334,7 @@ class NspawnImage(Image):
         :param via_name: bool, refer to the image via name, if false, refer via ID, not used now
         :return: None
         """
-        return run_cmd(["machinectl", "--no-pager", "remove", self.get_id()])
+        return os.remove(self.local_location)
 
     def mount(self, mount_point=None):
         """
@@ -397,7 +410,7 @@ class NspawnImage(Image):
             "--machine",
             machine_name,
             "-i",
-            self.get_metadata()["Path"]] + additional_opts + command
+            self.local_location] + additional_opts + command
         logger.debug("Start command: %s" % " ".join(systemd_command))
         callback_method = (subprocess.Popen, systemd_command, inernalargs, internalkw)
         self.container_process = NspawnContainer.internal_run_container(

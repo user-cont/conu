@@ -18,7 +18,7 @@
 # docker and nspawn
 CONU_ARTIFACT_TAG = 'CONU.'
 
-CONU_IMAGES_STORE = "/var/lib/machines"
+CONU_IMAGES_STORE = "/opt/conu-nspawn-images/"
 CONU_NSPAWN_BASEPACKAGES = [
     "dnf",
     "iproute",
@@ -36,7 +36,7 @@ CONU_NSPAWN_BASEPACKAGES = [
     "coreutils",
     "glibc-all-langpacks",
     "vim-minimal"]
-BOOTSTRAP_IMAGE_SIZE_IN_MB = 100000
+BOOTSTRAP_IMAGE_SIZE_IN_MB = 5000
 BOOTSTRAP_FS_UTIL = "mkfs.ext4"
 BOOTSTRAP_PACKAGER = [
                 "dnf",

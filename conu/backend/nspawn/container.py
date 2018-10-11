@@ -107,6 +107,14 @@ class NspawnContainer(Container):
         """
         return self._id
 
+    def get_image_name(self):
+        """
+        TODO: nspawn does not allow to get image name from running container
+        https://github.com/systemd/systemd/issues/10360
+        :return: None
+        """
+        return None
+
     def inspect(self, refresh=True):
         """
         return cached metadata by default (a convenience method)
