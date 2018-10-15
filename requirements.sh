@@ -7,7 +7,8 @@ source /etc/os-release
 set -x
 
 # In Dockerfile we install Python3 & Python2 packages from requirements.txt
-# Here we install these Python rpms:
+# Here we install these rpms which are required by conu, either during testing or in runtime:
+# - source-to-image, origin-clients, acl, docker, libselinux-utils: conu needs these binaries
 # - pip: to have different binaries for Python3 & Python2
 # - pytest: to have different binaries for Python3 & Python2
 # - pyxattr: to not build it from source
@@ -18,8 +19,7 @@ if [ "${NAME}" == "Fedora" ]; then
         source-to-image \
         origin-clients \
         python3-pip python2-pip \
-        python3-pyxattr python2-pyxattr \
         python3-pytest python2-pytest \
-        gcc python3-devel python2-devel \
-        make
+        python3-pyxattr python2-pyxattr \
+        gcc python3-devel python2-devel
 fi
