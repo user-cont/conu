@@ -25,21 +25,6 @@ import hashlib
 import glob
 import subprocess
 import time
-
-import shutil
-
-#try:
-#    from urllib import urlopen
-#except:
-    # python3 import
-#    from urllib.request import urlopen
-
-#try:
-#    import lzma
-#except:
-    # python2 does not contain lzma directly
-#    import backports.lzma as lzma
-
 from copy import deepcopy
 
 
@@ -259,20 +244,13 @@ class NspawnImage(Image):
             compressed_location = self.local_location + ".xz"
             run_cmd(["curl", "-f", "-L", "-o", compressed_location, self.location])
             run_cmd(["xz", "-d", compressed_location])
-            # TODO: original way removed, because troubles with python2/3 compat and sparse files
-            #with open(self.local_location, mode="wb") as writetofile:
-            #    writetofile.write(lzma.decompress(urlopen(self.location).read()))
         else:
             if self.location.endswith("xz"):
                 compressed_location = self.local_location + ".xz"
                 run_cmd(["cp", self.location, compressed_location])
                 run_cmd(["xz", "-d", compressed_location])
-                # TODO: original way removed, because troubles with python2/3 compat and sparse files
-                #with open(self.local_location, mode="wb") as writetofile:
-                #    writetofile.write(lzma.decompress(open(self.location).read()))
             else:
                 run_cmd(["cp", self.location, self.local_location])
-                #shutil.copy(self.location, self.local_location)
 
 
     def create_snapshot(self, name, tag):
