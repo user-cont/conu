@@ -21,8 +21,8 @@ Tests for Kubernetes backend
 import urllib3
 import pytest
 
-from conu import DockerBackend
-from conu.backend.k8s.backend import K8sBackend, K8sCleanupPolicy
+from conu import DockerBackend, \
+                 K8sBackend, K8sCleanupPolicy
 from conu.backend.k8s.pod import PodPhase
 from conu.backend.k8s.service import Service
 from conu.backend.k8s.deployment import Deployment

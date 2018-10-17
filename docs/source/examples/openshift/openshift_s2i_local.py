@@ -16,8 +16,8 @@
 
 import logging
 
-from conu.backend.origin.backend import OpenshiftBackend
-from conu.backend.docker.backend import DockerBackend
+from conu import OpenshiftBackend, \
+                 DockerBackend
 from conu.backend.origin.registry import login_to_registry
 from conu.utils import get_oc_api_token
 

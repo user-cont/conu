@@ -21,8 +21,8 @@ Tests for OpenShift backend
 import logging
 import pytest
 
-from conu.backend.origin.backend import OpenshiftBackend
-from conu.backend.docker.backend import DockerBackend
+from conu import OpenshiftBackend, \
+                 DockerBackend
 from conu.backend.origin.registry import login_to_registry
 from conu.utils import get_oc_api_token, oc_command_exists, is_oc_cluster_running
 from ..constants import CENTOS_MARIADB_10_2, CENTOS_PYTHON_3, MY_PROJECT, OC_CLUSTER_USER, \

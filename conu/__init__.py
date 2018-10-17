@@ -26,6 +26,12 @@ from conu.backend.docker.image import (
     DockerImage, S2IDockerImage, DockerImagePullPolicy, DockerImageViaArchiveFS
 )
 
+# k8s backend
+from conu.backend.k8s.backend import K8sBackend, K8sCleanupPolicy
+
+# OpenShift
+from conu.backend.origin.backend import OpenshiftBackend
+
 # utils
 from conu.utils.filesystem import Directory
 from conu.utils.probes import Probe, ProbeTimeout, CountExceeded
