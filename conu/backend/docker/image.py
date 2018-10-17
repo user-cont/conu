@@ -277,11 +277,21 @@ class DockerImage(Image):
         run_command_instance.options += ["--cidfile=%s" % tmpfile]
         logger.debug("docker command: %s" % run_command_instance)
         response = callback()
-        # and we need to wait now; inotify would be better but is way more complicated and
-        # adds dependency
-        Probe(timeout=10, count=10, pause=0.1, fnc=lambda: os.path.exists(tmpfile)).run()
+
+        def get_cont_id():
+            if not os.path.exists(tmpfile):
+                return False
+            with open(tmpfile, 'r') as fd:
+                content = fd.read()
+            return bool(content)
+
+        Probe(timeout=2, count=10, pause=0.1, fnc=get_cont_id).run()
+
         with open(tmpfile, 'r') as fd:
             container_id = fd.read()
+
+        if not container_id:
+            raise ConuException("We could not get container's ID, it probably was not created")
         return container_id, response
 
     def run_via_binary(self, run_command_instance=None, command=None, volumes=None,
