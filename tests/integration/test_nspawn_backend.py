@@ -30,8 +30,8 @@ from conu.utils import mkdtemp, run_cmd
 
 
 logger = logging.getLogger("conu.tests")
-image_name = "Fedora-Cloud-Base-27-1.6.x86_64"
-url = "http://download.eng.brq.redhat.com/pub/fedora/linux/releases/28/Cloud/x86_64/images/Fedora-Cloud-Base-28-1.1.x86_64.raw.xz"
+image_name = "Fedora-Cloud-Base.x86_64"
+url = "http://download.fedoraproject.org/pub/fedora/linux/releases/28/Cloud/x86_64/images/Fedora-Cloud-Base-28-1.1.x86_64.raw.xz"
 bootstrap_repos = [
     "https://download.fedoraproject.org/pub/fedora/linux/releases/27/Workstation/x86_64/os/"
 ]
