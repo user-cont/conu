@@ -257,7 +257,7 @@ class NspawnImage(Image):
 
         if not self._is_local():
             compressed_location = self.local_location + ".xz"
-            run_cmd(["curl", "-o", compressed_location, self.location])
+            run_cmd(["curl", "-f", "-L", "-o", compressed_location, self.location])
             run_cmd(["xz", "-d", compressed_location])
             # TODO: original way removed, because troubles with python2/3 compat and sparse files
             #with open(self.local_location, mode="wb") as writetofile:
