@@ -128,7 +128,7 @@ def test_copy_from(tmpdir):
 
 
 def test_container_create_failed():
-    with DockerBackend() as backend:
+    with DockerBackend(logging_level=10) as backend:
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
         # should raise an exc, there is no such command: waldo; we need to find waldo first
         with pytest.raises(ConuException):
