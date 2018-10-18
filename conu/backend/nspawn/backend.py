@@ -20,11 +20,12 @@ This is backend for nspawn engine
 import logging
 import re
 import subprocess
+import os
 
 from conu.apidefs.backend import Backend
 from conu.backend.nspawn.container import NspawnContainer
 from conu.backend.nspawn.image import NspawnImage, ImagePullPolicy
-from conu.backend.nspawn.constants import CONU_ARTIFACT_TAG
+from conu.backend.nspawn.constants import CONU_ARTIFACT_TAG, CONU_IMAGES_STORE
 from conu.utils import run_cmd
 
 
@@ -66,16 +67,10 @@ class NspawnBackend(Backend):
         """
         # Fedora-Cloud-Base-27-1.6.x86_64 raw  no  601.7M Sun 2017-11-05 08:30:10 CET \
         #   Sun 2017-11-05 08:30:10 CET
-        data = run_cmd(["machinectl", "list-images", "--no-legend", "--no-pager"],
-                       return_output=True)
+        data = os.listdir(CONU_IMAGES_STORE)
         output = []
-        reg = re.compile(r"\s+")
-        for line in data.split("\n"):
-            stripped = line.strip()
-            if stripped:
-                parts = reg.split(stripped)
-                name = parts[0]
-                output.append(self.ImageClass(name, pull_policy=ImagePullPolicy.NEVER))
+        for name in data:
+            output.append(self.ImageClass(name, pull_policy=ImagePullPolicy.NEVER))
         return output
 
     def cleanup_containers(self):
@@ -89,7 +84,7 @@ class NspawnBackend(Backend):
                 try:
                     logger.debug("removing container %s created by conu", cont)
                     # TODO: move this functionality to container.delete
-                    run_cmd(["machinectl", "terminate", cont])
+                    run_cmd(["machinectl", "terminate", cont.name])
                 except subprocess.CalledProcessError as e:
                     logger.error("unable to remove container %s: %r", cont, e)
 

@@ -30,9 +30,8 @@ from conu.utils import mkdtemp, run_cmd
 
 
 logger = logging.getLogger("conu.tests")
-image_name = "Fedora-Cloud-Base-27-1.6.x86_64"
-url = "https://download.fedoraproject.org/pub/fedora/linux/development/28/CloudImages/" \
-    "x86_64/images/Fedora-Cloud-Base-28-20180310.n.0.x86_64.raw.xz"
+image_name = "Fedora-Cloud-Base.x86_64"
+url = "http://download.fedoraproject.org/pub/fedora/linux/releases/28/Cloud/x86_64/images/Fedora-Cloud-Base-28-1.1.x86_64.raw.xz"
 bootstrap_repos = [
     "https://download.fedoraproject.org/pub/fedora/linux/releases/27/Workstation/x86_64/os/"
 ]
@@ -91,17 +90,17 @@ class TestNspawnBackend(object):
             additional_packages=["fedora-release"])
         logger.debug(im.get_metadata())
         out = im.run_foreground(["ls", "/"], stdout=subprocess.PIPE).communicate()
-        assert "sbin" in out[0]
+        assert "sbin" in out[0].decode("utf-8")
         out = im.run_foreground(
             ["ls", "/etc"],
             stdout=subprocess.PIPE).communicate()
         logger.info(out)
-        assert "os-release" in out[0]
+        assert "os-release" in out[0].decode("utf-8")
         out = im.run_foreground(
             ["cat", "/etc/os-release"],
             stdout=subprocess.PIPE).communicate()
-        logger.info(out)
-        assert "VERSION_ID=27" in out[0]
+        logger.info(str(out))
+        assert "VERSION_ID=27" in out[0].decode("utf-8")
         im.rmi()
 
     def test_container_basic(self):
@@ -151,5 +150,7 @@ class TestNspawnBackend(object):
         assert os.path.exists(host_fn)
         cont.execute(["rm", "-f", os.path.join("/opt", filename)])
         assert not os.path.exists(host_fn)
+        cont.stop()
         os.rmdir(dirname)
+        cont.image.rmi()
 
