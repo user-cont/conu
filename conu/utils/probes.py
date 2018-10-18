@@ -43,7 +43,8 @@ class Probe(object):
         :param pause:                Number of seconds waited between multiple function result checks
         :param count:                Maximum number of tries, defaults to infinite, represented by -1
         :param expected_exceptions:  When one of expected_exception is raised, probe ignores it and
-                                     tries to run function again. To ignore multiple exceptions use parenthesized tuple.
+                                     tries to run function again. To ignore multiple exceptions use
+                                     parenthesized tuple.
         :param expected_retval:      When expected_retval is received, probe ends successfully
         :param fnc:                  Function which run is checked by probe
         """
@@ -104,14 +105,15 @@ class Probe(object):
                      % (func_name, str(self.kwargs), round(time.time() - start), self.timeout))
         try:
             result = self.fnc(**self.kwargs)
-            logger.debug("callback result = %s", str(result)[:50])  # let's log only first 50 characters of the response
+            # let's log only first 50 characters of the response
+            logger.debug("callback result = %s", str(result)[:50])
             q.put(result)
-        except self.expected_exceptions as e:
-            logger.debug("expected exception was caught: %s", e)
+        except self.expected_exceptions as ex:
+            logger.debug("expected exception was caught: %s", ex)
             q.put(False)
-        except Exception as e:
-            logger.debug("adding exception %s to queue", e)
-            q.put(e)
+        except Exception as ex:
+            logger.debug("adding exception %s to queue", ex)
+            q.put(ex)
 
     def _run(self):
         start = time.time()

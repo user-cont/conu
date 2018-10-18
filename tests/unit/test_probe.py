@@ -17,10 +17,9 @@ import logging
 import time
 
 from conu import Probe, ProbeTimeout, CountExceeded
+from conu.apidefs.backend import set_logging
 
 import pytest
-
-from conu.apidefs.backend import set_logging
 
 
 ARGUMENT = "key"
