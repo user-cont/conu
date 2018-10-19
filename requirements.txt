@@ -1,5 +1,5 @@
 -i https://pypi.org/simple
-adal==1.1.0
+adal==1.2.0
 asn1crypto==0.24.0
 atomicwrites==1.2.1
 attrs==18.2.0
@@ -26,8 +26,8 @@ pytest==3.9.1
 python-dateutil==2.7.3
 pyyaml==3.13
 requests-oauthlib==1.0.0
-requests==2.19.1
+requests==2.20.0
 rsa==4.0
 six==1.11.0
-urllib3==1.23
+urllib3==1.24
 websocket-client==0.53.0
