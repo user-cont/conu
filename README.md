@@ -130,12 +130,16 @@ usercont/conu:0.5.0 python3 /app/my_source.py
 
 ## OpenShift
 - create new app using `oc new-app` command
+    - deploy pure image into openshift
     - support building s2i images from remote repository
     - support building s2i images from local path
     - support creating new applications using OpenShift templates
 - push images to internal OpenShift registry
 - request service
 - waiting until service is ready
+- obtain logs from all pods
+- get status of application
+- check readiness of pods
 - cleanup objects of specific application in current namespace 
 
 # Docker example

@@ -27,26 +27,30 @@ with OpenshiftBackend(api_key=api_key, logging_level=logging.DEBUG) as openshift
     openshift_backend.get_status()
 
     with DockerBackend(logging_level=logging.DEBUG) as backend:
-        # builder image
-        python_image = backend.ImageClass("centos/python-36-centos7")
+        mariadb_image = backend.ImageClass("centos/mariadb-102-centos7")
 
-        # docker login inside OpenShift internal registry
-        login_to_registry('developer')
+        login_to_registry('developer', token=api_key)
 
-        # create new app from remote source in OpenShift cluster
         app_name = openshift_backend.create_new_app_from_source(
-            python_image,
-            source="https://github.com/openshift/django-ex.git",
+            mariadb_image,
+            oc_new_app_args=[
+                "--env", "MYSQL_ROOT_PASSWORD=test",
+                "--env", "MYSQL_OPERATIONS_USER=test1",
+                "--env", "MYSQL_OPERATIONS_PASSWORD=test1",
+                "--env", "MYSQL_DATABASE=testdb",
+                "--env", "MYSQL_USER=user1",
+                "--env", "MYSQL_PASSWORD=user1"],
+            source="examples/openshift/extend-mariadb-image",
             project='myproject')
 
-        try:
-            # wait until service is ready to accept requests
+        openshift_backend.get_status()
 
+        try:
             openshift_backend.wait_for_service(
                 app_name=app_name,
-                port=8080,
-                expected_output='Welcome to your Django application on OpenShift',
+                port=3306,
                 timeout=300)
+            assert openshift_backend.all_pods_are_ready(app_name)
         finally:
             openshift_backend.get_logs(app_name)
             openshift_backend.clean_project(app_name)

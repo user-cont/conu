@@ -16,8 +16,8 @@
 
 import logging
 
-from conu.backend.k8s.backend import K8sBackend
-from conu.backend.docker.backend import DockerBackend
+from conu import K8sBackend, \
+                 DockerBackend
 from conu.backend.k8s.pod import PodPhase
 from conu.utils import get_oc_api_token
 

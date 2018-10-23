@@ -20,21 +20,17 @@ This is backend for OpenShift
 
 import logging
 import subprocess
-import string
-import random
 import os.path
 import requests
 
 from requests.exceptions import ConnectionError
 
+from conu.backend.origin.registry import push_to_registry
 from conu.backend.k8s.backend import K8sBackend
-from conu.backend.docker.backend import DockerBackend
 from conu.exceptions import ConuException
-from conu.utils import oc_command_exists, run_cmd
-from conu.backend.origin.constants import PORT
+from conu.utils import oc_command_exists, run_cmd, random_str, check_port
 from conu.utils.http_client import get_url
 from conu.utils.probes import Probe, ProbeTimeout
-from conu.utils import get_oc_api_token
 
 
 logger = logging.getLogger(__name__)
@@ -63,7 +59,7 @@ class OpenshiftBackend(K8sBackend):
         """
         perform a HTTP request
 
-        :param path: str, path within the reqest, e.g. "/api/version"
+        :param path: str, path within the request, e.g. "/api/version"
         :param method: str, HTTP method
         :param host: str, if None, set to 127.0.0.1
         :param port: str or int, if None, set to 8080
@@ -88,76 +84,77 @@ class OpenshiftBackend(K8sBackend):
         oc_command_exists()
         return ["oc"] + args
 
-    def new_app(self, image, project, source=None, template=None, name_in_template=None,
-                other_images=None, oc_new_app_args=None):
+    def deploy_image(self, image, oc_new_app_args, project, name=None):
         """
-        Deploy app in OpenShift cluster using 'oc new-app'
-        :param image: image to be used as builder image
+        Deploy image in OpenShift cluster using 'oc new-app'
+        :param image: DockerImage, image to be deployed
+        :param oc_new_app_args: additional parameters for the `oc new-app`, env variables etc.
         :param project: project where app should be created
-        :param source: source used to extend the image, can be path or url
-        :param template: str, url or local path to a template to use
-        :param name_in_template: dict, {repository:tag} image name used in the template
-        :param other_images: list of dict, some templates need other image to be pushed into the
-               OpenShift registry, specify them in this parameter as list of dict [{<image>:<tag>}],
-               where "<image>" is DockerImage and "<tag>" is a tag under which the image should be
-               available in the OpenShift registry.
-        :param oc_new_app_args: additional parameters for the `oc new-app`
-        :return: str, name of app
+        :param name:str, name of application, if None random name is generated
+        :return: str, name of the app
         """
-
-        if template is not None and source is not None:
-            raise ConuException('cannot combine template parameter with source parameter')
 
         # app name is generated randomly
-        random_string = ''.join(
-            random.choice(string.ascii_lowercase + string.digits) for _ in range(4))
-        name = 'app-{random_string}'.format(random_string=random_string)
+        name = name or 'app-{random_string}'.format(random_string=random_str(5))
 
         oc_new_app_args = oc_new_app_args or []
 
-        if template is not None:
-            if name_in_template is None:
-                raise ConuException('You need to specify name_in_template')
+        new_image = push_to_registry(image, image.name.split('/')[-1], image.tag, project)
 
-            self._create_app_from_template(image, name, template, name_in_template,
-                                           other_images, oc_new_app_args, project)
+        c = self._oc_command(
+            ["new-app"] + oc_new_app_args + [new_image.name] +
+            ["-n"] + [project] + ["--name=%s" % name])
 
-        else:
-            new_image = OpenshiftBackend.push_to_registry(image, image.name.split('/')[-1],
-                                                          image.tag, project)
+        logger.info("Creating new app in project %s", project)
 
-            c = self._oc_command(
-                ["new-app"] + oc_new_app_args + [new_image.name + "~" + source] +
-                ["-n"] + [project] + ["--name=%s" % name])
-
-            logger.info("Creating new app in project %s", project)
-
-            try:
-                o = run_cmd(c, return_output=True)
-                logger.debug(o)
-            except subprocess.CalledProcessError as ex:
-                raise ConuException("oc new-app failed: %s" % ex)
-
-            if os.path.isdir(source):
-                c = self._oc_command(["-n"] + [project] + ["start-build"] +
-                                     [name] + ["--from-dir=%s" % source])
-
-                logger.info("Build application from local source in project %s", project)
-
-                try:
-                    Probe(timeout=-1, pause=5, count=2,
-                          expected_exceptions=subprocess.CalledProcessError,
-                          expected_retval=None, fnc=run_cmd, cmd=c).run()
-                except ProbeTimeout as e:
-                    raise ConuException("Cannot start build of application: %s" % e)
+        try:
+            run_cmd(c)
+        except subprocess.CalledProcessError as ex:
+            raise ConuException("oc new-app failed: %s" % ex)
 
         return name
 
-    def _create_app_from_template(self, image, name, template, name_in_template,
-                                  other_images, oc_new_app_args, project):
+    def create_new_app_from_source(self, image, project, source=None, oc_new_app_args=None):
+        """
+        Deploy app using source-to-image in OpenShift cluster using 'oc new-app'
+        :param image: image to be used as builder image
+        :param project: project where app should be created
+        :param source: source used to extend the image, can be path or url
+        :param oc_new_app_args: additional parameters for the `oc new-app`
+        :return: str, name of the app
+        """
+
+        # app name is generated randomly
+        name = 'app-{random_string}'.format(random_string=random_str(5))
+
+        oc_new_app_args = oc_new_app_args or []
+
+        new_image = push_to_registry(image, image.name.split('/')[-1], image.tag, project)
+
+        c = self._oc_command(
+            ["new-app"] + [new_image.name + "~" + source] + oc_new_app_args
+            + ["-n"] + [project] + ["--name=%s" % name])
+
+        logger.info("Creating new app in project %s", project)
+
+        try:
+            o = run_cmd(c, return_output=True)
+            logger.debug(o)
+        except subprocess.CalledProcessError as ex:
+            raise ConuException("oc new-app failed: %s" % ex)
+
+        # build from local source
+        if os.path.isdir(source):
+            self.start_build(name, ["-n", project, "--from-dir=%s" % source])
+
+        return name
+
+    def create_app_from_template(self, image, name, template, name_in_template,
+                                 other_images, oc_new_app_args, project):
         """
         Helper function to create app from template
         :param image: image to be used as builder image
+        :param name: name of app from template
         :param template: str, url or local path to a template to use
         :param name_in_template: dict, {repository:tag} image name used in the template
         :param other_images: list of dict, some templates need other image to be pushed into the
@@ -170,16 +167,13 @@ class OpenshiftBackend(K8sBackend):
         """
         # push images to registry
         repository, tag = list(name_in_template.items())[0]
-        OpenshiftBackend.push_to_registry(image, repository, tag, project)
+        push_to_registry(image, repository, tag, project)
 
         other_images = other_images or []
 
         for o in other_images:
             image, tag = list(o.items())[0]
-            OpenshiftBackend.push_to_registry(image, tag.split(':')[0], tag.split(':')[1],
-                                              project)
-
-        oc_new_app_args += ["-p", "NAME=%s" % name, "-p", "NAMESPACE=%s" % project]
+            push_to_registry(image, tag.split(':')[0], tag.split(':')[1], project)
 
         c = self._oc_command(["new-app"] + [template] + oc_new_app_args + ["-n"] + [project]
                              + ["--name=%s" % name])
@@ -194,9 +188,22 @@ class OpenshiftBackend(K8sBackend):
         except subprocess.CalledProcessError as ex:
             raise ConuException("oc new-app failed: %s" % ex)
 
-        c = self._oc_command(["start-build"] + [name])
+        return name
 
-        logger.info("Build application from local source in project %s", project)
+    def start_build(self, build, args=None):
+        """
+        Start new build, raise exception if build failed
+        :param build: str, name of the build
+        :param args: list of str, another args of 'oc start-build' commands
+        :return: None
+        """
+
+        args = args or []
+
+        c = self._oc_command(["start-build"] + [build] + args)
+
+        logger.info("Executing build %s", build)
+        logger.info("Build command: %s", " ".join(c))
 
         try:
             Probe(timeout=-1, pause=5, count=2, expected_exceptions=subprocess.CalledProcessError,
@@ -204,92 +211,131 @@ class OpenshiftBackend(K8sBackend):
         except ProbeTimeout as e:
             raise ConuException("Cannot start build of application: %s" % e)
 
-    def request_service(self, app_name, expected_output=None):
+    def request_service(self, app_name, port, expected_output=None):
         """
         Make request on service of app. If there is connection error function return False.
-        :param app_name: str, name of app
+        :param app_name: str, name of the app
         :param expected_output: str, If not None method will check output returned from request
                and try to find matching string.
+        :param port: str or int, port of the service
         :return: bool, True if connection was established False if there was connection error
         """
+
+        # get ip of service
         ip = [service.get_ip() for service in self.list_services()
               if service.name == app_name][0]
 
-        try:
-            output = self.http_request(host=ip)
-            if expected_output is not None:
+        # make http request to obtain output
+        if expected_output is not None:
+            try:
+                output = self.http_request(host=ip, port=port)
                 if expected_output not in output.text:
                     raise ConuException(
                         "Connection to service established, but didn't match expected output")
                 else:
                     logger.info("Connection to service established and return expected output!")
+                    return True
+            except ConnectionError as e:
+                logger.info("Connection to service failed %s!", e)
+                return False
+        elif check_port(port, host=ip):  # check if port is open
             return True
-        except ConnectionError:
-            return False
 
-    def wait_for_service(self, app_name, expected_output=None, timeout=100):
+        return False
+
+    def wait_for_service(self, app_name, port, expected_output=None, timeout=100):
         """
         Block until service is not ready to accept requests,
         raises an exc ProbeTimeout if timeout is reached
-        :param app_name: str, name of app
+        :param app_name: str, name of the app
+        :param port: str or int, port of the service
         :param expected_output: If not None method will check output returned from request
                and try to find matching string.
         :param timeout: int or float (seconds), time to wait for pod to run
         :return: None
         """
         logger.info('Waiting for service to get ready')
-        Probe(timeout=timeout, fnc=self.request_service,
-              app_name=app_name, expected_output=expected_output, expected_retval=True).run()
+        try:
 
-    def clean_project(self, app_name):
+            Probe(timeout=timeout, pause=10, fnc=self.request_service, app_name=app_name,
+                  port=port, expected_output=expected_output, expected_retval=True).run()
+        except ProbeTimeout:
+            logger.warning("Timeout: Request to service unsuccessful.")
+            raise ConuException("Timeout: Request to service unsuccessful.")
+
+    def all_pods_are_ready(self, app_name):
         """
-        Delete all objects in current project in OpenShift cluster
+        Check if all pods are ready for specific app
+        :param app_name: str, name of the app
+        :return: bool
+        """
+        app_pod_exists = False
+        for pod in self.list_pods():
+            if app_name in pod.name and 'build' not in pod.name and 'deploy' not in pod.name:
+                app_pod_exists = True
+                if not pod.is_ready():
+                    return False
+        if app_pod_exists:
+            logger.info("All pods are ready!")
+            return True
+
+        return False
+
+    def get_status(self):
+        """
+        Get status of OpenShift cluster, similar to `oc status`
+        :return: str
+        """
+        try:
+            c = self._oc_command(["status"])
+            o = run_cmd(c, return_output=True)
+            for line in o.split('\n'):
+                logger.debug(line)
+            return o
+        except subprocess.CalledProcessError as ex:
+            raise ConuException("Cannot obtain OpenShift cluster status: %s" % ex)
+
+    def get_logs(self, name):
+        """
+        Obtain cluster status and logs from all pods and print them using logger.
+        This method is useful for debugging.
+        :param name: str, name of app generated by oc new-app
+        :return: str, cluster status and logs from all pods
+        """
+        logs = self.get_status()
+
+        for pod in self.list_pods():
+            if name in pod.name:  # get just logs from pods related to app
+                pod_logs = pod.get_logs()
+                if pod_logs:
+                    logs += pod_logs
+
+        return logs
+
+    def clean_project(self, app_name=None, delete_all=False):
+        """
+        Delete objects in current project in OpenShift cluster. If both parameters are passed,
+        delete all objects in project.
+        :param app_name: str, name of app
+        :param delete_all: bool, if true delete all objects in current project
         :return: None
         """
-        logger.info('Deleting app')
+
+        if not app_name and not delete_all:
+            ConuException("You need to specify either app_name or set delete_all=True")
+
+        if delete_all:
+            args = ["--all"]
+            logger.info('Deleting all objects in current project')
+        else:
+            args = "-l app=%s" % app_name
+            logger.info('Deleting all objects with label app=%s', app_name)
+
         try:
-            o = run_cmd(self._oc_command(["delete", "all", "-l app=%s" % app_name]),
+            o = run_cmd(self._oc_command(["delete", "all", args]),
                         return_output=True)
             o_lines = o.split('\n')
             for line in o_lines:
                 logger.info(line)
         except subprocess.CalledProcessError as ex:
-            raise ConuException("Cleanup failed: %s" % ex)
-
-    @staticmethod
-    def login_to_registry(username):
-        """
-        Login within docker daemon to docker registry running in this OpenShift cluster
-        :return:
-        """
-        with DockerBackend() as backend:
-            token = get_oc_api_token()
-            backend.login(username, password=token,
-                          registry=OpenshiftBackend.get_internal_registry_ip(), reauth=True)
-
-    @staticmethod
-    def push_to_registry(image, repository, tag, project):
-        """
-        :param image: DockerImage, image to push
-        :param repository: str, new name of image
-        :param tag: str, new tag of image
-        :param project: str, oc project
-        :return: DockerImage, new docker image
-        """
-        return image.push("%s/%s/%s" % (OpenshiftBackend.get_internal_registry_ip(),
-                                        project, repository), tag=tag)
-
-    @staticmethod
-    def get_internal_registry_ip():
-        """
-        Search for `docker-registry` IP
-        :return: str, ip address
-        """
-        with OpenshiftBackend() as origin_backend:
-            services = origin_backend.list_services()
-            for service in services:
-                if service.name == 'docker-registry':
-                    logger.debug("Internal docker-registry IP: %s",
-                                 "{ip}:{port}".format(ip=service.get_ip(), port=PORT))
-                    return "{ip}:{port}".format(ip=service.get_ip(), port=PORT)
-        return None
+            raise ConuException("Cleanup failed because of exception: %s" % ex)

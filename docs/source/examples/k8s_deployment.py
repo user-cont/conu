@@ -19,7 +19,7 @@ Create deployment using template and check if all pods are ready
 """
 import logging
 
-from conu.backend.k8s.backend import K8sBackend
+from conu import K8sBackend
 from conu.backend.k8s.deployment import Deployment
 from conu.utils import get_oc_api_token
 

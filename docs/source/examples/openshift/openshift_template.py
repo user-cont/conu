@@ -16,8 +16,9 @@
 
 import logging
 
-from conu.backend.origin.backend import OpenshiftBackend
-from conu.backend.docker.backend import DockerBackend
+from conu import OpenshiftBackend, \
+                 DockerBackend
+from conu.backend.origin.registry import login_to_registry
 from conu.utils import get_oc_api_token
 
 
@@ -30,24 +31,33 @@ with OpenshiftBackend(api_key=api_key, logging_level=logging.DEBUG) as openshift
         psql_image = backend.ImageClass("centos/postgresql-96-centos7", tag="9.6")
 
         # docker login inside OpenShift internal registry
-        OpenshiftBackend.login_to_registry('developer')
+        login_to_registry('developer')
 
         # create new app from remote source in OpenShift cluster
-        app_name = openshift_backend.new_app(
+        project = 'myproject'
+        app_name_in_template = 'django-psql-example'
+
+        openshift_backend.create_app_from_template(
             image=python_image,
+            name=app_name_in_template,
             template="https://raw.githubusercontent.com/sclorg/django-ex"
                      "/master/openshift/templates/django-postgresql.json",
-            oc_new_app_args=["-p", "SOURCE_REPOSITORY_REF=master", "-p", "PYTHON_VERSION=3.6",
+            oc_new_app_args=["-p", "NAMESPACE=%s" % project,
+                             "-p", "NAME=%s" % app_name_in_template,
+                             "-p", "SOURCE_REPOSITORY_REF=master", "-p",
+                             "PYTHON_VERSION=3.6",
                              "-p", "POSTGRESQL_VERSION=9.6"],
             name_in_template={"python": "3.6"},
             other_images=[{psql_image: "postgresql:9.6"}],
-            project='myproject')
+            project=project)
 
         try:
             # wait until service is ready to accept requests
             openshift_backend.wait_for_service(
-                app_name=app_name,
+                app_name=app_name_in_template,
+                port=8080,
                 expected_output='Welcome to your Django application on OpenShift',
                 timeout=300)
         finally:
-            openshift_backend.clean_project(app_name)
+            openshift_backend.get_logs(app_name_in_template)
+            openshift_backend.clean_project(app_name_in_template)
