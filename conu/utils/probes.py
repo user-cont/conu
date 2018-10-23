@@ -42,9 +42,10 @@ class Probe(object):
         :param timeout:              Number of seconds spent on trying. Set timeout to -1 for infinite run.
         :param pause:                Number of seconds waited between multiple function result checks
         :param count:                Maximum number of tries, defaults to infinite, represented by -1
-        :param expected_exceptions:  When one of expected_exception is raised, probe ignores it and tries to run function again.
-                                         To ignore multiple exceptions use parenthesized tuple.
-        :param expected_retval:      When expected_retval is recieved, probe ends successfully
+        :param expected_exceptions:  When one of expected_exception is raised, probe ignores it and
+                                     tries to run function again. To ignore multiple exceptions use
+                                     parenthesized tuple.
+        :param expected_retval:      When expected_retval is received, probe ends successfully
         :param fnc:                  Function which run is checked by probe
         """
         self.timeout = timeout
@@ -103,11 +104,16 @@ class Probe(object):
         logger.debug("Running \"%s\" with parameters: \"%s\":\t%s/%s"
                      % (func_name, str(self.kwargs), round(time.time() - start), self.timeout))
         try:
-            q.put(self.fnc(**self.kwargs))
-        except self.expected_exceptions:
+            result = self.fnc(**self.kwargs)
+            # let's log only first 50 characters of the response
+            logger.debug("callback result = %s", str(result)[:50])
+            q.put(result)
+        except self.expected_exceptions as ex:
+            logger.debug("expected exception was caught: %s", ex)
             q.put(False)
-        except Exception as e:
-            q.put(e)
+        except Exception as ex:
+            logger.debug("adding exception %s to queue", ex)
+            q.put(ex)
 
     def _run(self):
         start = time.time()
@@ -117,23 +123,29 @@ class Probe(object):
         p.start()
         logger.debug("first process started: pid=%s", p.pid)
         tries = 1
-        while (tries <= self.count or self.count == -1) and \
-                (self.timeout == -1 or time.time() - start <= self.timeout):
+        while tries <= self.count or self.count == -1:
+            elapsed = time.time() - start
+            if self.timeout != -1 and elapsed > self.timeout:
+                logger.info("timeout was reached, elapsed: %s", elapsed)
+                break
             if p.is_alive():
                 logger.debug("pausing for %s before next try", self.pause)
                 time.sleep(self.pause)
-            elif not fnc_queue.empty():
+            else:
+                logger.debug("waiting for process to end...")
+                p.join()
+                if fnc_queue.empty():
+                    raise RuntimeError("queue is empty when it shouldn't be")
                 result = fnc_queue.get()
+                logger.debug("result = %s", result)
                 if isinstance(result, Exception):
                     # TODO: use result's traceback
                     if self.queue:
                         self.queue.put(result)
+                        return False
                     else:
                         raise result
                 elif not (result == self.expected_retval):
-                    logger.debug("result = %s", result)
-                    logger.debug("waiting for process to end...")
-                    p.join()
                     logger.debug("process ended, about to start another one")
                     p = Process(target=self._wrapper, args=(fnc_queue, start))
                     p.start()
@@ -141,20 +153,17 @@ class Probe(object):
                     logger.debug("attempt no. %s started, pid: %s", tries, p.pid)
                 else:
                     return True
-            else:
-                return True
+        p.terminate()
+        p.join()
+        if -1 < self.count < tries:
+            e = CountExceeded()
         else:
-            p.terminate()
-            p.join()
-            if -1 < self.count < tries:
-                e = CountExceeded
-            else:
-                e = ProbeTimeout("Timeout exceeded.")
-            logger.warning("probe is unsuccessful: %s", e)
-            if self.queue:
-                self.queue.put(e)
-            else:
-                raise e
+            e = ProbeTimeout("Timeout exceeded.")
+        logger.warning("probe is unsuccessful: %s", e)
+        if self.queue:
+            self.queue.put(e)
+        else:
+            raise e
 
 
 class ProbeTimeout(ConuException):

@@ -13,11 +13,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import logging
 import time
 
 from conu import Probe, ProbeTimeout, CountExceeded
+from conu.apidefs.backend import set_logging
 
 import pytest
+
 
 ARGUMENT = "key"
 MESSAGE = "It is both alive and dead"
@@ -29,12 +32,16 @@ def snoozer(seconds=1):
 
 
 def value_err_raise():
-    raise ValueError
+    raise ValueError()
 
 
 class TestProbe(object):
+    @classmethod
+    def setup_class(cls):
+        set_logging(level=logging.DEBUG)
+
     def test_in_backgroud(self):
-        probe = Probe(timeout=5, pause=0.5, fnc=snoozer, seconds=2)
+        probe = Probe(timeout=1, pause=0.5, fnc=snoozer, seconds=0.1)
 
         probe.run()
         assert not probe.is_alive()
@@ -49,48 +56,36 @@ class TestProbe(object):
 
         # probe and caller in one thread
         # probe should ignore expected_exceptions
-        start = time.time()
-        probe = Probe(timeout=3, pause=0.5, expected_exceptions=ValueError, fnc=value_err_raise)
+        probe = Probe(timeout=1, pause=0.2, expected_exceptions=ValueError, fnc=value_err_raise)
         with pytest.raises(ProbeTimeout):
             probe.run()
-        assert (time.time() - start) > 2, "Timeout not reached with unsuccessful function"
 
         # probe should not ignore exceptions other than expected exceptions
-        start = time.time()
-        probe = Probe(timeout=5, pause=0.5, expected_exceptions=ImportError, fnc=value_err_raise)
+        probe = Probe(timeout=1, pause=0.2, expected_exceptions=ImportError, fnc=value_err_raise)
         with pytest.raises(ValueError):
             probe.run()
-        assert (time.time() - start) < 1, "Timeout exceeded"
 
-        start = time.time()
-        probe = Probe(timeout=5, pause=0.5, fnc=value_err_raise)
+        probe = Probe(timeout=1, pause=0.2, fnc=value_err_raise)
         with pytest.raises(ValueError):
             probe.run()
-        assert (time.time() - start) < 1, "Timeout exceeded"
 
         # run in background
         # probe should ignore expected_exceptions
-        start = time.time()
-        probe = Probe(timeout=3, pause=0.5, expected_exceptions=ValueError, fnc=value_err_raise)
+        probe = Probe(timeout=1, pause=0.2, expected_exceptions=ValueError, fnc=value_err_raise)
         probe.run_in_background()
         with pytest.raises(ProbeTimeout):
             probe.join()
-        assert (time.time() - start) > 2, "Timeout not reached with unsuccessful function"
 
         # probe should not ignore exceptions other than expected exceptions
-        start = time.time()
-        probe = Probe(timeout=5, pause=0.5, expected_exceptions=ImportError, fnc=value_err_raise)
+        probe = Probe(timeout=1, pause=0.2, expected_exceptions=ImportError, fnc=value_err_raise)
         probe.run_in_background()
         with pytest.raises(ValueError):
             probe.join()
-        assert (time.time() - start) < 1, "Timeout exceeded"
 
-        start = time.time()
-        probe = Probe(timeout=5, pause=0.5, fnc=value_err_raise)
+        probe = Probe(timeout=1, pause=0.2, fnc=value_err_raise)
         probe.run_in_background()
         with pytest.raises(ValueError):
             probe.join()
-        assert (time.time() - start) < 1, "Timeout exceeded"
 
     def test_count(self):
         def say_no():
@@ -135,18 +130,18 @@ class TestProbe(object):
         # probe should reach timeout with long-running function calls
         # probe and caller in one thread
         start = time.time()
-        probe = Probe(timeout=3, pause=0.5, fnc=snoozer, seconds=10)
+        probe = Probe(timeout=1, pause=0.2, fnc=snoozer, seconds=10)
         with pytest.raises(ProbeTimeout):
             probe.run()
-        assert (time.time() - start) > 2, "Timeout not reached with unsuccessful function"
+        assert (time.time() - start) < 3, "Time elapsed is way too high"
 
         # in background
         start = time.time()
-        probe = Probe(timeout=3, pause=0.5, fnc=snoozer, seconds=10)
+        probe = Probe(timeout=1, pause=0.2, fnc=snoozer, seconds=10)
         probe.run_in_background()
         with pytest.raises(ProbeTimeout):
             probe.join()
-        assert (time.time() - start) > 2, "Timeout not reached with unsuccessful function"
+        assert (time.time() - start) < 3, "Time elapsed is way too high"
 
     def test_expected_retval(self):
         def truth():
@@ -159,14 +154,14 @@ class TestProbe(object):
         start = time.time()
         probe = Probe(timeout=5, pause=0.5, fnc=truth, expected_retval=MESSAGE)
         probe.run()
-        assert (time.time() - start) < 1, "Timeout exceeded"
+        assert (time.time() - start) < 1.0, "Timeout exceeded"
 
         # probe should reach timeout when expected_retval is not reached
         start = time.time()
         probe = Probe(timeout=3, pause=0.5, fnc=lie, expected_retval=MESSAGE)
         with pytest.raises(ProbeTimeout):
             probe.run()
-        assert (time.time() - start) > 2, "Timeout not reached with unsuccessful function"
+        assert (time.time() - start) > 2.0, "Timeout not reached with unsuccessful function"
 
     def test_concurrency(self):
         pool = []
