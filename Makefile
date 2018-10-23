@@ -93,13 +93,7 @@ install-conu-rpm-in-centos-container: rpm-in-mock-el7
 		yum install -y /conu/python2-conu-*.el7.centos.noarch.rpm && \
 		python2 -c 'import conu; print conu.version'"
 
-encrypt-password-in-travis-yml:
-	docker run -ti --rm -v $(CURDIR):/src -w /src docker.io/tianon/travis-cli travis encrypt --add deploy.password -r fedora-modularity/conu $(THE_PASSWORD)
-
-clean:
-	git clean -dfx
-
-install: clean install-requirements
+install: install-requirements
 	pip install --user .
 
 uninstall:
