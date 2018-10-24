@@ -45,7 +45,7 @@ docker run -it --rm \
 -v /var/run/docker.sock:/var/run/docker.sock:z \
 --cap-add SYS_ADMIN \
 --privileged \
-usercont/conu:0.5.0 python3
+usercont/conu:0.6.0 python3
 ```
 
 ```python
@@ -66,7 +66,7 @@ docker run -it --rm \
 -v $PWD/my_source.py:/app/my_source.py:z \
 --cap-add SYS_ADMIN \
 --privileged \
-usercont/conu:0.5.0 python3 /app/my_source.py
+usercont/conu:0.6.0 python3 /app/my_source.py
 ```
 
 # Features
