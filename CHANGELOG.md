@@ -2,20 +2,23 @@
 
 # Breaking changes
 
-* We have split `new_app` method of origin backend to three specific methods.
-    - `deploy_image` for deployment of image
-    - `create_new_app_from_source` for deployment of applications using source-to-image from local or remote source
-    - `create_app_from_template` for deployment of applications using OpenShift templates
+* We have split `new_app` method of origin backend to three specific methods:
+    - `deploy_image` for deployment of an image.
+    - `create_new_app_from_source` for deployment of applications using source-to-image from local or remote source.
+    - `create_app_from_template` for deployment of applications using OpenShift templates.
 
 # New features
 
-* Troubleshooting and debugging of OpenShift backend is now easier because of new methods `get_logs` and `get_status`
+* Troubleshooting and debugging of OpenShift backend is now easier because of new methods `get_logs` and `get_status`.
 
 # Fixes
 
 * Documentation is updated and now includes OpenShift and Kubernetes backends.
 * Fixed race condition when starting docker containers via binary.
-* Nspawn backend improvements
+* Nspawn backend improvements:
+    - Changed default image location to `/opt` to avoid issues with brtfs and using loopback device.
+    - Do not use pull-raw and importing via machinectl.
+    - Test suite improvements.
 
 
 # 0.5.0
