@@ -9,8 +9,6 @@ from conu.utils import graceful_get
 
 logger = logging.getLogger(__name__)
 
-## TODO: This functions are the same as docker's version except few lines,
-## consider modify docker's fucntions to be universal
 
 def inspect_to_metadata(metadata_object, inspect_data):
     """
@@ -44,7 +42,7 @@ def inspect_to_metadata(metadata_object, inspect_data):
 
     raw_exposed_ports = graceful_get(inspect_data, "NetworkSettings", "Ports")
     if raw_exposed_ports:
-        metadata_object.exposed_ports = [d["containerPort"] for d in raw_exposed_ports]
+        metadata_object.exposed_ports = list(set([d["containerPort"] for d in raw_exposed_ports]))
 
     # specific to images
     raw_repo_tags = graceful_get(inspect_data, 'RepoTags')
@@ -74,6 +72,7 @@ def inspect_to_container_metadata(c_metadata_object, inspect_data, image_instanc
     """
     inspect_to_metadata(c_metadata_object, inspect_data)
 
+    # FIXME: Rename this function to be universal?
     status = ContainerStatus.get_from_docker(
         graceful_get(inspect_data, "State", "Status"),
         graceful_get(inspect_data, "State", "ExitCode"),
@@ -113,8 +112,12 @@ def inspect_to_container_metadata(c_metadata_object, inspect_data, image_instanc
             li.append(int_port)
             port_mappings.update({key: li})
 
+    raw_port_mappings = graceful_get(inspect_data, "NetworkSettings", "Ports")
+    c_metadata_object.port_mappings = {d["containerPort"]:[ p["hostPort"] for p in raw_port_mappings
+                                                            if p["containerPort"] == d["containerPort"]]
+                                       for d in raw_port_mappings}
+
     c_metadata_object.status = status
-    c_metadata_object.port_mappings = port_mappings
     c_metadata_object.hostname = graceful_get(inspect_data, 'Config', 'Hostname')
 
     # FIXME: Works only with one IP address

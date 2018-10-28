@@ -79,7 +79,11 @@ class PodmanBackend(Backend):
             inspect_data = PodmanContainer._inspect(identifier)
             name = graceful_get(inspect_data, "Name")
             image_id = graceful_get(inspect_data, "ImageID")
-            image_name, image_tag = parse_reference(graceful_get(inspect_data, "ImageName"))
+
+            try:
+                image_name, image_tag = parse_reference(inspect_data["ImageName"])
+            except (IndexError, TypeError):
+                image_name, image_tag = None, None
 
             image = PodmanImage(image_name, tag=image_tag, identifier=image_id)
             container = PodmanContainer(image, identifier, name=name)
@@ -98,7 +102,7 @@ class PodmanBackend(Backend):
         for identifier in self._list_all_podman_images():
             inspect_data  = PodmanImage._inspect(identifier)
             try:
-                i_name, tag = parse_reference(graceful_get(inspect_data, "RepoTags")[0])
+                i_name, tag = parse_reference(inspect_data["RepoTags"][0])
             except (IndexError, TypeError):
                 i_name, tag = None, None
             d_im = PodmanImage(i_name, tag=tag, identifier=identifier,
@@ -112,14 +116,11 @@ class PodmanBackend(Backend):
     def _list_all_podman_images():
         """
         Finds all podman containers
-        :return: list of containers' names
+        :return: list of containers' IDs
         """
-        cmdline = ["podman", "images"]
+        cmdline = ["podman", "images"] + ["--format", "{{.ID}}"]
         output = run_cmd(cmdline, return_output=True)
-        images = []
-        for l in output.split("\n")[1:]:
-            images.append(l.split()[2])
-
+        images = [image for image in output.split("\n")]
         return images
 
     @staticmethod
@@ -129,11 +130,7 @@ class PodmanBackend(Backend):
         :return: list of containers' names
         """
         option = ["--filter", filter] if filter else ["-a"]
-        cmdline = ["podman", "ps"] + option
+        cmdline = ["podman", "ps"] + option + ["--format", "{{.ID}}"]
         output =  run_cmd(cmdline, return_output=True)
-        containers = []
-        for l in output.split("\n")[1:]:
-            # TODO: Check if ID parsed well
-            containers.append(l[:12])
-
+        containers = [cont for cont in output.split("\n")]
         return containers

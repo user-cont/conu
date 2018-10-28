@@ -5,13 +5,16 @@ from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
 
 import subprocess
 import time
+import os
 
 from conu.backend.podman.backend import PodmanBackend
 from conu.backend.podman.container import PodmanRunBuilder, PodmanContainer
 from conu.backend.podman.image import PodmanImagePullPolicy
 from conu.utils import check_podman_command_works
 from conu.utils.probes import Probe
+
 from conu.apidefs.backend import CleanupPolicy
+from conu.apidefs.metadata import ContainerStatus
 
 from conu import ConuException, Directory
 
@@ -325,3 +328,51 @@ def test_list_images():
         image_under_test = [x for x in image_list if x.metadata.identifier == the_id][0]
         assert image_under_test.metadata.digest
         assert image_under_test.metadata.repo_digests
+
+
+def test_layers():
+    # TODO: Implement this test
+    pass
+
+
+def test_container_metadata():
+    with PodmanBackend() as backend:
+        image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+
+        c = image.run_via_binary(
+            PodmanRunBuilder(command=["cat"], additional_opts=['-i',
+                                                               '-t',
+                                                               '--name', 'mycontainer',
+                                                               '-p', '1234:12345',
+                                                               '-p', '123:12345',
+                                                               '-p', '8080',
+                                                               '--hostname', 'my_hostname',
+                                                               '-e', 'ENV1=my_env',
+                                                               '-e', 'ASD=',
+                                                               '-e', 'A=B=C=D',
+                                                               '--label', 'testlabel1=testvalue1'
+                                                               ])
+        )
+
+        try:
+            container_metadata = c.get_metadata()
+
+            assert container_metadata.command == ["cat"]
+            assert container_metadata.name == "mycontainer"
+            assert container_metadata.env_variables["ENV1"] == "my_env"
+            assert container_metadata.env_variables["ASD"] == ""
+            assert container_metadata.env_variables["A"] == "B=C=D"
+            assert container_metadata.hostname == "my_hostname"
+
+            # FIXME: podman raise an error when you send option  '-e XYZ': no such env variable
+            # assert "XYZ" not in list(container_metadata.env_variables.keys())
+
+            # FIXME: Podman store ports as integers not str
+            assert 12345 in container_metadata.port_mappings
+            assert container_metadata.port_mappings[12345] == [1234, 123]
+            assert 8080 in container_metadata.port_mappings
+            assert set(container_metadata.exposed_ports) == {8080, 12345}
+            assert container_metadata.labels["testlabel1"] == "testvalue1"
+            assert container_metadata.status == ContainerStatus.RUNNING
+        finally:
+            c.delete(force=True)

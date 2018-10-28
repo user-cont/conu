@@ -27,8 +27,6 @@ import json
 
 import six
 
-import podman
-
 from conu.apidefs.metadata import ImageMetadata
 from conu.apidefs.backend import get_backend_tmpdir
 from conu.apidefs.image import Image
@@ -164,13 +162,7 @@ class PodmanImage(Image):
 
         :return: None
         """
-        output = run_cmd(["podman", "pull", self.get_full_name()], return_output=True)
-        logger.debug(output)
-
-        if not "error pulling image" in output:
-            logger.info("Image successfully pulled: %s" % self.get_full_name())
-        else:
-            raise ConuException(output)
+        run_cmd(["podman", "pull", self.get_full_name()])
 
     def tag_image(self, repository=None, tag=None):
         """
@@ -416,3 +408,31 @@ class PodmanImage(Image):
         for v in volumes:
             result += ["-v", str(v)]
         return result
+
+    def get_layer_ids(self, rev=True):
+        """
+        Get IDs of image layers
+
+        :param rev: get layers reversed
+        :return: list of strings
+        """
+        cmdline = ["podman", "history", "--format", "{{.ID}}"]
+        layers = [layer for layer in run_cmd(cmdline, return_output=True)]
+        if not rev:
+            layers = layers.reverse()
+        return layers
+
+    def layers(self, rev=True):
+        """
+        Get list of PodmanImage for every layer in image
+
+        :param rev: get layers rev
+        :return: list of :class:`conu.PodmanImage`
+        """
+        image_layers = [
+            PodmanImage(None, identifier=x, pull_policy=PodmanImagePullPolicy.NEVER)
+            for x in self.get_layer_ids()
+        ]
+        if not rev:
+            image_layers.reverse()
+        return image_layers
