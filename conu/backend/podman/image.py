@@ -23,6 +23,7 @@ import logging
 import os
 import subprocess
 import enum
+import json
 
 import six
 
@@ -32,12 +33,12 @@ from conu.apidefs.metadata import ImageMetadata
 from conu.apidefs.backend import get_backend_tmpdir
 from conu.apidefs.image import Image
 
-from conu.backend.podman.client import get_client
 from conu.backend.podman.container import PodmanContainer, PodmanRunBuilder
 
 from conu.backend.docker.image import DockerImageViaArchiveFS
 
 from conu.exceptions import ConuException
+
 from conu.utils import run_cmd, random_tmp_filename, \
     graceful_get, export_docker_container_to_directory
 from conu.utils.filesystem import Volume
@@ -47,26 +48,26 @@ from conu.utils.probes import Probe
 logger = logging.getLogger(__name__)
 
 
-class PodmanImageViaArchiveFS(DockerImageViaArchiveFS):
-    def __init__(self, image, mount_point=None):
-        """
-        Provide image as an archive
-
-        :param image: instance of PodmanImage
-        :param mount_point: str, directory where the filesystem will be made available
-        """
-        super(PodmanImageViaArchiveFS, self).__init__(image, mount_point=mount_point)
-        self.image = image
-
-    def __enter__(self):
-        client = get_client()
-        c = client.create_container(self.image.get_id())
-        container = PodmanContainer(self.image, c["Id"])
-        try:
-            export_docker_container_to_directory(client, container, self.mount_point)
-        finally:
-            container.delete(force=True)
-        return super(PodmanImageViaArchiveFS, self).__enter__()
+# class PodmanImageViaArchiveFS(DockerImageViaArchiveFS):
+#     def __init__(self, image, mount_point=None):
+#         """
+#         Provide image as an archive
+#
+#         :param image: instance of PodmanImage
+#         :param mount_point: str, directory where the filesystem will be made available
+#         """
+#         super(PodmanImageViaArchiveFS, self).__init__(image, mount_point=mount_point)
+#         self.image = image
+#
+#     def __enter__(self):
+#         client = get_client()
+#         c = client.create_container(self.image.get_id())
+#         container = PodmanContainer(self.image, c["Id"])
+#         try:
+#             export_docker_container_to_directory(client, container, self.mount_point)
+#         finally:
+#             container.delete(force=True)
+#         return super(PodmanImageViaArchiveFS, self).__enter__()
 
 
 class PodmanImagePullPolicy(enum.Enum):
@@ -106,7 +107,6 @@ class PodmanImage(Image):
             raise ConuException("'pull_policy' is not an instance of PodmanImagePullPolicy")
         if identifier:
             self._id = identifier
-        self.d = get_client()
         self.pull_policy = pull_policy
 
         self._inspect_data = None
@@ -143,7 +143,7 @@ class PodmanImage(Image):
         :return: str
         """
         if self._id is None:
-            self._id = self.inspect(refresh=False)["id"]
+            self._id = graceful_get(self.inspect(refresh=False), "Id")
         return self._id
 
     def is_present(self):
@@ -152,10 +152,9 @@ class PodmanImage(Image):
 
         :return: bool, True if it is, False if it's not
         """
-        # TODO: move this method to generic API
         try:
             return bool(self.inspect())
-        except podman.libs.errors.ImageNotFound:
+        except subprocess.CalledProcessError:
             return False
 
     def pull(self):
@@ -165,20 +164,18 @@ class PodmanImage(Image):
 
         :return: None
         """
-        for json_e in self.d.images.pull(self.get_full_name()):
-            logger.debug(json_e)
-            status = graceful_get(json_e, "status")
-            if status:
-                logger.info(status)
-            else:
-                error = graceful_get(json_e, "error")
-                logger.error(status)
-                raise ConuException("There was an error while pulling the image %s: %s",
-                                    self.get_full_name(), error)
+        output = run_cmd(["podman", "pull", self.get_full_name()], return_output=True)
+        logger.debug(output)
+
+        if not "error pulling image" in output:
+            logger.info("Image successfully pulled: %s" % self.get_full_name())
+        else:
+            raise ConuException(output)
 
     def tag_image(self, repository=None, tag=None):
         """
-        Apply additional tags to the image BUT NOT A NEW NAME
+        Apply additional tags to the image or a new name
+        >> podman tag image[:tag] target-name[:tag]
 
         :param repository: str, see constructor
         :param tag: str, see constructor
@@ -187,9 +184,9 @@ class PodmanImage(Image):
         if not (repository or tag):
             raise ValueError("You need to specify either repository or tag.")
         r = repository or self.name
-        t = "latest" if not tag else tag
-        i = self._id or self.get_id()
-        self.d.images.get(i).tag(tag="%s:%s" % (r, t))
+        t = tag or "latest"
+        identifier = self._id or self.get_id()
+        run_cmd(["podman", "tag", identifier, "%s:%s" % (r, t)])
         return PodmanImage(r, tag=t)
 
     def inspect(self, refresh=True):
@@ -203,10 +200,14 @@ class PodmanImage(Image):
             identifier = self._id or self.get_full_name()
             if not identifier:
                 raise ConuException("This image does not have a valid identifier.")
-            self._inspect_data = self.d.images.get(identifier).inspect()
-            # Convert to dict
-            self._inspect_data = dict(self._inspect_data._asdict())
+            self._inspect_data = self._inspect(identifier)
         return self._inspect_data
+
+    @staticmethod
+    def _inspect(identifier):
+        cmdline = ['podman', 'inspect', identifier]
+        output = run_cmd(cmdline, return_output=True)
+        return json.loads(output)[0]
 
     def rmi(self, force=False, via_name=False):
         """
@@ -216,13 +217,9 @@ class PodmanImage(Image):
         :param via_name: bool, refer to the image via name, if false, refer via ID
         :return: None
         """
-        # FIXME: There is no 'via name' remove method in podman python API
-        if via_name:
-            cmdline = ["podman", "rmi", self.get_full_name()]
-            if force: cmdline.insert(2, "--force")
-            run_cmd(cmdline)
-        else:
-            self.d.images.get(self.get_id()).remove(force=force)
+        identifier = self.get_full_name() if via_name else (self._id or self.get_id())
+        cmdline = ["podman", "rmi", identifier, "--force" if force else ""]
+        run_cmd(cmdline)
 
     def _run_container(self, run_command_instance, callback):
         """ this is internal method """
@@ -233,10 +230,23 @@ class PodmanImage(Image):
         response = callback()
         # and we need to wait now; inotify would be better but is way more complicated and
         # adds dependency
-        Probe(timeout=10, count=10, pause=0.1, fnc=lambda: os.path.exists(tmpfile)).run()
+        Probe(timeout=10, count=10, pause=0.1, fnc=lambda: self._file_not_empty(tmpfile)).run()
         with open(tmpfile, 'r') as fd:
             container_id = fd.read()
         return container_id, response
+
+    @staticmethod
+    def _file_not_empty(tmpfile):
+        """
+        Returns True if file exists and it is not empty
+        to check if it is time to read container ID from cidfile
+        :param tmpfile: str, path to file
+        :return: bool, True if container id is written to the file
+        """
+        if os.path.exists(tmpfile):
+            return os.stat(tmpfile).st_size != 0
+        else:
+            return False
 
     def run_via_binary(self, run_command_instance=None, command=None, volumes=None,
                        additional_opts=None, **kwargs):
@@ -301,9 +311,95 @@ class PodmanImage(Image):
                 raise ConuException("Container exited with an error: %s" % ex.returncode)
 
         container_id, _ = self._run_container(run_command_instance, callback)
+        container_name = graceful_get(self._inspect(container_id), "Name")
 
-        container_name = self.d.containers.get(container_id).inspect().name
         return PodmanContainer(self, container_id, name=container_name)
+
+    def run_via_binary_in_foreground(
+            self, run_command_instance=None, command=None, volumes=None,
+            additional_opts=None, popen_params=None, container_name=None):
+        """
+        Create a container using this image and run it in foreground;
+        this method is useful to test real user scenarios when users invoke containers using
+        binary and pass input into the container via STDIN. You are also responsible for:
+
+         * redirecting STDIN when intending to use container.write_to_stdin afterwards by setting
+              popen_params={"stdin": subprocess.PIPE} during run_via_binary_in_foreground
+
+         * checking whether the container exited successfully via:
+              container.popen_instance.returncode
+
+        Please consult the documentation for subprocess python module for best practices on
+        how you should work with instance of Popen
+
+        :param run_command_instance: instance of PodmanRunBuilder
+        :param command: list of str, command to run in the container, examples:
+            - ["ls", "/"]
+            - ["bash", "-c", "ls / | grep bin"]
+        :param volumes: tuple or list of tuples in the form:
+
+            * `("/path/to/directory", )`
+            * `("/host/path", "/container/path")`
+            * `("/host/path", "/container/path", "mode")`
+            * `(conu.Directory('/host/path'), "/container/path")` (source can be also
+                Directory instance)
+
+        :param additional_opts: list of str, additional options for `docker run`
+        :param popen_params: dict, keyword arguments passed to Popen constructor
+        :param container_name: str, pretty container identifier
+        :return: instance of PodmanContainer
+        """
+        logger.info("run container via binary in foreground")
+
+        if (command is not None or additional_opts is not None) \
+                and run_command_instance is not None:
+            raise ConuException(
+                "run_command_instance and command parameters cannot be "
+                "passed into method at same time")
+
+        if run_command_instance is None:
+            command = command or []
+            additional_opts = additional_opts or []
+
+            if (isinstance(command, list) or isinstance(command, tuple) and
+                isinstance(additional_opts, list) or isinstance(additional_opts, tuple)):
+                run_command_instance = PodmanRunBuilder(
+                    command=command, additional_opts=additional_opts)
+            else:
+                raise ConuException("command and additional_opts needs to be list of str or None")
+        else:
+            run_command_instance = run_command_instance or PodmanRunBuilder()
+            if not isinstance(run_command_instance, PodmanRunBuilder):
+                raise ConuException("run_command_instance needs to be an "
+                                    "instance of PodmanRunBuilder")
+
+        popen_params = popen_params or {}
+
+        # FIXME: podman exits with error 139 if no --privileged flag
+        run_command_instance.options += ["--privileged"]
+
+        run_command_instance.image_name = self.get_id()
+        if container_name:
+            run_command_instance.options += ["--name", container_name]
+
+        if volumes:
+            run_command_instance.options += self.get_volume_options(volumes=volumes)
+
+        def callback():
+            return subprocess.Popen(run_command_instance.build(), **popen_params)
+
+        container_id, popen_instance = self._run_container(run_command_instance, callback)
+
+        actual_name = graceful_get(self._inspect(container_id), "Name")
+
+        if container_name and container_name != actual_name:
+            raise ConuException(
+                "Unexpected container name value. Expected = "
+                + str(container_name) + " Actual = " + str(actual_name))
+        if not container_name:
+            container_name = actual_name
+        return PodmanContainer(
+            self, container_id, popen_instance=popen_instance, name=container_name)
 
     @staticmethod
     def get_volume_options(volumes):

@@ -275,6 +275,36 @@ def check_docker_command_works():
     return True
 
 
+def check_podman_command_works():
+    """
+    Verify that podman binary works fine. This is performed by calling `podman
+    version`, which also checks server API version.
+
+    :return: bool, True if all is good, otherwise ConuException or CommandDoesNotExistException
+              is thrown
+    """
+    try:
+        out = subprocess.check_output(["podman", "version"],
+                                      stderr=subprocess.STDOUT,
+                                      universal_newlines=True)
+    except OSError:
+        logger.info("podman binary is not available")
+        raise CommandDoesNotExistException(
+            "podman command doesn't seem to be available on your system. "
+            "Please install and configure podman."
+        )
+    except subprocess.CalledProcessError as ex:
+        logger.error("exception: %s", ex)
+        logger.error("rc: %s, output: %r", ex.returncode, ex.output)
+        raise ConuException(
+            "`podman version` call failed, it seems that your podman daemon is misconfigured or "
+            "this user can't communicate with podman."
+        )
+    else:
+        logger.info("podman environment info: %r", out)
+    return True
+
+
 def graceful_get(d, *args):
     """
     Obtain values from dicts and lists gracefully. Example:

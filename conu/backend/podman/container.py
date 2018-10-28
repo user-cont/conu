@@ -3,19 +3,22 @@ Implementation of a podman container
 """
 from __future__ import print_function, unicode_literals
 
+import functools
 import logging
-
-from podman import ContainerNotFound
+import json
+import subprocess
 
 from conu.apidefs.container import Container
 from conu.apidefs.metadata import ContainerMetadata
-from conu.backend.podman.client import get_client
 from conu.exceptions import ConuException
 
 from conu.backend.docker.container import DockerRunBuilder
-from conu.utils import run_cmd
+from conu.backend.podman.utils import inspect_to_container_metadata
 
-from conu.backend.docker.constants import CONU_ARTIFACT_TAG
+from conu.utils import check_port, run_cmd, export_docker_container_to_directory, graceful_get
+from conu.utils.probes import Probe
+
+from conu.backend.podman.constants import CONU_ARTIFACT_TAG
 
 
 logger = logging.getLogger(__name__)
@@ -40,8 +43,7 @@ class PodmanRunBuilder(DockerRunBuilder):
 
     def build(self):
         return self.binary + self.global_options + self.command + self.options + \
-            [self.image_name] + self.arguments
-        # FIXME: add ["--label", CONU_ARTIFACT_TAG], now label assignation doesn't work for some reason
+               ["--label", "%s=1" % CONU_ARTIFACT_TAG] + [self.image_name] + self.arguments
 
     def get_parameters(self):
         raise NotImplementedError("method is not implemented")
@@ -55,7 +57,6 @@ class PodmanContainer(Container):
         :param name: str, pretty container name
         :param popen_instance: instance of Popen
         """
-        self.d = get_client()
         super(PodmanContainer, self).__init__(image, container_id, name)
         self.popen_instance = popen_instance
         self._inspect_data = None
@@ -74,9 +75,16 @@ class PodmanContainer(Container):
         :return: str
         """
         if self._id is None:
-            # FIXME: provide a better error message when key is not defined
-            self._id = self.inspect(refresh=False)["id"]
+            self._id = graceful_get(self.inspect(refresh=True), "ID")
         return self._id
+
+    def get_name(self):
+        """
+        Returns name of the container
+        :return: str
+        """
+        self.name = self.name or graceful_get(self.inspect(refresh=False), "Name")
+        return self.name
 
     def inspect(self, refresh=True):
         """
@@ -86,13 +94,17 @@ class PodmanContainer(Container):
         :return: dict
         """
         if refresh or not self._inspect_data:
-            ident = self._id or self.name
-            if not ident:
+            identifier = self._id or self.name
+            if not identifier:
                 raise ConuException("This container does not have a valid identifier.")
-            self._inspect_data = self.d.containers.get(ident).inspect()
-            # FIXME: get rid of protected method _asdict()
-            self._inspect_data = dict(self._inspect_data._asdict())
+            self._inspect_data = self._inspect(identifier)
         return self._inspect_data
+
+    @staticmethod
+    def _inspect(identifier):
+        cmdline = ["podman", "container", "inspect", identifier]
+        output = run_cmd(cmdline, return_output=True)
+        return json.loads(output)[0]
 
     def is_running(self):
         """
@@ -101,9 +113,106 @@ class PodmanContainer(Container):
         :return: bool
         """
         try:
-            return self.inspect(refresh=True)["state"]["running"]
-        except ContainerNotFound:
+            return graceful_get(self.inspect(refresh=True), "State", "Running")
+        except subprocess.CalledProcessError:
             return False
+
+    def get_IPv4s(self):
+        """
+        Return all known IPv4 addresses of this container. It may be possible
+        that the container has disabled networking: in that case, the list is
+        empty
+
+        :return: list of str
+        """
+        self.get_metadata()  # force update of metadata, we should probably do this better
+        return self.metadata.ipv4_addresses
+
+    def get_IPv6s(self):
+        """
+        Return all known IPv6 addresses of this container. It may be possible
+        that the container has disabled networking: in that case, the list is
+        empty
+
+        :return: list of str
+        """
+        self.get_metadata()  # force update of metadata, we should probably do this better
+        return self.metadata.ipv6_addresses
+
+    def get_ports(self):
+        """
+        get ports specified in container metadata
+
+        :return: list of str
+        """
+        ports = []
+        container_ports = graceful_get(self.inspect(refresh=True), "NetworkSettings", "Ports")
+        if not container_ports:
+            return ports
+        for p in container_ports:
+            # TODO: gracefullness, error handling
+            ports.append(p.split("/")[0])
+        return ports
+
+    def is_port_open(self, port, timeout=2):
+        """
+        check if given port is open and receiving connections on container ip_address
+
+        :param port: int, container port
+        :param timeout: int, how many seconds to wait for connection; defaults to 2
+        :return: True if the connection has been established inside timeout, False otherwise
+        """
+        addresses = self.get_IPv4s()
+        if not addresses:
+            return False
+        return check_port(port, host=addresses[0], timeout=timeout)
+
+    def get_port_mappings(self, port=None):
+        """
+        Get list of port mappings between container and host. The format of dicts is:
+
+            {"HostIp": XX, "HostPort": YY};
+
+        When port is None - return all port mappings. The container needs
+        to be running, otherwise this returns an empty list.
+
+        :param port: int or None, container port
+        :return: list of dict or None; dict when port=None
+        """
+        port_mappings = graceful_get(self.inspect(refresh=True), "NetworkSettings", "Ports")
+
+        if not port:
+            return port_mappings
+
+        if str(port) not in self.get_ports():
+            return []
+
+        for p in port_mappings:
+            if p.split("/")[0] == str(port):
+                return port_mappings[p]
+
+    def get_image_name(self):
+        """
+        return name of the container image
+
+        :return: str
+        """
+        metadata = self.inspect()
+        if "Config" in metadata:
+            return metadata["Config"].get("Image", None)
+        return None
+
+    def wait_for_port(self, port, timeout=10, **probe_kwargs):
+        """
+        block until specified port starts accepting connections, raises an exc ProbeTimeout
+        if timeout is reached
+
+        :param port: int, port number
+        :param timeout: int or float (seconds), time to wait for establishing the connection
+        :param probe_kwargs: arguments passed to Probe constructor
+        :return: None
+        """
+        Probe(timeout=timeout, fnc=functools.partial(self.is_port_open, port), **probe_kwargs).run()
 
     def delete(self, force=False, **kwargs):
         """
@@ -113,9 +222,8 @@ class PodmanContainer(Container):
         :param force: bool, if container engine supports this, force the functionality
         :return: None
         """
-        # TODO: Implement volumes removing
-        # :param volumes: bool, remove also associated volumes
-        self.d.containers.get(self.get_id()).remove(force=force)
+        cmdline = ["podman", "rm", "--force" if force else "", self.get_name()]
+        run_cmd(cmdline)
 
     def mount(self, mount_point=None):
         """
@@ -123,8 +231,7 @@ class PodmanContainer(Container):
 
         :return: str, the location of the mounted file system
         """
-        # TODO: implement mount point
-        cmd = ["podman", "mount", self.get_id()]
+        cmd = ["podman", "mount", self._id or self.get_id()]
         output = run_cmd(cmd, return_output=True).rstrip("\n\r")
         return output
 
@@ -142,51 +249,82 @@ class PodmanContainer(Container):
         cmd = ["podman", "umount"] + options + [self.get_id() if not all else ""]
         return run_cmd(cmd, return_output=True)
 
-    def copy_to(self, src, dest):
+    def logs(self, follow=False):
         """
-        copy a file or a directory from host system to a container
+        Get logs from this container. Iterator has one log line followed by a newline in next item.
+        The logs are NOT encoded (they are str, not bytes).
 
-        :param src: str, path to a file or a directory on host system
-        :param dest: str, path to a file or a directory within container
-        :return: None
+        Let's look at an example::
+
+            image = conu.PodmanImage("fedora", tag="27")
+            command = ["bash", "-c", "for x in `seq 1 5`; do echo $x; sleep 1; done"]
+            container = image.run_via_binary(command=command)
+            for line in container.logs(follow=True):
+                print(line)
+
+        This will output
+
+        .. code-block:: none
+
+            '1' '\n' '2' '\n' '3' '\n' '4' '\n' '5' '\n'
+
+        :param follow: bool, provide new logs as they come
+        :return: iterator (of str)
         """
-        # logger.debug("copying %s from host to container at %s using 'podman mount'", src, dest)
-        # full_dest = self.mount() + dest
-        # cmd = ["cp", "-R", src, full_dest]
-        # run_cmd(cmd)
-        raise NotImplementedError("method is not implemented")
+        # TODO: podman logs have different behavior than docker
+        follow = ["--follow"] if follow else []
+        cmdline = ["podman", "logs"] + follow + [self._id or self.get_id()]
+        output = run_cmd(cmdline, return_output=True)
+        return output
 
-    def copy_from(self, src, dest):
+    def get_status(self):
         """
-        copy a file or a directory from container or image to host system.
+        Get status of container
 
-        :param src: str, path to a file or a directory within container or image
-        :param dest: str, path to a file or a directory on host system
-        :return: None
+        :return: one of: 'created', 'restarting', 'running', 'paused', 'exited', 'dead'
         """
-        # using `podman cp` b/c get_archive is too complicated
-        # logger.debug("copying %s from host to container at %s", src, dest)
-        # cmd = ["podman", "cp", "%s:%s" % (self.get_id(), src), dest]
-        # run_cmd(cmd)
-        raise NotImplementedError("method is not implemented")
+        return graceful_get(self.inspect(refresh=True), "State", "Status")
 
-    def execute(self, command, blocking=True):
+    def wait(self, timeout=None):
+        """
+        Block until the container stops, then return its exit code. Similar to
+        the ``podman wait`` command.
+
+        :param timeout: int, microseconds to wait before polling for completion
+        :return: int, exit code
+        """
+        timeout = ["--interval=%s" % timeout] if timeout else []
+        cmdline = ["podman", "wait"] + timeout + [self._id or self.get_id()]
+        return run_cmd(cmdline, return_output=True)
+
+    def exit_code(self):
+        """
+        get exit code of container. Return value is 0 for running and created containers
+
+        :return: int
+        """
+        return graceful_get(self.inspect(refresh=True), "State", "ExitCode")
+
+    def execute(self, command):
         """
         Execute a command in this container -- the container needs to be running.
 
         :param command: list of str, command to execute in the container
-        :param blocking: bool, if True blocks until the command finishes
-        :return: iterator if non-blocking or list of bytes if blocking
+        :return: str
         """
-        # FIXME: there is no exec method in podman python API so use cmd
+
         logger.info("running command %s", command)
-        # podman exec container [options] [command [arg ...]]
-        cmd = ["podman", "exec"] + [self.get_id()] + command
+        cmd = ["podman", "exec", self.get_id()] + command
         output = run_cmd(cmd, return_output=True)
-        if blocking:
-            response = []
-            for line in output:
-                response.append(line)
-                logger.info("%s", line.decode("utf-8").strip("\n\r"))
-            return response
+
         return output
+
+    def get_metadata(self):
+        """
+        Convert dictionary returned after podman inspect command into instance of ContainerMetadata class
+        :return: ContainerMetadata, container metadata instance
+        """
+        inspect_data = self.inspect(refresh=True)
+        inspect_to_container_metadata(self.metadata, inspect_data, self.image)
+
+        return self.metadata
