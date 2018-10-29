@@ -211,6 +211,48 @@ class OpenshiftBackend(K8sBackend):
         except ProbeTimeout as e:
             raise ConuException("Cannot start build of application: %s" % e)
 
+    def _get_image_registry_url(self, image_name):
+        """
+        Helper function for obtain registry url of image using name
+        :param image_name: str, short name of an image, example:
+            - conu:0.5.0
+        :return: str, image registry url, example:
+            - 172.30.1.1:5000/myproject/conu:0.5.0
+        """
+        c = self._oc_command(["get is", image_name,
+                              "--output=jsonpath='{ .status.dockerImageRepository }"])
+        try:
+            internal_registry_name = run_cmd(c, return_output=True)
+        except subprocess.CalledProcessError as ex:
+            raise ConuException("oc get is failed: %s" % ex)
+
+        logger.info("Image registry url: %s", internal_registry_name)
+
+        return internal_registry_name
+
+    def import_image(self, imported_image_name, image_name):
+        """
+        Import image using `oc import-image` command.
+        :param imported_image_name: str, short name of an image in internal registry, example:
+            - hello-openshift:latest
+        :param image_name: full repository name, example:
+            - docker.io/openshift/hello-openshift:latest
+        :return: str, full name from internal registry
+        """
+
+        c = self._oc_command(["import-image", imported_image_name,
+                              "--from=%s" % image_name, "--insecure=true", "--confirm"])
+
+        logger.info("Importing image from: %s, as: %", image_name, imported_image_name)
+
+        try:
+            o = run_cmd(c, return_output=True, ignore_status=True)
+            logger.debug(o)
+        except subprocess.CalledProcessError as ex:
+            raise ConuException("oc import-image failed: %s" % ex)
+
+        return self._get_image_registry_url(imported_image_name)
+
     def request_service(self, app_name, port, expected_output=None):
         """
         Make request on service of app. If there is connection error function return False.
