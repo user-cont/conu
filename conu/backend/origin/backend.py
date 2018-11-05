@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 # let this class inherit docstring from parent
 class OpenshiftBackend(K8sBackend):
 
-    def __init__(self, api_key=None, logging_level=logging.INFO, logging_kwargs=None):
+    def __init__(self, api_key=None, logging_level=logging.INFO, logging_kwargs=None, project=None):
         """
         This method serves as a configuration interface for conu.
 
@@ -47,6 +47,9 @@ class OpenshiftBackend(K8sBackend):
         :param logging_level: int, control logger verbosity: see logging.{DEBUG,INFO,ERROR}
         :param logging_kwargs: dict, additional keyword arguments for logger set up, for more info
                                 see docstring of set_logging function
+        :param project: str, project name that will be used while working with this backend.
+                            It is possible to specify it later, when deploying app. One instance
+                            of OpenshiftBackend should work with just one project at time.
         """
         super(OpenshiftBackend, self).__init__(api_key,
                                                logging_level=logging_level,
@@ -54,6 +57,8 @@ class OpenshiftBackend(K8sBackend):
 
         # provides HTTP client (requests.Session)
         self.http_session = requests.Session()
+
+        self.project = project
 
     def http_request(self, path="/", method="GET", host=None, port=None, json=False, data=None):
         """
@@ -93,6 +98,7 @@ class OpenshiftBackend(K8sBackend):
         :param name:str, name of application, if None random name is generated
         :return: str, name of the app
         """
+        self.project = project
 
         # app name is generated randomly
         name = name or 'app-{random_string}'.format(random_string=random_str(5))
@@ -123,6 +129,7 @@ class OpenshiftBackend(K8sBackend):
         :param oc_new_app_args: additional parameters for the `oc new-app`
         :return: str, name of the app
         """
+        self.project = project
 
         # app name is generated randomly
         name = 'app-{random_string}'.format(random_string=random_str(5))
@@ -165,6 +172,8 @@ class OpenshiftBackend(K8sBackend):
         :param project: project where app should be created
         :return: None
         """
+        self.project = project
+
         # push images to registry
         repository, tag = list(name_in_template.items())[0]
         push_to_registry(image, repository, tag, project)
@@ -264,7 +273,7 @@ class OpenshiftBackend(K8sBackend):
         """
 
         # get ip of service
-        ip = [service.get_ip() for service in self.list_services()
+        ip = [service.get_ip() for service in self.list_services(namespace=self.project)
               if service.name == app_name][0]
 
         # make http request to obtain output
@@ -312,7 +321,7 @@ class OpenshiftBackend(K8sBackend):
         :return: bool
         """
         app_pod_exists = False
-        for pod in self.list_pods():
+        for pod in self.list_pods(namespace=self.project):
             if app_name in pod.name and 'build' not in pod.name and 'deploy' not in pod.name:
                 app_pod_exists = True
                 if not pod.is_ready():
@@ -346,7 +355,7 @@ class OpenshiftBackend(K8sBackend):
         """
         logs = self.get_status()
 
-        for pod in self.list_pods():
+        for pod in self.list_pods(namespace=self.project):
             if name in pod.name:  # get just logs from pods related to app
                 pod_logs = pod.get_logs()
                 if pod_logs:
