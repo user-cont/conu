@@ -21,5 +21,6 @@ if [ "${NAME}" == "Fedora" ]; then
         python3-pip python2-pip \
         python3-pytest python2-pytest \
         python3-pyxattr python2-pyxattr \
-        gcc python3-devel python2-devel
+        gcc python3-devel python2-devel \
+        nmap-ncat  # for tests
 fi
