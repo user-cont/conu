@@ -3,7 +3,7 @@ adal==1.2.0
 asn1crypto==0.24.0
 atomicwrites==1.2.1
 attrs==18.2.0
-cachetools==2.1.0
+cachetools==3.0.0
 certifi==2018.10.15
 cffi==1.11.5
 chardet==3.0.4
@@ -13,7 +13,7 @@ docker==3.5.1
 enum34==1.1.6
 google-auth==1.5.1
 idna==2.7
-kubernetes==7.0.0
+kubernetes==8.0.0
 more-itertools==4.3.0
 oauthlib==2.1.0
 pluggy==0.8.0
@@ -22,12 +22,12 @@ pyasn1-modules==0.2.2
 pyasn1==0.4.4
 pycparser==2.19
 pyjwt==1.6.4
-pytest==3.9.3
+pytest==3.10.0
 python-dateutil==2.7.5
 pyyaml==3.13
 requests-oauthlib==1.0.0
 requests==2.20.0
 rsa==4.0
 six==1.11.0
-urllib3==1.24
-websocket-client==0.53.0
+urllib3==1.24.1
+websocket-client==0.54.0
