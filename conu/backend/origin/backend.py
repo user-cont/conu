@@ -84,10 +84,10 @@ class OpenshiftBackend(K8sBackend):
         oc_command_exists()
         return ["oc"] + args
 
-    def deploy_image(self, image, oc_new_app_args, project, name=None):
+    def deploy_image(self, image_name, oc_new_app_args, project, name=None):
         """
         Deploy image in OpenShift cluster using 'oc new-app'
-        :param image: DockerImage, image to be deployed
+        :param image_name: image name with tag
         :param oc_new_app_args: additional parameters for the `oc new-app`, env variables etc.
         :param project: project where app should be created
         :param name:str, name of application, if None random name is generated
@@ -99,10 +99,10 @@ class OpenshiftBackend(K8sBackend):
 
         oc_new_app_args = oc_new_app_args or []
 
-        new_image = push_to_registry(image, image.name.split('/')[-1], image.tag, project)
+        new_image = self.import_image(image_name.split('/')[-1], image_name)
 
         c = self._oc_command(
-            ["new-app"] + oc_new_app_args + [new_image.name] +
+            ["new-app"] + oc_new_app_args + [new_image] +
             ["-n"] + [project] + ["--name=%s" % name])
 
         logger.info("Creating new app in project %s", project)
@@ -213,14 +213,14 @@ class OpenshiftBackend(K8sBackend):
 
     def _get_image_registry_url(self, image_name):
         """
-        Helper function for obtain registry url of image using name
+        Helper function for obtain registry url of image from it's name
         :param image_name: str, short name of an image, example:
             - conu:0.5.0
         :return: str, image registry url, example:
             - 172.30.1.1:5000/myproject/conu:0.5.0
         """
-        c = self._oc_command(["get is", image_name,
-                              "--output=jsonpath='{ .status.dockerImageRepository }"])
+        c = self._oc_command(["get", "is", image_name,
+                              "--output=jsonpath=\'{ .status.dockerImageRepository }\'"])
         try:
             internal_registry_name = run_cmd(c, return_output=True)
         except subprocess.CalledProcessError as ex:
