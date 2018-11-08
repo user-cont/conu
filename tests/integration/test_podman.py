@@ -5,15 +5,13 @@ from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
 
 import subprocess
 import time
-import os
 
 from conu.backend.podman.backend import PodmanBackend
-from conu.backend.podman.container import PodmanRunBuilder, PodmanContainer
+from conu.backend.podman.container import PodmanRunBuilder
 from conu.backend.podman.image import PodmanImagePullPolicy
 from conu.utils import check_podman_command_works
 from conu.utils.probes import Probe
 
-from conu.apidefs.backend import CleanupPolicy
 from conu.apidefs.metadata import ContainerStatus
 
 from conu import ConuException, Directory
@@ -21,6 +19,7 @@ from conu import ConuException, Directory
 from six import string_types
 
 import pytest
+
 
 def test_podman_cli():
     """
@@ -80,7 +79,7 @@ def test_container_create_failed():
     """
     Test podman run with execution non-existing command
     """
-    ## FIXME: Cleanup containers after run
+    # FIXME: Cleanup containers after run
     with PodmanBackend() as backend:
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
         # should raise an exc, there is no such command: waldo; we need to find waldo first
@@ -119,6 +118,7 @@ def test_interactive_container():
         finally:
             cont.delete(force=True)
 
+
 def test_container_logs():
     with PodmanBackend() as backend:
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
@@ -130,6 +130,7 @@ def test_container_logs():
             assert list(cont.logs()) == ['1', '\n', '2', '\n', '3', '\n', '4', '\n', '5', '\n']
         finally:
             cont.delete(force=True)
+
 
 def test_http_client():
     with PodmanBackend() as backend:
@@ -150,6 +151,7 @@ def test_http_client():
         finally:
             c.delete(force=True)
 
+
 def test_http_client_context():
     with PodmanBackend() as backend:
         image = backend.ImageClass(FEDORA_REPOSITORY)
@@ -169,6 +171,7 @@ def test_http_client_context():
                 assert r2.ok
         finally:
             c.delete(force=True)
+
 
 def test_wait_for_status():
     with PodmanBackend() as backend:
@@ -366,8 +369,6 @@ def test_container_metadata():
 
             # FIXME: podman raise an error when you send option  '-e XYZ': no such env variable
             # assert "XYZ" not in list(container_metadata.env_variables.keys())
-
-            # FIXME: Podman store ports as integers not str
             assert 12345 in container_metadata.port_mappings
             assert container_metadata.port_mappings[12345] == [1234, 123]
             assert 8080 in container_metadata.port_mappings
