@@ -1,3 +1,19 @@
+# -*- coding: utf-8 -*-
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
 """
 utility functions for related to podman
 """
@@ -113,14 +129,14 @@ def inspect_to_container_metadata(c_metadata_object, inspect_data, image_instanc
             port_mappings.update({key: li})
 
     raw_port_mappings = graceful_get(inspect_data, "NetworkSettings", "Ports")
-    c_metadata_object.port_mappings = {d["containerPort"]:[ p["hostPort"] for p in raw_port_mappings
+    c_metadata_object.port_mappings = {d["containerPort"]: [p["hostPort"] for p in raw_port_mappings
                                                             if p["containerPort"] == d["containerPort"]]
                                        for d in raw_port_mappings}
 
     c_metadata_object.status = status
     c_metadata_object.hostname = graceful_get(inspect_data, 'Config', 'Hostname')
 
-    # FIXME: Works only with one IP address
+    # TODO: Make it work not only with one IP address
     c_metadata_object.ipv4_addresses = [graceful_get(inspect_data, "NetworkSettings", "IPAddress")]
     c_metadata_object.ipv6_addresses = [graceful_get(inspect_data, "NetworkSettings", "GlobalIPv6Address")]
 

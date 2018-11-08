@@ -24,7 +24,6 @@ import os
 import subprocess
 import enum
 import json
-
 import six
 
 from conu.apidefs.metadata import ImageMetadata
@@ -33,39 +32,14 @@ from conu.apidefs.image import Image
 
 from conu.backend.podman.container import PodmanContainer, PodmanRunBuilder
 
-from conu.backend.docker.image import DockerImageViaArchiveFS
-
 from conu.exceptions import ConuException
 
-from conu.utils import run_cmd, random_tmp_filename, \
-    graceful_get, export_docker_container_to_directory
+from conu.utils import run_cmd, random_tmp_filename, graceful_get
 from conu.utils.filesystem import Volume
 from conu.utils.probes import Probe
 
 
 logger = logging.getLogger(__name__)
-
-
-# class PodmanImageViaArchiveFS(DockerImageViaArchiveFS):
-#     def __init__(self, image, mount_point=None):
-#         """
-#         Provide image as an archive
-#
-#         :param image: instance of PodmanImage
-#         :param mount_point: str, directory where the filesystem will be made available
-#         """
-#         super(PodmanImageViaArchiveFS, self).__init__(image, mount_point=mount_point)
-#         self.image = image
-#
-#     def __enter__(self):
-#         client = get_client()
-#         c = client.create_container(self.image.get_id())
-#         container = PodmanContainer(self.image, c["Id"])
-#         try:
-#             export_docker_container_to_directory(client, container, self.mount_point)
-#         finally:
-#             container.delete(force=True)
-#         return super(PodmanImageViaArchiveFS, self).__enter__()
 
 
 class PodmanImagePullPolicy(enum.Enum):
@@ -276,7 +250,7 @@ class PodmanImage(Image):
             additional_opts = additional_opts or []
 
             if (isinstance(command, list) or isinstance(command, tuple) and
-                isinstance(additional_opts, list) or isinstance(additional_opts, tuple)):
+               isinstance(additional_opts, list) or isinstance(additional_opts, tuple)):
                 run_command_instance = PodmanRunBuilder(
                     command=command, additional_opts=additional_opts)
             else:
@@ -289,7 +263,7 @@ class PodmanImage(Image):
 
         run_command_instance.image_name = self.get_id()
 
-        # FIXME: podman exits with error 139 if no --privileged flag
+        # TODO: podman run currently works only with --privileged flag, fix this
         run_command_instance.options += ["-d", "--privileged"]
 
         if volumes:
@@ -354,7 +328,7 @@ class PodmanImage(Image):
             additional_opts = additional_opts or []
 
             if (isinstance(command, list) or isinstance(command, tuple) and
-                isinstance(additional_opts, list) or isinstance(additional_opts, tuple)):
+               isinstance(additional_opts, list) or isinstance(additional_opts, tuple)):
                 run_command_instance = PodmanRunBuilder(
                     command=command, additional_opts=additional_opts)
             else:
@@ -416,7 +390,7 @@ class PodmanImage(Image):
         :param rev: get layers reversed
         :return: list of strings
         """
-        cmdline = ["podman", "history", "--format", "{{.ID}}"]
+        cmdline = ["podman", "history", "--format", "{{.ID}}", self._id or self.get_id()]
         layers = [layer for layer in run_cmd(cmdline, return_output=True)]
         if not rev:
             layers = layers.reverse()

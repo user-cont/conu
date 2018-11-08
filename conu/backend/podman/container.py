@@ -1,3 +1,19 @@
+# -*- coding: utf-8 -*-
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
 """
 Implementation of a podman container
 """
@@ -15,7 +31,7 @@ from conu.exceptions import ConuException
 from conu.backend.docker.container import DockerRunBuilder
 from conu.backend.podman.utils import inspect_to_container_metadata
 
-from conu.utils import check_port, run_cmd, export_docker_container_to_directory, graceful_get
+from conu.utils import check_port, run_cmd, graceful_get
 from conu.utils.probes import Probe
 
 from conu.backend.podman.constants import CONU_ARTIFACT_TAG
@@ -244,8 +260,10 @@ class PodmanContainer(Container):
         """
         # FIXME: handle error if unmount didn't work
         options = []
-        if force: options.append('--force')
-        if all: options.append('--all')
+        if force:
+            options.append('--force')
+        if all:
+            options.append('--all')
         cmd = ["podman", "umount"] + options + [self.get_id() if not all else ""]
         return run_cmd(cmd, return_output=True)
 

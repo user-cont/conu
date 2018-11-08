@@ -1,3 +1,19 @@
+# -*- coding: utf-8 -*-
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
 """
 This is backend for podman engine
 """
@@ -60,7 +76,7 @@ class PodmanBackend(Backend):
             logging_level=logging_level, logging_kwargs=logging_kwargs, cleanup=cleanup)
 
     def cleanup_containers(self):
-        #  FIXME: Test this
+        # TODO: Test this
         conu_containers = self._list_podman_containers(filter=CONU_ARTIFACT_TAG)
         for c in conu_containers:
             logger.info("Trying to remove conu container: %s" % c)
@@ -100,7 +116,7 @@ class PodmanBackend(Backend):
         """
         images = []
         for identifier in self._list_all_podman_images():
-            inspect_data  = PodmanImage._inspect(identifier)
+            inspect_data = PodmanImage._inspect(identifier)
             try:
                 i_name, tag = parse_reference(inspect_data["RepoTags"][0])
             except (IndexError, TypeError):
@@ -118,7 +134,7 @@ class PodmanBackend(Backend):
         Finds all podman containers
         :return: list of containers' IDs
         """
-        cmdline = ["podman", "images"] + ["--format", "{{.ID}}"]
+        cmdline = ["podman", "images", "--format", "{{.ID}}"]
         output = run_cmd(cmdline, return_output=True)
         images = [image for image in output.split("\n")]
         return images
@@ -131,6 +147,6 @@ class PodmanBackend(Backend):
         """
         option = ["--filter", filter] if filter else ["-a"]
         cmdline = ["podman", "ps"] + option + ["--format", "{{.ID}}"]
-        output =  run_cmd(cmdline, return_output=True)
+        output = run_cmd(cmdline, return_output=True)
         containers = [cont for cont in output.split("\n")]
         return containers
