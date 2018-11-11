@@ -22,5 +22,6 @@ if [ "${NAME}" == "Fedora" ]; then
         python3-pytest python2-pytest \
         python3-pyxattr python2-pyxattr \
         gcc python3-devel python2-devel \
-        nmap-ncat  # for tests
+        nmap-ncat \
+        podman
 fi
