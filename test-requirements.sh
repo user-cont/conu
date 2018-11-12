@@ -7,9 +7,9 @@ source /etc/os-release
 set -x
 
 if [ "${NAME}" == "Fedora" ]; then
-    dnf install -y docker make
+    dnf install -y docker make podman
 elif [ "${NAME}" == "CentOS Linux" ]; then
-    yum install -y docker make
+    yum install -y docker make podman
 fi
 
 setenforce 0
