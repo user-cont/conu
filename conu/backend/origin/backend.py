@@ -236,7 +236,7 @@ class OpenshiftBackend(K8sBackend):
 
         logger.info("Image registry url: %s", internal_registry_name)
 
-        return internal_registry_name
+        return internal_registry_name.replace("'", "").replace('"', '')
 
     def import_image(self, imported_image_name, image_name):
         """
