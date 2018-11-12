@@ -25,7 +25,6 @@ import requests
 
 from requests.exceptions import ConnectionError
 
-from conu.backend.origin.registry import push_to_registry
 from conu.backend.k8s.backend import K8sBackend
 from conu.exceptions import ConuException
 from conu.utils import oc_command_exists, run_cmd, random_str, check_port
@@ -120,10 +119,10 @@ class OpenshiftBackend(K8sBackend):
 
         return name
 
-    def create_new_app_from_source(self, image, project, source=None, oc_new_app_args=None):
+    def create_new_app_from_source(self, image_name, project, source=None, oc_new_app_args=None):
         """
         Deploy app using source-to-image in OpenShift cluster using 'oc new-app'
-        :param image: image to be used as builder image
+        :param image_name: image to be used as builder image
         :param project: project where app should be created
         :param source: source used to extend the image, can be path or url
         :param oc_new_app_args: additional parameters for the `oc new-app`
@@ -136,10 +135,10 @@ class OpenshiftBackend(K8sBackend):
 
         oc_new_app_args = oc_new_app_args or []
 
-        new_image = push_to_registry(image, image.name.split('/')[-1], image.tag, project)
+        new_image = self.import_image(image_name.split('/')[-1], image_name)
 
         c = self._oc_command(
-            ["new-app"] + [new_image.name + "~" + source] + oc_new_app_args
+            ["new-app"] + [new_image + "~" + source] + oc_new_app_args
             + ["-n"] + [project] + ["--name=%s" % name])
 
         logger.info("Creating new app in project %s", project)
@@ -156,18 +155,18 @@ class OpenshiftBackend(K8sBackend):
 
         return name
 
-    def create_app_from_template(self, image, name, template, name_in_template,
+    def create_app_from_template(self, image_name, name, template, name_in_template,
                                  other_images, oc_new_app_args, project):
         """
         Helper function to create app from template
-        :param image: image to be used as builder image
+        :param image_name: image to be used as builder image
         :param name: name of app from template
         :param template: str, url or local path to a template to use
         :param name_in_template: dict, {repository:tag} image name used in the template
         :param other_images: list of dict, some templates need other image to be pushed into the
                OpenShift registry, specify them in this parameter as list of dict [{<image>:<tag>}],
-               where "<image>" is DockerImage and "<tag>" is a tag under which the image should be
-               available in the OpenShift registry.
+               where "<image>" is image name with tag and "<tag>" is a tag under which the image
+               should be available in the OpenShift registry.
         :param oc_new_app_args: additional parameters for the `oc new-app`
         :param project: project where app should be created
         :return: None
@@ -176,13 +175,13 @@ class OpenshiftBackend(K8sBackend):
 
         # push images to registry
         repository, tag = list(name_in_template.items())[0]
-        push_to_registry(image, repository, tag, project)
+        self.import_image(repository + ":" + tag, image_name)
 
         other_images = other_images or []
 
         for o in other_images:
             image, tag = list(o.items())[0]
-            push_to_registry(image, tag.split(':')[0], tag.split(':')[1], project)
+            self.import_image(tag.split(':')[0] + ":" + tag.split(':')[1], image)
 
         c = self._oc_command(["new-app"] + [template] + oc_new_app_args + ["-n"] + [project]
                              + ["--name=%s" % name])
@@ -220,7 +219,7 @@ class OpenshiftBackend(K8sBackend):
         except ProbeTimeout as e:
             raise ConuException("Cannot start build of application: %s" % e)
 
-    def _get_image_registry_url(self, image_name):
+    def get_image_registry_url(self, image_name):
         """
         Helper function for obtain registry url of image from it's name
         :param image_name: str, short name of an image, example:
@@ -246,13 +245,13 @@ class OpenshiftBackend(K8sBackend):
             - hello-openshift:latest
         :param image_name: full repository name, example:
             - docker.io/openshift/hello-openshift:latest
-        :return: str, full name from internal registry
+        :return: str, short name in internal registry
         """
 
         c = self._oc_command(["import-image", imported_image_name,
                               "--from=%s" % image_name, "--insecure=true", "--confirm"])
 
-        logger.info("Importing image from: %s, as: %", image_name, imported_image_name)
+        logger.info("Importing image from: %s, as: %s", image_name, imported_image_name)
 
         try:
             o = run_cmd(c, return_output=True, ignore_status=True)
@@ -260,7 +259,7 @@ class OpenshiftBackend(K8sBackend):
         except subprocess.CalledProcessError as ex:
             raise ConuException("oc import-image failed: %s" % ex)
 
-        return self._get_image_registry_url(imported_image_name)
+        return imported_image_name
 
     def request_service(self, app_name, port, expected_output=None):
         """
