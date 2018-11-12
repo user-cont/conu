@@ -95,7 +95,7 @@ class K8sBackend(Backend):
                             ports=k8s_ports_to_metadata_ports(s.spec.ports),
                             namespace=s.metadata.namespace,
                             labels=s.metadata.labels, selector=s.spec.selector, spec=s.spec)
-                    for s in self.core_api.list_namespaced_serivce(namespace, watch=False).items]
+                    for s in self.core_api.list_namespaced_service(namespace, watch=False).items]
 
         return [Service(name=s.metadata.name,
                         ports=k8s_ports_to_metadata_ports(s.spec.ports),
