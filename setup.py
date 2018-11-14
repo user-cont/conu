@@ -32,11 +32,19 @@ except ImportError:
 def get_requirements():
     packages = []
 
-    with open("./requirements.txt") as fd:
+    with open("./requirements.in") as fd:
         for line in fd.readlines():
             if not line or line.startswith('-i'):
                 continue
-            packages.append(line.split(';', 1)[0])
+            parsed_line = line.split(';', 1)[0].strip()
+            packages.append(parsed_line)
+
+    # Sesheta dropped the '; python_version <= '2.7'' requirement from enum34 line which means
+    # that enum34 is being installed on python 3 and that actually breaks your workstation since
+    # re module is using enum -- you can't even use pip after you `pip3 install enum34`
+    # hence this is guard to make sure that we don't install enum34 on python3
+    if sys.version_info.major == 3:
+        packages.remove("enum34")
 
     return packages
 

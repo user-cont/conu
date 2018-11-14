@@ -10,7 +10,7 @@ chardet==3.0.4
 cryptography==2.4.1
 docker-pycreds==0.3.0
 docker==3.5.1
-enum34==1.1.6
+enum34==1.1.6 ; python_version <= '2.7'
 google-auth==1.6.0
 idna==2.7
 kubernetes==8.0.0
