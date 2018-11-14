@@ -14,4 +14,4 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # https://www.python.org/dev/peps/pep-0440/
-__version__ = '0.6.0'
+__version__ = '0.6.1'

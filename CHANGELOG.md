@@ -1,17 +1,27 @@
+# 0.6.1
+
+This is a bug-fix release to resolve the issues with dependencies.
+
+## Fixes
+
+* Resolve an issue when enum34 was listed as a requirement on python 3.
+* Conu can now be used in linux distributions because it no longer requires precise versions of its dependencies.
+
+
 # 0.6.0
 
-# Breaking changes
+## Breaking changes
 
 * We have split `new_app` method of origin backend to three specific methods:
     - `deploy_image` for deployment of an image.
     - `create_new_app_from_source` for deployment of applications using source-to-image from local or remote source.
     - `create_app_from_template` for deployment of applications using OpenShift templates.
 
-# New features
+## New features
 
 * Troubleshooting and debugging of OpenShift backend is now easier because of new methods `get_logs` and `get_status`.
 
-# Fixes
+## Fixes
 
 * Documentation is updated and now includes OpenShift and Kubernetes backends.
 * Fixed race condition when starting docker containers via binary.
