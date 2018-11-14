@@ -122,7 +122,7 @@ fixtures which can be utilized via pytest
 
 %package -n %{pypi_name}-doc
 Summary:        conu documentation
-BuildRequires:  %{_bindir}/sphinx-build
+BuildRequires:  python3-sphinx
 
 %description -n %{pypi_name}-doc
 Documentation for conu.
