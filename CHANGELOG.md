@@ -1,3 +1,14 @@
+# 0.6.1
+
+* install enum34 on python2 only
+* use req.in in setup.py
+* Automatic update of dependency pytest from 3.10.0 to 3.10.1
+* add podman to test-requirements
+* req.sh: add nmap-ncat
+* Automatic update of dependency pytest from 3.9.3 to 3.10.0
+* Automatic update of dependency pytest from 3.9.2 to 3.9.3
+* remove git clean and encrypt password for Travis CI
+
 # 0.6.0
 
 # Breaking changes
