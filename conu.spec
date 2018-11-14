@@ -7,7 +7,7 @@
 %endif
 
 Name:           %{pypi_name}
-Version:        0.4.0
+Version:        0.6.1
 Release:        1%{?dist}
 Summary:        library which makes it easy to write tests for your containers
 
@@ -45,6 +45,7 @@ Requires:       python-requests
 BuildRequires:  python2-docker
 BuildRequires:  python2-enum34
 Requires:       python2-docker
+Requires:       python2-kubernetes
 Requires:       python2-enum34
 Requires:       python2-requests
 %endif
@@ -92,6 +93,7 @@ Summary:        %{summary}
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
 Requires:       python3-docker
+Requires:       python3-kubernetes
 Requires:       python3-requests
 Requires:       python3-pyxattr
 Requires:       python3-six
@@ -177,6 +179,9 @@ rm -rf html/.{doctrees,buildinfo}
 %license LICENSE
 
 %changelog
+* Wed Nov 14 2018 Tomas Tomecek <ttomecek@redhat.com> - 0.6.1-1
+- 0.6.1 release
+
 * Thu May 24 2018 Tomas Tomecek <ttomecek@redhat.com> - 0.4.0-1
 - 0.4.0 release
 
