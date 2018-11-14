@@ -1,3 +1,8 @@
+# 0.6.2
+
+* spec: change dep on sphinx to python3-sphinx package
+* include requirements.in in release tarball
+
 # 0.6.1
 
 This is a bug-fix release to resolve the issues with dependencies.
