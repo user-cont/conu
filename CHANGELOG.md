@@ -1,7 +1,11 @@
 # 0.6.2
 
-* spec: change dep on sphinx to python3-sphinx package
-* include requirements.in in release tarball
+This is a bug-fix release to fix the RPM packaging in Fedora.
+
+## Fixes
+
+* Conu can now be built as an RPM.
+
 
 # 0.6.1
 
