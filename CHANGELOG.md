@@ -1,3 +1,12 @@
+# 0.6.2
+
+This is a bug-fix release to fix the RPM packaging in Fedora.
+
+## Fixes
+
+* Conu can now be built as an RPM.
+
+
 # 0.6.1
 
 This is a bug-fix release to resolve the issues with dependencies.
