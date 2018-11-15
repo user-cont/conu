@@ -162,6 +162,27 @@ class TestK8s(object):
                     db_deployment.delete()
                     k8s_backend.delete_namespace(namespace)
 
+    def test_list_pod_for_namespace(self):
+        api_key = get_oc_api_token()
+        with K8sBackend(api_key=api_key) as k8s_backend:
+            namespace1 = k8s_backend.create_namespace()
+            namespace2 = k8s_backend.create_namespace()
+
+            with DockerBackend() as backend:
+
+                image = backend.ImageClass("openshift/hello-openshift")
+
+                pod1 = image.run_in_pod(namespace=namespace1)
+
+                try:
+                    pod1.wait(200)
+                    assert any(pod1.name == p.name for p in k8s_backend.list_pods(namespace1))
+                    assert not any(pod1.name == p.name for p in k8s_backend.list_pods(namespace2))
+                finally:
+                    pod1.delete()
+                    k8s_backend.delete_namespace(namespace1)
+                    k8s_backend.delete_namespace(namespace2)
+
     def test_deployment_from_template(self):
         api_key = get_oc_api_token()
         with K8sBackend(api_key=api_key) as k8s_backend:
