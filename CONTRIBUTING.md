@@ -49,6 +49,24 @@ make docs-in-container
 ```
 and then documentation can be find in */docs/build/html*.
 
+
+#### Changelog
+
+When you are contributing to changelog, please follow these suggestions:
+
+* The changelog is meant to be read by everyone. Imagine that an average user
+  will read it and should understand the changes. `docker_image.mount() via .get_archive()` is
+  not very descriptive. `DockerImage class now utilizes get_archive() from
+  docker-py for its mount() method.` is a more friendly description.
+* Every line should be a complete sentence. Either tell what is the change that the tool is doing or describe it precisely:
+  * Bad: `Use search method in label regex`
+  * Good: `Colin now uses search method when...`
+* And finally, with the changelogs we are essentially selling our projects:
+  think about a situation that you met someone at a conference and you are
+  trying to convince the person to use the project and that the changelog
+  should help with that.
+
+
 ### Testing
 
 For testing, we are using [pytest](https://docs.pytest.org/en/latest/) framework. Tests are stored in the [tests](/tests) directory. We recommend to run tests inside docker container using:
