@@ -420,5 +420,5 @@ class PodmanImage(Image):
 
         :return: ImageMetadata, Image metadata instance
         """
-        inspect_to_metadata(self._metadata, self.inspect(refresh=True))
-        return self._metadata
+        inspect_to_metadata(self.metadata, self.inspect(refresh=True))
+        return self.metadata

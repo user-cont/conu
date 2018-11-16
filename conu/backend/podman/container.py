@@ -350,4 +350,4 @@ class PodmanContainer(Container):
         :return: ContainerMetadata, container metadata instance
         """
         inspect_to_container_metadata(self.metadata, self.inspect(refresh=True), self.image)
-        return self._metadata
+        return self.metadata
