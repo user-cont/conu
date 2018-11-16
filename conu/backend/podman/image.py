@@ -31,6 +31,7 @@ from conu.apidefs.backend import get_backend_tmpdir
 from conu.apidefs.image import Image
 
 from conu.backend.podman.container import PodmanContainer, PodmanRunBuilder
+from conu.backend.podman.utils import inspect_to_metadata
 
 from conu.exceptions import ConuException
 
@@ -82,7 +83,7 @@ class PodmanImage(Image):
         self.pull_policy = pull_policy
 
         self._inspect_data = None
-        self.metadata = ImageMetadata()
+        self._metadata = None
 
         if self.pull_policy == PodmanImagePullPolicy.ALWAYS:
             logger.debug("pull policy set to 'always', pulling the image")
@@ -262,9 +263,7 @@ class PodmanImage(Image):
                     "run_command_instance needs to be an instance of PodmanRunBuilder")
 
         run_command_instance.image_name = self.get_id()
-
-        # TODO: podman run currently works only with --privileged flag, fix this
-        run_command_instance.options += ["-d", "--privileged"]
+        run_command_instance.options += ["-d"]
 
         if volumes:
             run_command_instance.options += self.get_volume_options(volumes=volumes)
@@ -341,9 +340,6 @@ class PodmanImage(Image):
 
         popen_params = popen_params or {}
 
-        # FIXME: podman exits with error 139 if no --privileged flag
-        run_command_instance.options += ["--privileged"]
-
         run_command_instance.image_name = self.get_id()
         if container_name:
             run_command_instance.options += ["--name", container_name]
@@ -410,3 +406,19 @@ class PodmanImage(Image):
         if not rev:
             image_layers.reverse()
         return image_layers
+
+    @property
+    def metadata(self):
+        if self._metadata is None:
+            self._metadata = ImageMetadata()
+            self._metadata = self.get_metadata()
+        return self._metadata
+
+    def get_metadata(self):
+        """
+        Provide metadata about this image.
+
+        :return: ImageMetadata, Image metadata instance
+        """
+        inspect_to_metadata(self._metadata, self.inspect(refresh=True))
+        return self._metadata

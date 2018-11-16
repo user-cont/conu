@@ -76,7 +76,7 @@ class PodmanContainer(Container):
         super(PodmanContainer, self).__init__(image, container_id, name)
         self.popen_instance = popen_instance
         self._inspect_data = None
-        self.metadata = ContainerMetadata()
+        self._metadata = None
 
     def __repr__(self):
         return "PodmanContainer(image=%s, id=%s)" % (self.image, self.get_id())
@@ -337,12 +337,17 @@ class PodmanContainer(Container):
 
         return output
 
+    @property
+    def metadata(self):
+        if self._metadata is None:
+            self._metadata = ContainerMetadata()
+            self._metadata = self.get_metadata()
+        return self._metadata
+
     def get_metadata(self):
         """
         Convert dictionary returned after podman inspect command into instance of ContainerMetadata class
         :return: ContainerMetadata, container metadata instance
         """
-        inspect_data = self.inspect(refresh=True)
-        inspect_to_container_metadata(self.metadata, inspect_data, self.image)
-
-        return self.metadata
+        inspect_to_container_metadata(self.metadata, self.inspect(refresh=True), self.image)
+        return self._metadata

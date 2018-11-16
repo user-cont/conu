@@ -297,7 +297,7 @@ def check_podman_command_works():
         logger.error("exception: %s", ex)
         logger.error("rc: %s, output: %r", ex.returncode, ex.output)
         raise ConuException(
-            "`podman version` call failed, it seems that your podman daemon is misconfigured or "
+            "`podman version` call failed, it seems that your podman is misconfigured or "
             "this user can't communicate with podman."
         )
     else:

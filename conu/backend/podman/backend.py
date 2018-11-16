@@ -18,13 +18,12 @@
 This is backend for podman engine
 """
 import logging
+import json
 
 from conu.apidefs.backend import Backend
 from conu.backend.podman.container import PodmanContainer
 from conu.backend.podman.image import PodmanImage, PodmanImagePullPolicy
 from conu.backend.podman.constants import CONU_ARTIFACT_TAG
-from conu.backend.podman.utils import inspect_to_metadata, inspect_to_container_metadata, graceful_get
-
 
 from conu.utils import run_cmd
 
@@ -91,19 +90,19 @@ class PodmanBackend(Backend):
         :return: collection of instances of :class:`conu.PodmanContainer`
         """
         containers = []
-        for identifier in self._list_podman_containers():
-            inspect_data = PodmanContainer._inspect(identifier)
-            name = graceful_get(inspect_data, "Name")
-            image_id = graceful_get(inspect_data, "ImageID")
+        for container in self._list_podman_containers():
+
+            identifier = container["id"]
+            name = container["names"]
+            image_id = container["image_id"]
 
             try:
-                image_name, image_tag = parse_reference(inspect_data["ImageName"])
+                image_name, image_tag = parse_reference(container["image"])
             except (IndexError, TypeError):
                 image_name, image_tag = None, None
 
             image = PodmanImage(image_name, tag=image_tag, identifier=image_id)
             container = PodmanContainer(image, identifier, name=name)
-            inspect_to_container_metadata(container.metadata, inspect_data, image)
             containers.append(container)
 
         return containers
@@ -115,15 +114,13 @@ class PodmanBackend(Backend):
         :return: collection of instances of :class:`conu.PodmanImage`
         """
         images = []
-        for identifier in self._list_all_podman_images():
-            inspect_data = PodmanImage._inspect(identifier)
+        for image in self._list_all_podman_images():
             try:
-                i_name, tag = parse_reference(inspect_data["RepoTags"][0])
+                i_name, tag = parse_reference(image["names"][0])
             except (IndexError, TypeError):
                 i_name, tag = None, None
-            d_im = PodmanImage(i_name, tag=tag, identifier=identifier,
+            d_im = PodmanImage(i_name, tag=tag, identifier=image["id"],
                                pull_policy=PodmanImagePullPolicy.NEVER)
-            inspect_to_metadata(d_im.metadata, inspect_data)
             images.append(d_im)
 
         return images
@@ -132,21 +129,21 @@ class PodmanBackend(Backend):
     def _list_all_podman_images():
         """
         Finds all podman containers
-        :return: list of containers' IDs
+        :return: list of dicts with image info
         """
-        cmdline = ["podman", "images", "--format", "{{.ID}}"]
+        cmdline = ["podman", "images", "--format", "json"]
         output = run_cmd(cmdline, return_output=True)
-        images = [image for image in output.split("\n")]
+        images = json.loads(output)
         return images
 
     @staticmethod
     def _list_podman_containers(filter=None):
         """
         Finds podman containers by filter or all containers
-        :return: list of containers' names
+        :return: list of dicts with containers info
         """
         option = ["--filter", filter] if filter else ["-a"]
-        cmdline = ["podman", "ps"] + option + ["--format", "{{.ID}}"]
+        cmdline = ["podman", "ps"] + option + ["--format", "json"]
         output = run_cmd(cmdline, return_output=True)
-        containers = [cont for cont in output.split("\n")]
+        containers = json.loads(output)
         return containers
