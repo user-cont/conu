@@ -340,7 +340,6 @@ class PodmanContainer(Container):
     @property
     def metadata(self):
         if self._metadata is None:
-            self._metadata = ContainerMetadata()
             self._metadata = self.get_metadata()
         return self._metadata
 
@@ -349,5 +348,7 @@ class PodmanContainer(Container):
         Convert dictionary returned after podman inspect command into instance of ContainerMetadata class
         :return: ContainerMetadata, container metadata instance
         """
-        inspect_to_container_metadata(self.metadata, self.inspect(refresh=True), self.image)
-        return self.metadata
+        if self._metadata is None:
+            self._metadata = ContainerMetadata()
+        inspect_to_container_metadata(self._metadata, self.inspect(refresh=True), self.image)
+        return self._metadata

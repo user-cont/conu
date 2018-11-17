@@ -410,7 +410,6 @@ class PodmanImage(Image):
     @property
     def metadata(self):
         if self._metadata is None:
-            self._metadata = ImageMetadata()
             self._metadata = self.get_metadata()
         return self._metadata
 
@@ -420,5 +419,7 @@ class PodmanImage(Image):
 
         :return: ImageMetadata, Image metadata instance
         """
-        inspect_to_metadata(self.metadata, self.inspect(refresh=True))
-        return self.metadata
+        if self._metadata is None:
+            self._metadata = ImageMetadata()
+        inspect_to_metadata(self._metadata, self.inspect(refresh=True))
+        return self._metadata
