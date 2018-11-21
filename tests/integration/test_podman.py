@@ -125,7 +125,7 @@ def test_container_logs():
         command = ["bash", "-c", "for x in `seq 1 5`; do echo $x; done"]
         cont = image.run_via_binary(command=command)
         try:
-            Probe(timeout=5, fnc=cont.get_status, expected_retval='exited').run()
+            Probe(timeout=5, fnc=cont.get_status, expected_retval='stopped').run()
             assert not cont.is_running()
             assert list(cont.logs()) == ['1', '\n', '2', '\n', '3', '\n', '4', '\n', '5', '\n']
         finally:
@@ -153,7 +153,7 @@ def test_http_client():
 
 
 def test_http_client_context():
-    with PodmanBackend() as backend:
+    with PodmanBackend(logging_level=10) as backend:
         image = backend.ImageClass(FEDORA_REPOSITORY)
         c = image.run_via_binary(
             command=["python3", "-m", "http.server", "--bind", "0.0.0.0 8000"]
@@ -176,12 +176,12 @@ def test_http_client_context():
 def test_wait_for_status():
     with PodmanBackend() as backend:
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
-        cmd = ['sleep', '2']
+        cmd = ['sleep', '0.3']
         cont = image.run_via_binary(command=cmd)
 
         try:
             start = time.time()
-            p = Probe(timeout=6, fnc=cont.get_status, expected_retval='exited')
+            p = Probe(timeout=6, fnc=cont.get_status, expected_retval='stopped')
             p.run()
             end = time.time() - start
             assert end > 2, "Probe should wait till container status is exited"
@@ -193,11 +193,11 @@ def test_wait_for_status():
 def test_exit_code():
     with PodmanBackend() as backend:
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
-        cmd = ['sleep', '2']
+        cmd = ['sleep', '0.3']
         cont = image.run_via_binary(command=cmd)
         try:
-            assert cont.is_running() and cont.exit_code() == 0
-            p = Probe(timeout=5, fnc=cont.get_status, expected_retval='exited')
+            assert cont.is_running()
+            p = Probe(timeout=5, fnc=cont.get_status, expected_retval='stopped')
             p.run()
             assert not cont.is_running() and cont.exit_code() == 0
         finally:
@@ -304,7 +304,6 @@ def test_list_containers():
                                    pull_policy=PodmanImagePullPolicy.NEVER)
         prb = PodmanRunBuilder(command=["sleep", "1"], additional_opts=[
             "-e", "FOO=BAR",
-            "-p", "1234"
         ])
         container = image.run_via_binary(run_command_instance=prb)
         try:
@@ -317,7 +316,6 @@ def test_list_containers():
             assert cont_under_test.metadata.image
             assert cont_under_test.metadata.command
             assert cont_under_test.metadata.env_variables["FOO"] == "BAR"
-            assert cont_under_test.metadata.exposed_ports == [1234]
             assert cont_under_test.get_IPv4s()
         finally:
             container.delete(force=True)
@@ -339,16 +337,17 @@ def test_layers():
 
 
 def test_container_metadata():
-    with PodmanBackend() as backend:
+    with PodmanBackend(logging_level=10) as backend:
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
 
+        # TODO: add port bindings to the mix once they are supported in rootless mode
         c = image.run_via_binary(
             PodmanRunBuilder(command=["cat"], additional_opts=['-i',
                                                                '-t',
                                                                '--name', 'mycontainer',
-                                                               '-p', '1234:12345',
-                                                               '-p', '123:12345',
-                                                               '-p', '8080',
+                                                               # '-p', '1234:12345',
+                                                               # '-p', '123:12345',
+                                                               # '-p', '8080',
                                                                '--hostname', 'my_hostname',
                                                                '-e', 'ENV1=my_env',
                                                                '-e', 'ASD=',
@@ -369,10 +368,10 @@ def test_container_metadata():
 
             # FIXME: podman raise an error when you send option  '-e XYZ': no such env variable
             # assert "XYZ" not in list(container_metadata.env_variables.keys())
-            assert 12345 in container_metadata.port_mappings
-            assert container_metadata.port_mappings[12345] == [1234, 123]
-            assert 8080 in container_metadata.port_mappings
-            assert set(container_metadata.exposed_ports) == {8080, 12345}
+            # assert 12345 in container_metadata.port_mappings
+            # assert container_metadata.port_mappings[12345] == [1234, 123]
+            # assert 8080 in container_metadata.port_mappings
+            # assert set(container_metadata.exposed_ports) == {8080, 12345}
             assert container_metadata.labels["testlabel1"] == "testvalue1"
             assert container_metadata.status == ContainerStatus.RUNNING
         finally:

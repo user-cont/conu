@@ -91,17 +91,16 @@ class PodmanBackend(Backend):
         """
         containers = []
         for container in self._list_podman_containers():
-
-            identifier = container["id"]
-            name = container["names"]
-            image_id = container["image_id"]
+            identifier = container["ID"]
+            name = container["Names"]
+            image_name = container["Image"]
 
             try:
-                image_name, image_tag = parse_reference(container["image"])
+                image_name, image_tag = parse_reference(image_name)
             except (IndexError, TypeError):
                 image_name, image_tag = None, None
 
-            image = PodmanImage(image_name, tag=image_tag, identifier=image_id)
+            image = PodmanImage(image_name, tag=image_tag, identifier=None)
             container = PodmanContainer(image, identifier, name=name)
             containers.append(container)
 
