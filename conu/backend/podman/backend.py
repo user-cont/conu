@@ -25,6 +25,8 @@ from conu.backend.podman.container import PodmanContainer
 from conu.backend.podman.image import PodmanImage, PodmanImagePullPolicy
 from conu.backend.podman.constants import CONU_ARTIFACT_TAG
 
+from conu.exceptions import ConuException
+
 from conu.utils import run_cmd
 
 logger = logging.getLogger(__name__)
@@ -146,3 +148,13 @@ class PodmanBackend(Backend):
         output = run_cmd(cmdline, return_output=True)
         containers = json.loads(output)
         return containers
+
+    @staticmethod
+    def _podman_command(args):
+        """
+        return podman command with default args to run
+
+        :param args: list of str, arguments and options passed to podman binary
+        :return: list of podman command and default args
+        """
+        return ["podman"] + args

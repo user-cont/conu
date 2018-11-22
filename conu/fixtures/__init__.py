@@ -21,7 +21,8 @@ and pytest.
 
 import logging
 
-from conu import DockerBackend
+from conu import DockerBackend, PodmanBackend
+from conu.utils import run_cmd
 
 import pytest
 
@@ -40,4 +41,17 @@ def docker_backend():
     :return: instance of DockerBackend
     """
     with DockerBackend(logging_level=logging.DEBUG) as backend:
+        yield backend
+
+
+@pytest.fixture()
+def podman_backend():
+    """
+        pytest fixture which mimics context manager: it provides new instance of PodmanBackend and
+        cleans after it once it's used; behaves the same as docker_backend fixture
+
+        :return: instance of PodmanBackend
+        """
+    with PodmanBackend(logging_level=logging.DEBUG) as backend:
+        run_cmd(backend._podman_command(["--storage-driver", "vfs", "info"]))
         yield backend
