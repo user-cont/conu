@@ -123,7 +123,7 @@ def test_container_logs(podman_backend):
     command = ["bash", "-c", "for x in `seq 1 5`; do echo $x; done"]
     cont = image.run_via_binary(command=command)
     try:
-        Probe(timeout=5, fnc=cont.get_status, expected_retval='stopped').run()
+        Probe(timeout=5, fnc=cont.is_running, expected_retval=False).run()
         assert not cont.is_running()
         assert list(cont.logs()) == ['1', '\n', '2', '\n', '3', '\n', '4', '\n', '5', '\n']
     finally:
@@ -178,7 +178,7 @@ def test_wait_for_status(podman_backend):
 
     try:
         start = time.time()
-        p = Probe(timeout=6, fnc=cont.get_status, expected_retval='stopped')
+        p = Probe(timeout=6, fnc=cont.is_running, expected_retval=False)
         p.run()
         end = time.time() - start
         assert end > 2, "Probe should wait till container status is exited"
@@ -192,8 +192,7 @@ def test_exit_code(podman_backend):
     cmd = ['sleep', '0.3']
     cont = image.run_via_binary(command=cmd)
     try:
-        assert cont.is_running()
-        p = Probe(timeout=5, fnc=cont.get_status, expected_retval='stopped')
+        p = Probe(timeout=5, fnc=cont.is_running, expected_retval=False)
         p.run()
         assert not cont.is_running() and cont.exit_code() == 0
     finally:
@@ -223,7 +222,7 @@ def test_execute(podman_backend):
 
 def test_pull_always(podman_backend):
     image = podman_backend.ImageClass("docker.io/library/busybox", tag="latest",
-                               pull_policy=PodmanImagePullPolicy.ALWAYS)
+                                      pull_policy=PodmanImagePullPolicy.ALWAYS)
     try:
         assert image.is_present()
     finally:
@@ -231,10 +230,7 @@ def test_pull_always(podman_backend):
 
 
 def test_pull_if_not_present(podman_backend):
-    with pytest.raises(subprocess.CalledProcessError) as ex:
-        podman_backend.ImageClass._inspect("docker.io/library/busybox:latest")
-        assert "not found" in ex.value.message
-    image = podman_backend.ImageClass("docker.io/library/busybox", tag="1.25.1")
+    image = podman_backend.ImageClass("docker.io/library/busybox", tag="1.29.3")
     try:
         assert image.is_present()
     finally:
@@ -244,7 +240,7 @@ def test_pull_if_not_present(podman_backend):
 def test_pull_never(podman_backend):
     with pytest.raises(subprocess.CalledProcessError):
         podman_backend.ImageClass._inspect("busybox:1.25.1")
-    image = podman_backend.ImageClass("docker.io/library/busybox", tag="1.25.1",
+    image = podman_backend.ImageClass("docker.io/library/busybox", tag="1.29.3",
                                pull_policy=PodmanImagePullPolicy.NEVER)
     assert not image.is_present()
 
