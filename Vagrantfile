@@ -5,9 +5,10 @@
 
 Vagrant.configure(2) do |config|
 
-    config.vm.box = "fedora/28-cloud-base"
+    config.vm.box = "fedora/29-cloud-base"
     config.vm.hostname = "conu-test-vm"
     config.vm.post_up_message = "This VM is purposed to run test suite of conu."
+    config.vm.synced_folder ".", "/sharedolder", type: "sshfs"
 
     config.vm.provider "libvirt" do |libvirt|
         libvirt.memory = 2048
