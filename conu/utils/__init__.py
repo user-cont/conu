@@ -109,7 +109,7 @@ def random_str(size=10):
     return ''.join(random.choice(string.ascii_lowercase) for _ in range(size))
 
 
-def run_cmd(cmd, return_output=False, ignore_status=False, **kwargs):
+def run_cmd(cmd, return_output=False, ignore_status=False, log_output=True, **kwargs):
     """
     run provided command on host system using the same user as you invoked this code, raises
     subprocess.CalledProcessError if it fails
@@ -117,6 +117,7 @@ def run_cmd(cmd, return_output=False, ignore_status=False, **kwargs):
     :param cmd: list of str
     :param return_output: bool, return output of the command
     :param ignore_status: bool, do not fail in case nonzero return code
+    :param log_output: bool, if True, log output to debug log
     :param kwargs: pass keyword arguments to subprocess.check_* functions; for more info,
             please check `help(subprocess.Popen)`
     :return: None or str
@@ -125,7 +126,8 @@ def run_cmd(cmd, return_output=False, ignore_status=False, **kwargs):
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                universal_newlines=True, **kwargs)
     output = process.communicate()[0]
-    logger.debug(output)
+    if log_output:
+        logger.debug(output)
 
     if process.returncode > 0:
         if ignore_status:
