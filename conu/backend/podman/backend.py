@@ -19,6 +19,7 @@ This is backend for podman engine
 """
 import logging
 import json
+import re
 
 from conu.apidefs.backend import Backend
 from conu.backend.podman.container import PodmanContainer
@@ -72,9 +73,36 @@ class PodmanBackend(Backend):
             - [CleanupPolicy.VOLUMES, CleanupPolicy.TMP_DIRS]
             - [CleanupPolicy.NOTHING]
         """
-
         super(PodmanBackend, self).__init__(
             logging_level=logging_level, logging_kwargs=logging_kwargs, cleanup=cleanup)
+        # we support podman-0.11+
+        podman_version = self.get_version()
+        if podman_version:
+            try:
+                maj, min, _ = podman_version
+                maj, min = int(maj), int(min)
+            except ValueError:
+                logger.error("unable to parse major and minor part of podman version")
+            else:
+                if (0, 11) > (maj, min):
+                    raise ConuException("We support podman from version 0.11, please update.")
+        else:
+            logger.warning("unable to parse version of podman, you're on your own")
+
+    def get_version(self):
+        """
+        return 3-tuple of version info or None
+
+        :return: (str, str, str)
+        """
+        raw_version = run_cmd(["podman", "version"], return_output=True)
+        regex = re.compile(r"Version:\s*(\d+)\.(\d+)\.(\d+)")
+        match = regex.findall(raw_version)
+        try:
+            return match[0]
+        except IndexError:
+            logger.error("unable to parse version from `podman version`")
+            return
 
     def cleanup_containers(self):
         # TODO: Test this

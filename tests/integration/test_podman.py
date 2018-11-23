@@ -28,6 +28,10 @@ def test_podman_cli():
     assert check_podman_command_works()
 
 
+def test_podman_version(podman_backend):
+    assert podman_backend.get_version() is not None
+
+
 def test_podman_image(podman_backend):
     """
     Test interaction with an image
