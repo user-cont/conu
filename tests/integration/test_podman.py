@@ -8,7 +8,7 @@ import time
 
 from conu.backend.podman.container import PodmanRunBuilder
 from conu.backend.podman.image import PodmanImagePullPolicy
-from conu.utils import check_podman_command_works
+from conu.utils import check_podman_command_works, are_we_root
 from conu.utils.probes import Probe
 from conu.fixtures import podman_backend
 
@@ -126,6 +126,7 @@ def test_container_logs(podman_backend):
         cont.delete(force=True)
 
 
+@pytest.mark.skipif(not are_we_root(), reason="rootless containers don't provide networking metadata, yet")
 def test_http_client(podman_backend):
     image = podman_backend.ImageClass(FEDORA_REPOSITORY)
     c = image.run_via_binary(
@@ -145,6 +146,7 @@ def test_http_client(podman_backend):
         c.delete(force=True)
 
 
+@pytest.mark.skipif(not are_we_root(), reason="rootless containers don't provide networking metadata, yet")
 def test_http_client_context(podman_backend):
     image = podman_backend.ImageClass(FEDORA_REPOSITORY)
     c = image.run_via_binary(

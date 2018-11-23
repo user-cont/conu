@@ -407,3 +407,12 @@ def is_oc_cluster_running():
         return True
     except subprocess.CalledProcessError:
         return False
+
+
+def are_we_root():
+    """
+    is uid of current process 0?
+
+    :return: True if root, else otherwise
+    """
+    return os.geteuid() == 0
