@@ -42,6 +42,7 @@ def docker_backend():
     """
     with DockerBackend(logging_level=logging.DEBUG) as backend:
         yield backend
+        backend._clean()
 
 
 @pytest.fixture()
@@ -54,3 +55,4 @@ def podman_backend():
         """
     with PodmanBackend(logging_level=logging.DEBUG) as backend:
         yield backend
+        backend._clean()
