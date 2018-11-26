@@ -26,6 +26,11 @@ from conu.backend.docker.image import (
     DockerImage, S2IDockerImage, DockerImagePullPolicy, DockerImageViaArchiveFS
 )
 
+# podman backend
+from conu.backend.podman.backend import PodmanBackend
+from conu.backend.podman.container import PodmanContainer, PodmanRunBuilder
+from conu.backend.podman.image import PodmanImage, PodmanImagePullPolicy
+
 # k8s backend
 from conu.backend.k8s.backend import K8sBackend, K8sCleanupPolicy
 

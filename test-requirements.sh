@@ -7,7 +7,9 @@ source /etc/os-release
 set -x
 
 if [ "${NAME}" == "Fedora" ]; then
-    dnf install -y docker make podman
+    # let's use cutting edge
+    dnf install -y --enablerepo=updates-testing docker make podman
+    dnf update -y --enablerepo=updates-testing docker podman
 elif [ "${NAME}" == "CentOS Linux" ]; then
     yum install -y docker make podman
 fi
