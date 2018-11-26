@@ -42,6 +42,7 @@ def docker_backend():
     """
     with DockerBackend(logging_level=logging.DEBUG) as backend:
         yield backend
+        backend._clean()
 
 
 @pytest.fixture()
@@ -53,5 +54,5 @@ def podman_backend():
         :return: instance of PodmanBackend
         """
     with PodmanBackend(logging_level=logging.DEBUG) as backend:
-        run_cmd(backend._podman_command(["--storage-driver", "vfs", "info"]))
         yield backend
+        backend._clean()

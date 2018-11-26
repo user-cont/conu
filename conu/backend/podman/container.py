@@ -119,7 +119,7 @@ class PodmanContainer(Container):
     @staticmethod
     def _inspect(identifier):
         cmdline = ["podman", "container", "inspect", identifier]
-        output = run_cmd(cmdline, return_output=True)
+        output = run_cmd(cmdline, return_output=True, log_output=False)
         return json.loads(output)[0]
 
     def is_running(self):
