@@ -54,8 +54,21 @@ centos-ci-test: install-test-requirements container-image build-test-container t
 test-in-container:
 	@# use it like this: `make test-in-container TEST_TARGET=tests/integration/test_utils.py`
 	$(eval kubedir := $(shell mktemp -d /tmp/tmp.conu-kube-XXXXX))
-	docker run --net=host -e STORAGE_DRIVER=vfs --rm -v /dev:/dev:ro -v /var/lib/docker:/var/lib/docker:ro --security-opt label=disable --cap-add SYS_ADMIN -ti -v /var/run/docker.sock:/var/run/docker.sock -v $(CURDIR):/src -v $(CURDIR)/pytest-container.ini:/src/pytest.ini -v $(kubedir):/root/.kube $(TEST_IMAGE_NAME) make exec-test TEST_TARGET='$(TEST_TARGET)'
 	sed -e s@"${HOME}"@/root@g ${HOME}/.kube/config > $(kubedir)/config ; \
+	docker run \
+		--rm -ti \
+		--net=host \
+		--privileged \
+		-e STORAGE_DRIVER=vfs \
+		-e CGROUP_MANAGER=cgroupfs \
+		--security-opt label=disable \
+		-v /dev:/dev:ro \
+		-v /var/lib/docker:/var/lib/docker:ro \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(CURDIR):/src \
+		-v $(CURDIR)/pytest-container.ini:/src/pytest.ini \
+		-v $(kubedir):/root/.kube \
+		$(TEST_IMAGE_NAME) make exec-test TEST_TARGET='$(TEST_TARGET)'
 
 test-in-vm:
 	vagrant up --provision
