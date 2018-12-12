@@ -173,16 +173,13 @@ def test_http_client_context(podman_backend):
 
 def test_wait_for_status(podman_backend):
     image = podman_backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
-    cmd = ['sleep', '0.3']
+    cmd = ['true']
     cont = image.run_via_binary(command=cmd)
 
     try:
-        start = time.time()
         p = Probe(timeout=6, fnc=cont.is_running, expected_retval=False)
-        p.run()
-        end = time.time() - start
-        assert end > 2, "Probe should wait till container status is exited"
-        assert end < 7, "Probe should end when container status is exited"
+        p.run()  # let's wait for the container to exit
+        assert cont.exit_code() == 0  # let's make sure it exited fine
     finally:
         cont.delete(force=True)
 
