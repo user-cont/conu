@@ -16,8 +16,8 @@ install-test-requirements:
 exec-test:
 	cat pytest.ini
 	@# use it like this: `make exec-test TEST_TARGET="tests/unit/"`
-	PYTHONPATH=$(CURDIR) pytest-2 $(TEST_TARGET) --verbose --showlocals
 	PYTHONPATH=$(CURDIR) pytest-3 $(TEST_TARGET) --verbose --showlocals
+	PYTHONPATH=$(CURDIR) pytest-2 $(TEST_TARGET) --verbose --showlocals
 
 check: test
 
