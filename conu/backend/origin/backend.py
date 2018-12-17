@@ -372,15 +372,13 @@ class OpenshiftBackend(K8sBackend):
         """
 
         try:
-            command = self._oc_command(["project"])
+            command = self._oc_command(["project", "-q"])
             output = run_cmd(command, return_output=True)
         except subprocess.CalledProcessError as ex:
             raise ConuException("Failed to obtain current project name : %s" % ex)
 
         try:
-            # index is two because `oc project` returns string in format:
-            # In project <project_name>
-            return output.split(" ")[2].replace("'", "").replace('"', '')  # remove quotes
+            return output.rstrip()  # remove '\n'
         except IndexError:
             raise ConuException("Failed to obtain project name")
 
