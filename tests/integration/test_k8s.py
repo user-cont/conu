@@ -23,7 +23,7 @@ import pytest
 
 from conu import DockerBackend, \
                  K8sBackend, K8sCleanupPolicy
-from conu.backend.k8s.pod import PodPhase
+from conu.backend.k8s.pod import Pod, PodPhase
 from conu.backend.k8s.service import Service
 from conu.backend.k8s.deployment import Deployment
 from conu.backend.k8s.client import get_core_api
@@ -55,6 +55,47 @@ class TestK8s(object):
                     pod.delete()
                     assert pod.get_phase() == PodPhase.TERMINATING
                     k8s_backend.delete_namespace(namespace)
+
+    def test_pod_from_template(self):
+
+        template = {
+          "apiVersion": "v1",
+          "kind": "Pod",
+          "metadata": {
+            "name": "myapp-pod",
+            "labels": {
+              "app": "myapp"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "myapp-container",
+                "image": "busybox",
+                "command": [
+                  "sh",
+                  "-c",
+                  "echo Hello Kubernetes! && sleep 3600"
+                ]
+              }
+            ]
+          }
+        }
+
+        api_key = get_oc_api_token()
+        with K8sBackend(api_key=api_key) as k8s_backend:
+            namespace = k8s_backend.create_namespace()
+
+            pod = Pod(namespace=namespace, from_template=template)
+
+            try:
+                pod.wait(200)
+                assert pod.is_ready()
+                assert pod.get_phase() == PodPhase.RUNNING
+            finally:
+                pod.delete()
+                assert pod.get_phase() == PodPhase.TERMINATING
+                k8s_backend.delete_namespace(namespace)
 
     def test_database_deployment(self):
         api_key = get_oc_api_token()

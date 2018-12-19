@@ -147,7 +147,7 @@ class Deployment(object):
     def create_in_cluster(self):
         """
         call Kubernetes API and create this Deployment in cluster,
-        raise ConuExeption if the API call fails
+        raise ConuException if the API call fails
         :return: None
         """
         try:
