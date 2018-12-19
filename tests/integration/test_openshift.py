@@ -31,6 +31,11 @@ from ..constants import CENTOS_MARIADB_10_2, CENTOS_PYTHON_3, MY_PROJECT,\
 @pytest.mark.skipif(not is_oc_cluster_running(), reason="OpenShift cluster is not running!")
 class TestOpenshift(object):
 
+    def test_get_project_name(self):
+        api_key = get_oc_api_token()
+        with OpenshiftBackend(api_key=api_key, logging_level=logging.DEBUG) as openshift_backend:
+            assert openshift_backend.get_current_project() == MY_PROJECT
+
     def test_import_image(self):
         api_key = get_oc_api_token()
         with OpenshiftBackend(api_key=api_key, logging_level=logging.DEBUG) as openshift_backend:

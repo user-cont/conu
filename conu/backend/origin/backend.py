@@ -88,16 +88,16 @@ class OpenshiftBackend(K8sBackend):
         oc_command_exists()
         return ["oc"] + args
 
-    def deploy_image(self, image_name, oc_new_app_args, project, name=None):
+    def deploy_image(self, image_name, oc_new_app_args=None, project=None, name=None):
         """
         Deploy image in OpenShift cluster using 'oc new-app'
         :param image_name: image name with tag
         :param oc_new_app_args: additional parameters for the `oc new-app`, env variables etc.
-        :param project: project where app should be created
+        :param project: project where app should be created, default: current project
         :param name:str, name of application, if None random name is generated
         :return: str, name of the app
         """
-        self.project = project
+        self.project = project or self.get_current_project()
 
         # app name is generated randomly
         name = name or 'app-{random_string}'.format(random_string=random_str(5))
@@ -119,16 +119,17 @@ class OpenshiftBackend(K8sBackend):
 
         return name
 
-    def create_new_app_from_source(self, image_name, project, source=None, oc_new_app_args=None):
+    def create_new_app_from_source(self, image_name, project=None,
+                                   source=None, oc_new_app_args=None):
         """
         Deploy app using source-to-image in OpenShift cluster using 'oc new-app'
         :param image_name: image to be used as builder image
-        :param project: project where app should be created
+        :param project: project where app should be created, default: current project
         :param source: source used to extend the image, can be path or url
         :param oc_new_app_args: additional parameters for the `oc new-app`
         :return: str, name of the app
         """
-        self.project = project
+        self.project = project or self.get_current_project()
 
         # app name is generated randomly
         name = 'app-{random_string}'.format(random_string=random_str(5))
@@ -156,7 +157,7 @@ class OpenshiftBackend(K8sBackend):
         return name
 
     def create_app_from_template(self, image_name, name, template, name_in_template,
-                                 other_images, oc_new_app_args, project):
+                                 other_images=None, oc_new_app_args=None, project=None):
         """
         Helper function to create app from template
         :param image_name: image to be used as builder image
@@ -168,10 +169,11 @@ class OpenshiftBackend(K8sBackend):
                where "<image>" is image name with tag and "<tag>" is a tag under which the image
                should be available in the OpenShift registry.
         :param oc_new_app_args: additional parameters for the `oc new-app`
-        :param project: project where app should be created
+        :param project: project where app should be created, default: current project
         :return: None
         """
-        self.project = project
+        self.project = project or self.get_current_project()
+        oc_new_app_args = oc_new_app_args or []
 
         # push images to registry
         repository, tag = list(name_in_template.items())[0]
@@ -249,7 +251,7 @@ class OpenshiftBackend(K8sBackend):
         """
 
         c = self._oc_command(["import-image", imported_image_name,
-                              "--from=%s" % image_name, "--insecure=true", "--confirm"])
+                              "--from=%s" % image_name, "--confirm"])
 
         logger.info("Importing image from: %s, as: %s", image_name, imported_image_name)
 
@@ -361,6 +363,24 @@ class OpenshiftBackend(K8sBackend):
                     logs += pod_logs
 
         return logs
+
+    def get_current_project(self):
+        """
+        Get name of current project using `oc project` command.
+        Raise ConuException in case of an error.
+        :return: str, project name
+        """
+
+        try:
+            command = self._oc_command(["project", "-q"])
+            output = run_cmd(command, return_output=True)
+        except subprocess.CalledProcessError as ex:
+            raise ConuException("Failed to obtain current project name : %s" % ex)
+
+        try:
+            return output.rstrip()  # remove '\n'
+        except IndexError:
+            raise ConuException("Failed to obtain project name")
 
     def clean_project(self, app_name=None, delete_all=False):
         """
