@@ -14,7 +14,8 @@ set -x
 # - pyxattr: to not build it from source
 # - devel & gcc: to compile pyxattr if requirements.txt specifies different version than we install here
 
-if which dnf; then
+# which is not installed in the base image
+if [ -f /bin/dnf ]; then
     dnf install -y acl docker libselinux-utils \
         source-to-image \
         origin-clients \
