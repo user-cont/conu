@@ -37,12 +37,12 @@ logger = logging.getLogger(__name__)
 
 class Pod(object):
 
-    def __init__(self, name=None, namespace=None, spec=None, from_template=None):
+    def __init__(self, namespace, name=None, spec=None, from_template=None):
         """
         Utility functions for kubernetes pods.
 
-        :param name: name of pod
         :param namespace: str, namespace in which is pod created
+        :param name: name of pod
         :param spec: pod spec
         https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1PodSpec.md
         :param from_template: str, pod template, example:
