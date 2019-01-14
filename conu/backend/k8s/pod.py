@@ -37,21 +37,44 @@ logger = logging.getLogger(__name__)
 
 class Pod(object):
 
-    def __init__(self, name, namespace, spec):
+    def __init__(self, namespace, name=None, spec=None, from_template=None):
         """
         Utility functions for kubernetes pods.
 
-        :param name: name of pod
         :param namespace: str, namespace in which is pod created
+        :param name: name of pod
         :param spec: pod spec
-            https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1PodSpec.md
+        https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1PodSpec.md
+        :param from_template: str, pod template, example:
+               - https://kubernetes.io/docs/concepts/workloads/pods/pod-overview/#pod-templates
         """
-
-        self.name = name
-        self.namespace = namespace
-        self.spec = spec
-        self.phase = None
         self.core_api = get_core_api()
+        self.namespace = namespace
+        self.phase = None
+
+        if (from_template is not None) and (name is not None or spec is not None):
+            raise ConuException('from_template cannot be passed to constructor at the same time'
+                                ' with name or spec')
+        elif from_template is not None:  # create Pod from template
+            try:
+                pod_instance = self.core_api.create_namespaced_pod(namespace=namespace,
+                                                                   body=from_template)
+            except ApiException as e:
+                raise ConuException(
+                    "Exception when calling CoreV1Api->create_namespaced_pod: %s\n" % e)
+
+            logger.info(
+                "Starting Pod %s in namespace %s" % (pod_instance.metadata.name, namespace))
+
+            self.name = pod_instance.metadata.name
+            self.spec = pod_instance.spec
+
+        elif name is not None or spec is not None:
+            self.name = name
+            self.spec = spec
+        else:
+            raise ConuException('to create pod you need to specify pod template or'
+                                ' properties: name and spec.')
 
     def delete(self):
         """
