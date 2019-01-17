@@ -306,7 +306,8 @@ def test_list_containers(podman_backend):
 def test_list_images(podman_backend):
     image_list = podman_backend.list_images()
     assert len(image_list) > 0
-    the_id = "ded494ce3076e8f2d264235fdb09da5970921d8317f8fd024ab65821bf13e29f"
+    # id of registry.fedoraproject.org/fedora-minimal:26
+    the_id = "8f0e66c924c0c169352de487a3c2463d82da24e9442fc097dddaa5f800df7129"
     image_under_test = [x for x in image_list if x.metadata.identifier == the_id][0]
     assert image_under_test.metadata.digest
     assert image_under_test.metadata.repo_digests
