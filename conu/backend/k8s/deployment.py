@@ -60,7 +60,7 @@ class Deployment(object):
                 'from_template cannot be passed to constructor at the same time with'
                 ' name, selector, labels or image_metadata')
         elif from_template is not None:
-            self.body = yaml.load(from_template)
+            self.body = yaml.safe_load(from_template)
 
             self.name = self.body['metadata']['name']
 
