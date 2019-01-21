@@ -95,8 +95,8 @@ rpm: sdist
 srpm: sdist
 	rpmbuild ./*.spec -bs --define "_sourcedir $(CURDIR)" --define "_specdir $(CURDIR)" --define "_builddir $(CURDIR)" --define "_srcrpmdir $(CURDIR)" --define "_rpmdir $(CURDIR)"
 
-rpm-in-mock-f28: srpm
-	mock --rebuild -r fedora-28-x86_64 ./*.src.rpm
+rpm-in-mock-f29: srpm
+	mock --rebuild -r fedora-29-x86_64 ./*.src.rpm
 
 rpm-in-mock-el7: srpm
 	mock --rebuild -r epel-7-x86_64 ./*.src.rpm
@@ -105,6 +105,14 @@ install-conu-rpm-in-centos-container: rpm-in-mock-el7
 	docker run -v "/var/lib/mock/epel-7-x86_64/result:/conu" -ti centos:7 bash -c " \
 		yum install -y /conu/python2-conu-*.el7.centos.noarch.rpm && \
 		python2 -c 'import conu; print conu.version'"
+
+install-conu-rpm-in-f29-container: rpm-in-mock-f29
+	docker run \
+		-v "/var/lib/mock/fedora-29-x86_64/result:/conu" \
+		-ti fedora:29 bash -c " \
+		dnf install -y /conu/python3-conu-*.fc29.noarch.rpm colin \
+		&& python3 -c 'import conu; print(conu.version)' \
+		&& colin --help"
 
 install: install-requirements
 	pip install --user .
