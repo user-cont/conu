@@ -7,8 +7,8 @@
 %endif
 
 Name:           %{pypi_name}
-Version:        0.6.1
-Release:        1%{?dist}
+Version:        0.6.2
+Release:        2%{?dist}
 Summary:        library which makes it easy to write tests for your containers
 
 License:        GPLv3+
@@ -30,6 +30,7 @@ and is handy when playing with containers inside your code.
 It defines an API to access and manipulate containers,
 images and provides more, very helpful functions.
 
+%if (0%{?fedora} && 0%{?fedora} <= 29) || (0%{?rhel} && 0%{?rhel} <= 7)
 %package -n     python2-%{pypi_name}
 Summary:        %{summary}
 %{?python_provide:%python_provide python2-%{pypi_name}}
@@ -38,14 +39,17 @@ BuildRequires:  python2-setuptools
 %if 0%{?rhel} && 0%{?rhel} <= 7
 BuildRequires:  python-docker-py
 BuildRequires:  python-enum34
+BuildRequires:  python-kubernetes
+Requires:       python-kubernetes
 Requires:       python-docker-py
 Requires:       python-enum34
 Requires:       python-requests
 %else
 BuildRequires:  python2-docker
 BuildRequires:  python2-enum34
-Requires:       python2-docker
+BuildRequires:  python2-kubernetes
 Requires:       python2-kubernetes
+Requires:       python2-docker
 Requires:       python2-enum34
 Requires:       python2-requests
 %endif
@@ -85,6 +89,7 @@ Requires:       python2-%{pypi_name}
 
 %description -n python2-%{pypi_name}-pytest
 fixtures which can be utilized via pytest
+%endif
 
 %if %{with python3}
 %package -n     python3-%{pypi_name}
@@ -92,8 +97,13 @@ Summary:        %{summary}
 %{?python_provide:%python_provide python3-%{pypi_name}}
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
-Requires:       python3-docker
+BuildRequires:  python3-kubernetes
+BuildRequires:  python3-docker
+BuildRequires:  python3-requests
+BuildRequires:  python3-pyxattr
+BuildRequires:  python3-six
 Requires:       python3-kubernetes
+Requires:       python3-docker
 Requires:       python3-requests
 Requires:       python3-pyxattr
 Requires:       python3-six
@@ -122,7 +132,13 @@ fixtures which can be utilized via pytest
 
 %package -n %{pypi_name}-doc
 Summary:        conu documentation
+%if %{with python3}
 BuildRequires:  python3-sphinx
+%else
+%if (0%{?fedora} && 0%{?fedora} <= 29) || (0%{?rhel} && 0%{?rhel} <= 7)
+BuildRequires:  python2-sphinx
+%endif  # if fedora
+%endif  # if python3
 
 %description -n %{pypi_name}-doc
 Documentation for conu.
@@ -133,10 +149,13 @@ Documentation for conu.
 rm -rf %{pypi_name}.egg-info
 
 %build
+%if (0%{?fedora} && 0%{?fedora} <= 29) || (0%{?rhel} && 0%{?rhel} <= 7)
 %py2_build
+%endif
 %if %{with python3}
 %py3_build
 %endif
+
 # generate html docs
 PYTHONPATH="${PWD}:${PWD}/docs/" sphinx-build docs/source html
 # remove the sphinx-build leftovers
@@ -146,8 +165,11 @@ rm -rf html/.{doctrees,buildinfo}
 %if %{with python3}
 %py3_install
 %endif
+%if (0%{?fedora} && 0%{?fedora} <= 29) || (0%{?rhel} && 0%{?rhel} <= 7)
 %py2_install
+%endif
 
+%if (0%{?fedora} && 0%{?fedora} <= 29) || (0%{?rhel} && 0%{?rhel} <= 7)
 %files -n python2-%{pypi_name}
 %license LICENSE
 %doc README.md
@@ -159,6 +181,7 @@ rm -rf html/.{doctrees,buildinfo}
 %files -n python2-%{pypi_name}-pytest
 %license LICENSE
 %{python2_sitelib}/%{pypi_name}/fixtures/
+%endif
 
 %if %{with python3}
 %files -n python3-%{pypi_name}
@@ -179,17 +202,35 @@ rm -rf html/.{doctrees,buildinfo}
 %license LICENSE
 
 %changelog
-* Wed Nov 14 2018 Tomas Tomecek <ttomecek@redhat.com> - 0.6.1-1
+* Mon Jan 21 2019 Tomas Tomecek <ttomecek@redhat.com> - 0.6.2-2
+- packaging fixes
+
+* Thu Nov 15 2018 Tomas Tomecek <ttomecek@redhat.com> 0.6.2-1
+- 0.6.2 release
+
+* Wed Nov 14 2018 lachmanfrantisek <lachmanfrantisek@gmail.com> 0.6.1-1
 - 0.6.1 release
 
-* Thu May 24 2018 Tomas Tomecek <ttomecek@redhat.com> - 0.4.0-1
-- 0.4.0 release
+* Wed Oct 24 2018 Radoslav Pitoňák <rado.pitonak@gmail.com> 0.6.0-1
+- 0.6.0 release
+
+* Thu Sep 13 2018 Radoslav Pitonak <rado.pitonak@gmail.com> - 0.5.0-2
+- add dependency kubernetes 
+
+* Thu Sep 13 2018 Radoslav Pitonak <rado.pitonak@gmail.com> - 0.5.0-1
+- New upstream release 0.5.0
+
+* Thu Jul 12 2018 Fedora Release Engineering <releng@fedoraproject.org> - 0.4.0-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_29_Mass_Rebuild
+
+* Tue Jun 19 2018 Miro Hrončok <mhroncok@redhat.com> - 0.4.0-2
+- Rebuilt for Python 3.7
+
+* Fri May 25 2018 Tomas Tomecek <ttomecek@redhat.com> - 0.4.0-1
+- New upstream release 0.4.0
 
 * Wed May 02 2018 Tomas Tomecek <ttomecek@redhat.com> - 0.3.1-1
-- 0.3.1 release
-
-* Wed May 02 2018 Dominika Hodovska <dhodovsk@redhat.com> 0.3.0-1
-- 0.3.0 release
+- New upstream release 0.3.1
 
 * Thu Feb 01 2018 Tomas Tomecek <ttomecek@redhat.com> 0.2.0-1
 - 0.2.0 release
