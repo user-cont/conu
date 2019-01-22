@@ -49,7 +49,7 @@ build-test-container:
 # You have to run 'sudo make install-test-requirements' prior to this.
 test: build-test-container test-in-container test-doc-examples
 
-centos-ci-test: install-test-requirements container-image build-test-container test-in-container
+centos-ci-test: install-test-requirements container-image build-test-container test-in-container srpm
 
 test-in-container:
 	@# use it like this: `make test-in-container TEST_TARGET=tests/integration/test_utils.py`
@@ -97,6 +97,9 @@ srpm: sdist
 
 rpm-in-mock-f29: srpm
 	mock --rebuild -r fedora-29-x86_64 ./*.src.rpm
+
+rpm-in-mock-rawhide: srpm
+	mock --rebuild -r fedora-rawhide-x86_64 ./*.src.rpm
 
 rpm-in-mock-el7: srpm
 	mock --rebuild -r epel-7-x86_64 ./*.src.rpm

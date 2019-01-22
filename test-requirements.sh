@@ -11,7 +11,7 @@ if [ "${NAME}" == "Fedora" ]; then
     dnf install -y --enablerepo=updates-testing docker make podman
     dnf update -y --enablerepo=updates-testing docker podman
 elif [ "${NAME}" == "CentOS Linux" ]; then
-    yum install -y docker make podman
+    yum install -y docker make podman rpm-build
 fi
 
 setenforce 0
