@@ -307,7 +307,9 @@ def test_list_images(podman_backend):
     image_list = podman_backend.list_images()
     assert len(image_list) > 0
     # id of registry.fedoraproject.org/fedora-minimal:26
-    the_id = "8f0e66c924c0c169352de487a3c2463d82da24e9442fc097dddaa5f800df7129"
+    the_id = subprocess.check_output(["podman", "inspect", "-f", "{{.Id}}",
+                                      FEDORA_MINIMAL_REPOSITORY + ":" +
+                                      FEDORA_MINIMAL_REPOSITORY_TAG]).decode("utf-8")
     image_under_test = [x for x in image_list if x.metadata.identifier == the_id][0]
     assert image_under_test.metadata.digest
     assert image_under_test.metadata.repo_digests
