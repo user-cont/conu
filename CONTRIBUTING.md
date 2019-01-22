@@ -39,7 +39,10 @@ Please take a few minutes to read GitHub's guide on [How to Contribute to Open S
 
 ### Dependencies
 
-[Kebechet](https://github.com/thoth-station/kebechet) bot keeps our python dependencies fresh and up-to-date. If you want to change or add new dependency please edit [requirements.in](/requirements.in), **not** `requirements.txt`, because it is updated automatically based on `requirements.in`.
+If you are introducing a new dependency, please make sure it's added to:
+ * spec file
+ * requirements.txt
+ * requirements.sh — so that we install it as an RPM while testing
 
 ### Documentation
 
