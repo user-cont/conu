@@ -1,56 +1,13 @@
 # 0.7.0
 
-* Update pyyaml dependency
-* get image ID using subprocess in test_list_images()
-* sync spec from Fedora
-* [backend/k8s/deployment.py] yaml.load() -> yaml.safe_load()
-* make: update to f29, add rpm-testing target
-* fix id of image in podman test_list_images()
-* download newer version of oc cluster in test-requirements.sh
-* req.sh: check for dnf w/o which package
-* make namespace to be required paramter in Pod constructor
-* Creation of pod from template using k8s backend
-* use oc project -q
-* New method in origin backend: get_curent_project. Make project parameter optional in app deployment methods
-* req.sh: install pkgs if dnf is available
-* cont-image: install conu to global sitelib
-* podman,testing: simplify test_wait_for_status
-* make: let's do testing in py3 first
-* run podman tests in a container
-* make: sed: change # to @
-* reverse() returns None
-* fix podman tests
-* test-req: install packages from updates-testing
-* podman: dont debug log inspect output
-* podman: require podman 0.11+
-* vagrant: update to F29 and use sshfs
-* skip http podman tests for rootless conts
-* fixtures: actually clean when done
-* use vfs backend for podman tests
-* bump base image to F29
-* pytest fixture for podman backend
-* podman testing,multiple:
-* podman: correct keys when parsing a list of containers
-* fixed podman metadata implementation
-* small fixes in podman metadata implementation
-* inspection removed in list_images, list_containers + small fixes
-* doc changelog creation in contrib guide
-* add podman to requirements.sh
-* code cleaning
-* conflict resolving
-* conflict resolving
-* podman methods only cli
-* podman methods only cli
-* podman backend skeleton
-* don't return quoted string from get_image_registry_url method
-* remove docker backend from OpenShift examples
-* fix typo
-* test for oc import image and update all openshift test to use oc import image
-* replace docker push to registry with oc-import in all origin backend methods
-* add project property to OpenshiftBackend
-* possibility to specify namspace parameter for listing methods in k8s backend
-* remove docker usage from deploy_image method
-* Add oc import-image method to OpenShift backend
+## New features
+
+* Parameter `project` is now optional in all OpenShift backend app deployment methods. Application is now deployed in currently used project of OpenShift cluster by default.
+* You are now able to create new `Pod` using Kubernetes pod templates.
+* Support for importing images into OpenShift registry using `oc` binary.
+* Introducing `Podman` backend, thanks to @fasashen!
+* Conu docker image now use fedora 29 as base image.
+
 
 # 0.6.2
 
