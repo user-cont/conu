@@ -6,7 +6,7 @@
 * You are now able to create new `Pod` using Kubernetes pod templates.
 * Support for importing images into OpenShift registry using `oc` binary.
 * Introducing `Podman` backend, thanks to @fasashen!
-* Conu docker image now use fedora 29 as base image.
+* Conu docker image now uses fedora 29 as a base image.
 
 
 # 0.6.2
