@@ -39,7 +39,7 @@ def test_podman_image(podman_backend):
     image = podman_backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
     assert "%s:%s" % (FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG) == image.get_full_name()
     assert "%s:%s" % (FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG) in image.inspect()['RepoTags']
-    assert "ContainerConfig" in image.inspect()
+    assert "Config" in image.inspect()
     assert "fedora-minimal:26" in image.get_full_name()
     assert "registry.fedoraproject.org/fedora-minimal:26" == str(image)
     assert "PodmanImage(repository=%s, tag=%s)" % (FEDORA_MINIMAL_REPOSITORY,
