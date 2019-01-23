@@ -1,3 +1,14 @@
+# 0.7.0
+
+## New features
+
+* Parameter `project` is now optional in all OpenShift backend app deployment methods. Application is now deployed in currently used project of OpenShift cluster by default.
+* You are now able to create new `Pod` using Kubernetes pod templates.
+* Support for importing images into OpenShift registry using `oc` binary.
+* Introducing `Podman` backend, thanks to @fasashen!
+* Conu docker image now uses fedora 29 as a base image.
+
+
 # 0.6.2
 
 This is a bug-fix release to fix the RPM packaging in Fedora.
