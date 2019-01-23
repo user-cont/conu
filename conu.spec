@@ -7,8 +7,8 @@
 %endif
 
 Name:           %{pypi_name}
-Version:        0.6.2
-Release:        2%{?dist}
+Version:        0.7.0
+Release:        1%{?dist}
 Summary:        library which makes it easy to write tests for your containers
 
 License:        GPLv3+
@@ -202,6 +202,9 @@ rm -rf html/.{doctrees,buildinfo}
 %license LICENSE
 
 %changelog
+* Wed Jan 23 2019 Tomas Tomecek <ttomecek@redhat.com> - 0.7.0-1
+- 0.7.0 release
+
 * Mon Jan 21 2019 Tomas Tomecek <ttomecek@redhat.com> - 0.6.2-2
 - packaging fixes
 
