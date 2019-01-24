@@ -93,6 +93,8 @@ rpm: sdist
 	rpmbuild ./*.spec -bb --define "_sourcedir $(CURDIR)" --define "_specdir $(CURDIR)" --define "_builddir $(CURDIR)" --define "_srcrpmdir $(CURDIR)" --define "_rpmdir $(CURDIR)"
 
 srpm: sdist
+	# -bs fails in CI with "Bad owner/group"
+	chown $(shell id -u):$(shell id -u) ./*.spec
 	rpmbuild ./*.spec -bs --define "_sourcedir $(CURDIR)" --define "_specdir $(CURDIR)" --define "_builddir $(CURDIR)" --define "_srcrpmdir $(CURDIR)" --define "_rpmdir $(CURDIR)"
 
 rpm-in-mock-f29: srpm
