@@ -35,13 +35,14 @@ log = logging.getLogger("conu.tests")
 
 
 def obtain_images():
-    subprocess.check_call(["docker", "image", "pull", FEDORA_MINIMAL_IMAGE])
-    subprocess.check_call(["docker", "image", "pull", FEDORA_REPOSITORY])
-    subprocess.check_call(["docker", "image", "pull", FEDORA_MINIMAL_REPOSITORY_DIGEST])
-    subprocess.check_call(["docker", "container", "run", "--name", "nc-container",
-                           FEDORA_MINIMAL_IMAGE, "microdnf", "install", "nmap-ncat"])
-    subprocess.check_call(["docker", "container", "commit", "nc-container", THE_HELPER_IMAGE])
-    subprocess.check_call(["docker", "container", "rm", "nc-container"])
+    for image in (FEDORA_MINIMAL_IMAGE, FEDORA_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_DIGEST):
+        for tool in ("podman", "docker"):
+            subprocess.check_call([tool, "image", "pull", image])
+    for tool in ("podman", "docker"):
+        subprocess.check_call([tool, "container", "run", "--name", "nc-container",
+                               FEDORA_MINIMAL_IMAGE, "microdnf", "install", "nmap-ncat"])
+        subprocess.check_call([tool, "container", "commit", "nc-container", THE_HELPER_IMAGE])
+        subprocess.check_call([tool, "container", "rm", "nc-container"])
     build_punchbag()  # pull base images first
 
 
@@ -51,9 +52,10 @@ def build_punchbag():
     integration_tests_dir = os.path.abspath(os.path.dirname(__file__))
     data_dir = os.path.join(integration_tests_dir, "data")
     image_dir = os.path.join(data_dir, "punchbag")
-    c = ["docker", "image", "build", "--tag", "punchbag", image_dir]
-    log.debug("command = %s", c)
-    subprocess.check_call(c)
+    for tool in ("podman", "docker"):
+        c = [tool, "image", "build", "--tag", "punchbag", image_dir]
+        log.debug("command = %s", c)
+        subprocess.check_call(c)
 
 
 @pytest.fixture(autouse=True, scope='session')
@@ -62,6 +64,7 @@ def setup_test_session():
               FEDORA_MINIMAL_REPOSITORY_DIGEST]:
         try:
             subprocess.check_call(["docker", "image", "inspect", x], stdout=subprocess.PIPE)
+            subprocess.check_call(["podman", "image", "inspect", x], stdout=subprocess.PIPE)
         except subprocess.CalledProcessError:
             break
     # executed if break was not reached

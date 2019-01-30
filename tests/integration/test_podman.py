@@ -39,7 +39,7 @@ def test_podman_image(podman_backend):
     image = podman_backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
     assert "%s:%s" % (FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG) == image.get_full_name()
     assert "%s:%s" % (FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG) in image.inspect()['RepoTags']
-    assert "ContainerConfig" in image.inspect()
+    assert "Config" in image.inspect()
     assert "fedora-minimal:26" in image.get_full_name()
     assert "registry.fedoraproject.org/fedora-minimal:26" == str(image)
     assert "PodmanImage(repository=%s, tag=%s)" % (FEDORA_MINIMAL_REPOSITORY,
@@ -267,14 +267,18 @@ def test_set_name(podman_backend):
 
 def test_run_with_volumes_metadata_check(tmpdir, podman_backend):
     t = str(tmpdir)
+    mountpoint_path = "/mountpoint"
     image = podman_backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG,
-                               pull_policy=PodmanImagePullPolicy.NEVER)
-    container = image.run_via_binary(volumes=(Directory(t), "/mountpoint", "Z"))
+                                      pull_policy=PodmanImagePullPolicy.NEVER)
+    container = image.run_via_binary(volumes=(Directory(t), mountpoint_path, "Z"))
     try:
-        mount = container.inspect()["Mounts"][0]
-        assert mount["source"] == t
-        assert mount["destination"] == "/mountpoint"
-        assert "Z" in mount["options"]
+        for mount in container.inspect()["Mounts"]:
+            if mount["source"] == t and mount["destination"] == mountpoint_path:
+                assert "Z" in mount["options"]
+                break
+        # break was not reached: the mountpoint was not found
+        else:
+            assert False, "No mountpoint matching criteria: %s:%s:%s" % (t, mountpoint_path, "Z")
     finally:
         container.delete(force=True)
 

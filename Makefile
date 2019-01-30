@@ -49,7 +49,7 @@ build-test-container:
 # You have to run 'sudo make install-test-requirements' prior to this.
 test: build-test-container test-in-container test-doc-examples
 
-centos-ci-test: install-test-requirements container-image build-test-container test-in-container
+centos-ci-test: install-test-requirements container-image build-test-container test-in-container srpm
 
 test-in-container:
 	@# use it like this: `make test-in-container TEST_TARGET=tests/integration/test_utils.py`
@@ -93,10 +93,15 @@ rpm: sdist
 	rpmbuild ./*.spec -bb --define "_sourcedir $(CURDIR)" --define "_specdir $(CURDIR)" --define "_builddir $(CURDIR)" --define "_srcrpmdir $(CURDIR)" --define "_rpmdir $(CURDIR)"
 
 srpm: sdist
+	# -bs fails in CI with "Bad owner/group"
+	chown $(shell id -u):$(shell id -u) ./*.spec
 	rpmbuild ./*.spec -bs --define "_sourcedir $(CURDIR)" --define "_specdir $(CURDIR)" --define "_builddir $(CURDIR)" --define "_srcrpmdir $(CURDIR)" --define "_rpmdir $(CURDIR)"
 
 rpm-in-mock-f29: srpm
 	mock --rebuild -r fedora-29-x86_64 ./*.src.rpm
+
+rpm-in-mock-rawhide: srpm
+	mock --rebuild -r fedora-rawhide-x86_64 ./*.src.rpm
 
 rpm-in-mock-el7: srpm
 	mock --rebuild -r epel-7-x86_64 ./*.src.rpm

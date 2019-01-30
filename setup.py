@@ -32,7 +32,7 @@ except ImportError:
 def get_requirements():
     packages = []
 
-    with open("./requirements.in") as fd:
+    with open("./requirements.txt") as fd:
         for line in fd.readlines():
             if not line or line.startswith('-i'):
                 continue
