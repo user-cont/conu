@@ -1,3 +1,13 @@
+# 0.8.0
+
+* update spec to 0.7.0
+* podman renamed ContainerConfig to Config
+* test_run_with_volumes_metadata_check: fix and optimize
+* tests: prepare test env for podman as well
+* make srpm fail in CI, fix it
+* build srpm in CI
+* mv req.in req.txt
+
 # 0.7.0
 
 ## New features
