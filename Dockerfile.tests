@@ -1,7 +1,6 @@
 FROM docker.io/usercont/conu:dev
 
 RUN dnf install -y nmap-ncat make && \
-    pip2 install --user -r tests/requirements.txt && \
     pip3 install --user -r tests/requirements.txt
 
 # a solution to set cgroup_manager to cgroupfs since we don't have

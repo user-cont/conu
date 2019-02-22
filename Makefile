@@ -17,7 +17,6 @@ exec-test:
 	cat pytest.ini
 	@# use it like this: `make exec-test TEST_TARGET="tests/unit/"`
 	PYTHONPATH=$(CURDIR) pytest-3 $(TEST_TARGET) --verbose --showlocals
-	PYTHONPATH=$(CURDIR) pytest-2 $(TEST_TARGET) --verbose --showlocals
 
 check: test
 
@@ -102,14 +101,6 @@ rpm-in-mock-f29: srpm
 
 rpm-in-mock-rawhide: srpm
 	mock --rebuild -r fedora-rawhide-x86_64 ./*.src.rpm
-
-rpm-in-mock-el7: srpm
-	mock --rebuild -r epel-7-x86_64 ./*.src.rpm
-
-install-conu-rpm-in-centos-container: rpm-in-mock-el7
-	docker run -v "/var/lib/mock/epel-7-x86_64/result:/conu" -ti centos:7 bash -c " \
-		yum install -y /conu/python2-conu-*.el7.centos.noarch.rpm && \
-		python2 -c 'import conu; print conu.version'"
 
 install-conu-rpm-in-f29-container: rpm-in-mock-f29
 	docker run \

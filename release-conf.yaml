@@ -1,7 +1,6 @@
 # list of major python versions that release-bot will build separate wheels for
 python_versions:
   - 3
-  - 2
 
 # whether to release on fedora
 fedora: true

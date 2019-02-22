@@ -11,6 +11,8 @@ and is handy when playing with containers inside your code.
 It defines an API to access and manipulate containers,
 images and provides more, very helpful functions.
 
+`conu` does NOT support Python 2 at all.
+
 ![example](./docs/example.gif)
 
 # Installation
