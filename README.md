@@ -11,7 +11,7 @@ and is handy when playing with containers inside your code.
 It defines an API to access and manipulate containers,
 images and provides more, very helpful functions.
 
-`conu` does NOT support Python 2 at all.
+`conu` is supported on python 3.6+ only.
 
 ![example](./docs/example.gif)
 
@@ -30,7 +30,7 @@ $ pip install --user conu
 If you are running Fedora, we have packaged `conu` in an RPM:
 
 ```
-$ dnf install python{2,3}-conu
+$ dnf install python3-conu
 ```
 
 Please visit [our documentation](http://conu.readthedocs.io/en/latest/installation.html) for more info on installation.

@@ -75,7 +75,6 @@ test-in-vm:
 test-doc-examples: install
 	for file in $$(ls $(DOC_EXAMPLE_PATH)) ; do \
 		echo "Checking example file $$file" ; \
-		PYTHONPATH=$(CURDIR) python2 $(DOC_EXAMPLE_PATH)/$$file || exit ; \
 		PYTHONPATH=$(CURDIR) python3 $(DOC_EXAMPLE_PATH)/$$file || exit ; \
 	done
 

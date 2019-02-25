@@ -8,5 +8,4 @@ RUN ./requirements.sh && \
     dnf clean all
 
 COPY . /src
-RUN pip3 install . && \
-    pip2 install .
+RUN pip3 install .
