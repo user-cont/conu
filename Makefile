@@ -48,7 +48,7 @@ build-test-container:
 # You have to run 'sudo make install-test-requirements' prior to this.
 test: build-test-container test-in-container test-doc-examples
 
-centos-ci-test: install-test-requirements container-image build-test-container test-in-container srpm
+centos-ci-test: install-test-requirements container-image build-test-container test-in-container
 
 test-in-container:
 	@# use it like this: `make test-in-container TEST_TARGET=tests/integration/test_utils.py`
