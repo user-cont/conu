@@ -1,16 +1,9 @@
 # 0.7.1
 
-* remove srpm from CI test
-* Fix problems catched by Review.
-* Remove python2 support
-* [release-conf.yaml] F30 has been branched
-* update spec to 0.7.0
-* podman renamed ContainerConfig to Config
-* test_run_with_volumes_metadata_check: fix and optimize
-* tests: prepare test env for podman as well
-* make srpm fail in CI, fix it
-* build srpm in CI
-* mv req.in req.txt
+## Breaking changes
+
+* conu is now supported on python 3.6+ only.
+
 
 # 0.7.0
 
