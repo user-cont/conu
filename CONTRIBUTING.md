@@ -12,7 +12,7 @@ if the problem has already been reported (or fixed in a master branch).
 
 If you're unable to find an open issue addressing the problem, [open a new one](https://github.com/user-cont/conu/issues/new).
 Be sure to include a **descriptive title and a clear description**. Ideally, please provide:
- * version of conu you are using (`rpm -q python2-conu python3-conu` or `pip freeze | grep conu`)
+ * version of conu you are using (`rpm -q python3-conu` or `python3 -m pip freeze | grep conu`)
  * version of container runtime you are using (`rpm -qa | grep docker`)
  * the command you executed, output and ideally please describe the image, container that you are trying to test
 

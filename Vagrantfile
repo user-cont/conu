@@ -22,9 +22,6 @@ Vagrant.configure(2) do |config|
         sudo dnf install -y systemd-container make
         sudo make install-requirements
         sudo make install-test-requirements
-        sudo pip2 install --user -r tests/requirements.txt
-        sudo pip2 install --user -r requirements.txt
-        sudo pip2 install --user .
         sudo pip3 install --user -r tests/requirements.txt
         sudo pip3 install --user -r requirements.txt
         sudo pip3 install --user .

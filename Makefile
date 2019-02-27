@@ -17,7 +17,6 @@ exec-test:
 	cat pytest.ini
 	@# use it like this: `make exec-test TEST_TARGET="tests/unit/"`
 	PYTHONPATH=$(CURDIR) pytest-3 $(TEST_TARGET) --verbose --showlocals
-	PYTHONPATH=$(CURDIR) pytest-2 $(TEST_TARGET) --verbose --showlocals
 
 check: test
 
@@ -49,7 +48,7 @@ build-test-container:
 # You have to run 'sudo make install-test-requirements' prior to this.
 test: build-test-container test-in-container test-doc-examples
 
-centos-ci-test: install-test-requirements container-image build-test-container test-in-container srpm
+centos-ci-test: install-test-requirements container-image build-test-container test-in-container
 
 test-in-container:
 	@# use it like this: `make test-in-container TEST_TARGET=tests/integration/test_utils.py`
@@ -76,7 +75,6 @@ test-in-vm:
 test-doc-examples: install
 	for file in $$(ls $(DOC_EXAMPLE_PATH)) ; do \
 		echo "Checking example file $$file" ; \
-		PYTHONPATH=$(CURDIR) python2 $(DOC_EXAMPLE_PATH)/$$file || exit ; \
 		PYTHONPATH=$(CURDIR) python3 $(DOC_EXAMPLE_PATH)/$$file || exit ; \
 	done
 
@@ -102,14 +100,6 @@ rpm-in-mock-f29: srpm
 
 rpm-in-mock-rawhide: srpm
 	mock --rebuild -r fedora-rawhide-x86_64 ./*.src.rpm
-
-rpm-in-mock-el7: srpm
-	mock --rebuild -r epel-7-x86_64 ./*.src.rpm
-
-install-conu-rpm-in-centos-container: rpm-in-mock-el7
-	docker run -v "/var/lib/mock/epel-7-x86_64/result:/conu" -ti centos:7 bash -c " \
-		yum install -y /conu/python2-conu-*.el7.centos.noarch.rpm && \
-		python2 -c 'import conu; print conu.version'"
 
 install-conu-rpm-in-f29-container: rpm-in-mock-f29
 	docker run \
