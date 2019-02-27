@@ -1,3 +1,10 @@
+# 0.7.1
+
+## Breaking changes
+
+* conu is now supported on python 3.6+ only.
+
+
 # 0.7.0
 
 ## New features
