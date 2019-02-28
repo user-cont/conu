@@ -1,8 +1,8 @@
 %global pypi_name conu
 
 Name:           %{pypi_name}
-Version:        0.7.0
-Release:        1%{?dist}
+Version:        0.7.1
+Release:        2%{?dist}
 Summary:        library which makes it easy to write tests for your containers
 
 License:        GPLv3+
@@ -98,7 +98,16 @@ rm -rf html/.{doctrees,buildinfo}
 %license LICENSE
 
 %changelog
-* Wed Jan 23 2019 Tomas Tomecek <ttomecek@redhat.com> - 0.7.0-1
+* Thu Feb 28 2019 Jiri Popelka <jpopelka@redhat.com> - 0.7.1-2
+- remove Python 2 support
+
+* Wed Feb 27 2019 Radoslav Pitoňák <rado.pitonak@gmail.com> 0.7.1-1
+- 0.7.1 release
+
+* Thu Jan 31 2019 Fedora Release Engineering <releng@fedoraproject.org> - 0.7.0-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_30_Mass_Rebuild
+
+* Wed Jan 23 2019 Tomas Tomecek <ttomecek@redhat.com> 0.7.0-1
 - 0.7.0 release
 
 * Mon Jan 21 2019 Tomas Tomecek <ttomecek@redhat.com> - 0.6.2-2
