@@ -1,0 +1,7 @@
+---
+specfile_path: conu.spec
+synced_files:
+  - conu.spec
+upstream_name: conu
+package_name: conu
+dist_git_url: https://src.fedoraproject.org/rpms/conu.git
