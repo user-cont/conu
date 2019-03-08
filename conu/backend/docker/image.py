@@ -229,12 +229,10 @@ class DockerImage(Image):
         :param tag
         :return: the new DockerImage later
         """
-        import subprocess
         subprocess.call(["skopeo", "copy",
                          "docker://" + self.name + ":" + self.tag,
                          "docker://" + repository + ":" + tag])
         return DockerImage(repository, tag, pull_policy=DockerImagePullPolicy.NEVER)
-        
 
     def tag_image(self, repository=None, tag=None):
         """
