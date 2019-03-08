@@ -220,18 +220,42 @@ class DockerImage(Image):
                     raise ConuException("There was an error while pushing the image %s: %s",
                                         self.name, error)
         return image
-    
-    def copy(self, repository, tag="latest"):
+
+    def copy(self, repository, tag="latest", source_transport_index=2, target_transport_index=2):
         """
         WIP
         Copy image to repository:tag
         :param repository to be copied to
         :param tag
-        :return: the new DockerImage later
+        :param source_transport_index in transport list WIP. for testing
+                can I find this out tranport from DockerImage instance? maybe useless param
+        :param target_transport_index in tranposrts list WIP, for testing
+        :return: the new DockerImage
         """
-        subprocess.call(["skopeo", "copy",
-                         "docker://" + self.name + ":" + self.tag,
-                         "docker://" + repository + ":" + tag])
+        transports = ["containers-storage:",
+                      "dir:",
+                      "docker://",
+                      "docker-archive",
+                      "docker-daemon:",
+                      "oci:",
+                      "ostree:"]
+
+        # doing thigs in local space, maid be deleted later
+        def transport_param(index, repo, tagg):
+            if not 0 <= index < len(transports):
+                raise ValueError("Invalid source transport index: " + str(index))
+            # command=transports[index]
+            if index in [0, 2, 4, 5]:
+                return transports[index] + repo + ":" + tagg
+            raise NotImplementedError(transports[index] + "transport is not implemented yet")
+
+        run_cmd(["skopeo", "copy",
+                 transport_param(source_transport_index, self.name, self.tag),
+                 transport_param(target_transport_index, repository, tag)])
+
+        # questionable.. repo is for example palusus/alpine..
+        # tried to pull this to local "docker-daemon".. it got pulled to docker.io/palusus/alpine instead
+
         return DockerImage(repository, tag, pull_policy=DockerImagePullPolicy.NEVER)
 
     def tag_image(self, repository=None, tag=None):
