@@ -240,8 +240,15 @@ class DockerImage(Image):
                       "oci:",
                       "ostree:"]
 
-        # doing thigs in local space, maid be deleted later
+        # doing things in local space, maid be deleted later
         def transport_param(index, repo, tagg):
+            """
+            Parses info into skopeo parameter
+            :param index: index in transports list, kinda temporary
+            :param repo:
+            :param tagg:
+            :return: string. skopeo parameter specifying image
+            """
             if not 0 <= index < len(transports):
                 raise ValueError("Invalid source transport index: " + str(index))
             # command=transports[index]
@@ -254,7 +261,8 @@ class DockerImage(Image):
                  transport_param(target_transport_index, repository, tag)])
 
         # questionable.. repo is for example palusus/alpine..
-        # tried to pull this to local "docker-daemon".. it got pulled to docker.io/palusus/alpine instead
+        # tried to pull this to local "docker-daemon"..
+        # it got pulled to docker.io/palusus/alpine instead
 
         return DockerImage(repository, tag, pull_policy=DockerImagePullPolicy.NEVER)
 
