@@ -220,6 +220,21 @@ class DockerImage(Image):
                     raise ConuException("There was an error while pushing the image %s: %s",
                                         self.name, error)
         return image
+    
+    def copy(self, repository, tag="latest"):
+        """
+        WIP
+        Copy image to repository:tag
+        :param repository to be copied to
+        :param tag
+        :return: the new DockerImage later
+        """
+        import subprocess
+        subprocess.call(["skopeo", "copy",
+                         "docker://" + self.name + ":" + self.tag,
+                         "docker://" + repository + ":" + tag])
+        return DockerImage(repository, tag, pull_policy=DockerImagePullPolicy.NEVER)
+        
 
     def tag_image(self, repository=None, tag=None):
         """
