@@ -38,6 +38,7 @@ from conu.backend.docker.client import get_client
 from conu.backend.docker.container import DockerContainer, DockerRunBuilder
 from conu.backend.docker.container_parameters import DockerContainerParameters
 from conu.backend.docker.utils import inspect_to_metadata
+from conu.backend.docker.skopeo import transport_param
 from conu.exceptions import ConuException
 from conu.utils import run_cmd, random_tmp_filename, s2i_command_exists, \
     graceful_get, export_docker_container_to_directory
@@ -221,17 +222,17 @@ class DockerImage(Image):
                                         self.name, error)
         return image
 
-    def copy(self, repository, tag="latest", source_transport_index=2, target_transport_index=2):
+    def copy(self, repository, tag="latest", source_transport_index=2, target_transport_index=2, path = None):
         """
         WIP
         Copy image to repository:tag
         :param repository to be copied to
         :param tag
         :param source_transport_index in transport list WIP. for testing
-                can I find this out tranport from DockerImage instance? maybe useless param
+                can I find this transport out from DockerImage instance? maybe useless param
         :param target_transport_index in tranposrts list WIP, for testing
         :return: the new DockerImage
-        """
+
         transports = ["containers-storage:",
                       "dir:",
                       "docker://",
@@ -239,30 +240,12 @@ class DockerImage(Image):
                       "docker-daemon:",
                       "oci:",
                       "ostree:"]
+        """
 
-        # doing things in local space, maid be deleted later
-        def transport_param(index, repo, tagg):
-            """
-            Parses info into skopeo parameter
-            :param index: index in transports list, kinda temporary
-            :param repo:
-            :param tagg:
-            :return: string. skopeo parameter specifying image
-            """
-            if not 0 <= index < len(transports):
-                raise ValueError("Invalid source transport index: " + str(index))
-            # command=transports[index]
-            if index in [0, 2, 4, 5]:
-                return transports[index] + repo + ":" + tagg
-            raise NotImplementedError(transports[index] + "transport is not implemented yet")
-
-        run_cmd(["skopeo", "copy",
-                 transport_param(source_transport_index, self.name, self.tag),
-                 transport_param(target_transport_index, repository, tag)])
-
-        # questionable.. repo is for example palusus/alpine..
-        # tried to pull this to local "docker-daemon"..
-        # it got pulled to docker.io/palusus/alpine instead
+        run_cmd(["skopeo",
+                 "copy",
+                 transport_param(source_transport_index, self.name, self.tag, path),
+                 transport_param(target_transport_index, repository, tag, path)])
 
         return DockerImage(repository, tag, pull_policy=DockerImagePullPolicy.NEVER)
 
