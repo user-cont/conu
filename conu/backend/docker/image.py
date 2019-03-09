@@ -222,7 +222,9 @@ class DockerImage(Image):
                                         self.name, error)
         return image
 
-    def copy(self, repository, tag="latest", source_transport_index=2, target_transport_index=2, path = None):
+    def copy(self, repository, tag="latest",
+             source_transport_index=2, target_transport_index=2,
+             source_path=None, target_path=None):
         """
         WIP
         Copy image to repository:tag
@@ -231,21 +233,25 @@ class DockerImage(Image):
         :param source_transport_index in transport list WIP. for testing
                 can I find this transport out from DockerImage instance? maybe useless param
         :param target_transport_index in tranposrts list WIP, for testing
+        :param source_path needed to specify for dir, docker-archive or oci transport
+        :param target_path needed to specify for dir, docker-archive or oci transport
         :return: the new DockerImage
 
-        transports = ["containers-storage:",
-                      "dir:",
-                      "docker://",
-                      "docker-archive",
-                      "docker-daemon:",
-                      "oci:",
-                      "ostree:"]
+        Arguments used for target transport:
+            0 container-storage: repository, [tag defaults to latest]
+            1 dir: path
+            2 docker:// repository, [tag defaults to latest]
+            3 docker-archive: path, [repository and tag - is only used when creating such a file
+                and it must not contain a digest
+            4 docker-daemon: repository, [tag]
+            5 oci: path, tag
+            6 ostree: not implemented yet
         """
 
         run_cmd(["skopeo",
                  "copy",
-                 transport_param(source_transport_index, self.name, self.tag, path),
-                 transport_param(target_transport_index, repository, tag, path)])
+                 transport_param(source_transport_index, self.name, self.tag, source_path),
+                 transport_param(target_transport_index, repository, tag, target_path)])
 
         return DockerImage(repository, tag, pull_policy=DockerImagePullPolicy.NEVER)
 
