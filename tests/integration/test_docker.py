@@ -37,6 +37,7 @@ from conu import \
     DockerImagePullPolicy, \
     Directory
 
+from conu.backend.docker.skopeo import Transport
 from six import string_types
 
 
@@ -48,6 +49,24 @@ from six import string_types
 ])
 def test_parse_reference(reference, result):
     assert parse_reference(reference) == result
+
+
+def test_copy(tmpdir):
+    with DockerBackend() as backend:
+        image = backend.ImageClass("docker.io/alpine",
+                                   tag="latest",
+                                   pull_policy=DockerImagePullPolicy.NEVER)
+        image2 = image.skopeo_pull()
+        image3 = image2.copy(target_transport=Transport.DIRECTORY, target_path=str(tmpdir))
+        image4 = image3.copy(source_path=str(tmpdir), target_transport=Transport.DOCKER_DAEMON, tag="weed")
+        image5 = image4.copy(target_transport=Transport.OCI, tag="oko", target_path=str(tmpdir))
+        with pytest.raises(ValueError):
+            image5.copy(target_transport=Transport.DIRECTORY)
+        with pytest.raises(ValueError):
+            missing_source_path = image5.copy("potato", target_transport=Transport.DOCKER_DAEMON)
+        image6 = image5.copy("potato", target_transport=Transport.DOCKER_DAEMON, source_path=str(tmpdir))
+        with pytest.raises(ValueError):
+            image6.copy(target_transport=Transport.OCI)
 
 
 def test_image():
