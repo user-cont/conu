@@ -132,6 +132,8 @@ class DockerImage(Image):
         self._inspect_data = None
         self.metadata = ImageMetadata()
 
+        self.transport = None
+
         if self.pull_policy == DockerImagePullPolicy.ALWAYS:
             logger.debug("pull policy set to 'always', pulling the image")
             self.pull()
@@ -222,6 +224,22 @@ class DockerImage(Image):
                                         self.name, error)
         return image
 
+    def mark_transport(self, transport):
+        self.transport = transport
+        return self
+
+    def skopeo_pull(self):
+        return self.copy(self.name, self.tag, Transport.DOCKER, Transport.DOCKER_DAEMON)\
+            .mark_transport(Transport.DOCKER_DAEMON)
+
+    def skopeo_push(self, repository, tag="latest"):
+        if not tag:
+            tag = self.tag
+        if not repository:
+            repository = self.name
+        return self.copy(repository, tag, Transport.DOCKER_DAEMON, Transport.DOCKER)\
+            .mark_transport(Transport.DOCKER)
+
     def copy(self, repository, tag="latest",
              source_transport=Transport.DOCKER,
              target_transport=Transport.DOCKER,
@@ -238,13 +256,16 @@ class DockerImage(Image):
         :return: the new DockerImage
 
         """
+        if not source_transport:
+            source_transport = self.transport if self.transport else Transport.DOCKER
 
         run_cmd(["skopeo",
                  "copy",
                  transport_param(source_transport, self.name, self.tag, source_path),
                  transport_param(target_transport, repository, tag, target_path)])
 
-        return DockerImage(repository, tag, pull_policy=DockerImagePullPolicy.NEVER)
+        return DockerImage(repository, tag, pull_policy=DockerImagePullPolicy.NEVER)\
+            .mark_transport(target_transport)
 
     def tag_image(self, repository=None, tag=None):
         """
