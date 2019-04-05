@@ -225,23 +225,31 @@ class DockerImage(Image):
         return image
 
     def mark_transport(self, transport):
+        """
+        :param transport: from where will be this image copied
+        :return: self
+        """
         self.transport = transport
         return self
 
     def skopeo_pull(self):
+        """
+        :return: pulled image
+        """
         return self.copy(self.name, self.tag, Transport.DOCKER, Transport.DOCKER_DAEMON)\
             .mark_transport(Transport.DOCKER_DAEMON)
 
-    def skopeo_push(self, repository, tag="latest"):
-        if not tag:
-            tag = self.tag
-        if not repository:
-            repository = self.name
+    def skopeo_push(self, repository=None, tag=None):
+        """
+        :param repository: repository to be pushed to
+        :param tag: tag
+        :return: pushed image
+        """
         return self.copy(repository, tag, Transport.DOCKER_DAEMON, Transport.DOCKER)\
             .mark_transport(Transport.DOCKER)
 
-    def copy(self, repository, tag="latest",
-             source_transport=Transport.DOCKER,
+    def copy(self, repository=None, tag=None,
+             source_transport=None,
              target_transport=Transport.DOCKER,
              source_path=None, target_path=None):
         """
@@ -256,8 +264,12 @@ class DockerImage(Image):
         :return: the new DockerImage
 
         """
+        if not repository:
+            repository = self.name
         if not source_transport:
             source_transport = self.transport if self.transport else Transport.DOCKER
+        if not tag:
+            tag = self.tag if self.tag else "latest"  # keep "latest" ?
 
         run_cmd(["skopeo",
                  "copy",

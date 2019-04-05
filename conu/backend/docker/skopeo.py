@@ -2,6 +2,10 @@ import enum
 
 
 class Transport(enum.Enum):
+    """
+    This enum defines transports for skopeo.
+    ...
+    """
     CONTAINERS_STORAGE = 0
     DIRECTORY = 1
     DOCKER = 2
@@ -40,7 +44,8 @@ def transport_param(transport, repository, tag, path=None):
         if repository is None:
             return command
         command += ":"
-    if transport in [Transport.CONTAINERS_STORAGE, Transport.DOCKER, Transport.DOCKER_ARCHIVE, transport.DOCKER_DAEMON]:
+    if transport in [Transport.CONTAINERS_STORAGE, Transport.DOCKER,
+                     Transport.DOCKER_ARCHIVE, transport.DOCKER_DAEMON]:
         return command + repository + ":" + tag
     if transport == Transport.OCI:
         return command + path + ":" + tag
