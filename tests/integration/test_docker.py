@@ -63,7 +63,7 @@ def test_copy(tmpdir):
         with pytest.raises(ValueError):
             image5.copy(target_transport=Transport.DIRECTORY)
         with pytest.raises(ValueError):
-            missing_source_path = image5.copy("potato", target_transport=Transport.DOCKER_DAEMON)
+            image5.copy("potato", target_transport=Transport.DOCKER_DAEMON)
         image6 = image5.copy("potato", target_transport=Transport.DOCKER_DAEMON, source_path=str(tmpdir))
         with pytest.raises(ValueError):
             image6.copy(target_transport=Transport.OCI)

@@ -1,7 +1,8 @@
-import enum
+from enum import Enum
+from conu.exceptions import ConuException
 
 
-class Transport(enum.Enum):
+class Transport(Enum):
     """
     This enum defines transports for skopeo.
     ...
@@ -24,7 +25,7 @@ def transport_param(transport, repository, tag, path=None):
     :param path: required for dir and docker-archive transports
     :return: string. skopeo parameter specifying image
     """
-    transports = {Transport.CONTAINERS_STORAGE:"containers-storage:",
+    transports = {Transport.CONTAINERS_STORAGE: "containers-storage:",
                   Transport.DIRECTORY: "dir:",
                   Transport.DOCKER: "docker://",
                   Transport.DOCKER_ARCHIVE: "docker-archive",
@@ -33,8 +34,8 @@ def transport_param(transport, repository, tag, path=None):
                   Transport.OSTREE: "ostree:"}
 
     command = transports[transport]
-    path_needing = [Transport.DIRECTORY, Transport.DOCKER_ARCHIVE, Transport.OCI]
-    if transport in path_needing and path is None:
+    path_required = [Transport.DIRECTORY, Transport.DOCKER_ARCHIVE, Transport.OCI]
+    if transport in path_required and path is None:
         raise ValueError(transports[transport] + " path is required to be specified")
 
     if transport == Transport.DIRECTORY:
@@ -50,4 +51,8 @@ def transport_param(transport, repository, tag, path=None):
     if transport == Transport.OCI:
         return command + path + ":" + tag
 
-    raise NotImplementedError(transports[transport] + "transport is not implemented yet")
+    if transport in transports:
+        # Temporary until OSTREE I implement OSTREE implemented, should be supported
+        raise NotImplementedError(transports[transport] + "transport is not implemented yet")
+
+    raise ConuException("This transport is not supported")
