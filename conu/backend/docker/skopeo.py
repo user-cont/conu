@@ -52,7 +52,7 @@ def transport_param(transport, repository, tag, path=None):
         return command + path + ":" + tag
 
     if transport in transports:
-        # Temporary until OSTREE I implement OSTREE implemented, should be supported
+        # Temporary until I implement OSTREE, it should be supported
         raise NotImplementedError(transports[transport] + "transport is not implemented yet")
 
     raise ConuException("This transport is not supported")
