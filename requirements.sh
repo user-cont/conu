@@ -23,5 +23,6 @@ if [ -f /bin/dnf ]; then
         python3-pyxattr \
         gcc python3-devel \
         nmap-ncat \
-        podman
+        podman \
+        skopeo
 fi
