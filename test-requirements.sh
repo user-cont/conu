@@ -13,7 +13,7 @@ if [ "${NAME}" == "Fedora" ]; then
 elif [ "${NAME}" == "CentOS Linux" ]; then
     yum install -y docker make podman rpm-build
 fi
-
+pip3 install --user flexmock
 setenforce 0
 systemctl stop firewalld # firewall on CentOS does not allow docker login into OpenShift registry
 systemctl start docker

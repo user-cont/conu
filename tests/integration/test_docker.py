@@ -23,6 +23,8 @@ import time
 import docker.errors
 import pytest
 
+from flexmock import flexmock
+
 from conu.backend.docker.backend import parse_reference
 from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, \
     FEDORA_REPOSITORY
@@ -59,9 +61,14 @@ def test_copy(tmpdir):
         image2 = image.skopeo_pull()
         image3 = image2.copy(target_transport=Transport.DIRECTORY, target_path=str(tmpdir))
         image4 = image3.copy(source_path=str(tmpdir), target_transport=Transport.DOCKER_DAEMON, tag="weed")
+        (flexmock(image4, skopeo_push=lambda: "pushed_image")
+         .should_receive("skopeo_push").with_args("your_repo/alpine")
+         .and_return("pushed_image"))
+        # (flexmock(image4).should_receive("push")
+        # .and_raise(ConuException, "Requested access to the resource is denied"))
         image5 = image4.copy(target_transport=Transport.OCI, tag="oko", target_path=str(tmpdir))
         with pytest.raises(ValueError):
-            image5.copy(target_transport=Transport.DIRECTORY)
+            image5.copy(target_transport=Transport)
         with pytest.raises(ValueError):
             image5.copy("potato", target_transport=Transport.DOCKER_DAEMON)
         image6 = image5.copy("potato", target_transport=Transport.DOCKER_DAEMON, source_path=str(tmpdir))
