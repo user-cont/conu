@@ -68,7 +68,7 @@ def test_copy(tmpdir):
         # .and_raise(ConuException, "Requested access to the resource is denied"))
         image5 = image4.copy(target_transport=Transport.OCI, tag="oko", target_path=str(tmpdir))
         with pytest.raises(ValueError):
-            image5.copy(target_transport=Transport)
+            image5.copy(target_transport=Transport.DIRECTORY)
         with pytest.raises(ValueError):
             image5.copy("potato", target_transport=Transport.DOCKER_DAEMON)
         image6 = image5.copy("potato", target_transport=Transport.DOCKER_DAEMON, source_path=str(tmpdir))
