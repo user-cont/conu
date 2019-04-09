@@ -1,3 +1,7 @@
+"""
+Wrapping skopeo's functionality
+"""
+
 from enum import Enum
 from conu.exceptions import ConuException
 
@@ -17,8 +21,8 @@ class Transport(Enum):
 
 
 def transport_param(image):
-    """
-    Parses DockerImage info into skopeo parameter
+    """ WIP: Parse DockerImage info into skopeo parameter
+
     :param image: DockerImage
     :return: string. skopeo parameter specifying image
     """

@@ -74,12 +74,16 @@ def test_copy(tmpdir):
                                    tag="latest",
                                    pull_policy=DockerImagePullPolicy.NEVER)
         image2 = image.skopeo_pull()
+        assert image2.transport == Transport.DOCKER_DAEMON
         image3 = image2.copy(target_transport=Transport.DIRECTORY, target_path=str(tmpdir))
+        assert "Config" in image3.inspect()
         image4 = image3.copy(source_path=str(tmpdir), target_transport=Transport.DOCKER_DAEMON, tag="weed")
         # does next line even work? :D
         (flexmock(image4).should_receive("skopeo_push")
          .and_raise(ConuException, "There was and error while copying repository", image4.name))
         image5 = image4.copy(target_transport=Transport.OCI, tag="3.7", target_path=str(tmpdir))
+        assert image5.path == str(tmpdir), "copied image did not remember it's path"
+        assert "alpine" in image.get_full_name()
         # TODO remove image2 from DOCKER-DAEMON
         image5.save_to(image2)
         image5.copy("himalaya", target_transport=Transport.DOCKER_DAEMON, source_path=str(tmpdir))

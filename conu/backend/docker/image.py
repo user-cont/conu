@@ -242,24 +242,36 @@ class DockerImage(Image):
         return self
 
     def save_to(self, image):
+        """ Save this image to another DockerImage
+
+        :param image: DockerImage
+        :return:
+        """
         if not isinstance(image, self.__class__):
             raise ConuException("Invalid target image type", type(image))
         self.copy(image.name, image.tag, target_transport=image.transport, target_path=image.path)
 
     def load_from(self, image):
+        """ Load from another DockerImage to this one
+
+        :param image:
+        :return:
+        """
         if not isinstance(image, self.__class__):
             raise ConuException("Invalid source image type", type(image))
         image.save_to(self)
 
     def skopeo_pull(self):
-        """
+        """ Pull image from Docker to local Docker daemon using skopeo
+
         :return: pulled image
         """
         return self.copy(self.name, self.tag, Transport.DOCKER, Transport.DOCKER_DAEMON)\
             .set_transport(Transport.DOCKER_DAEMON)
 
     def skopeo_push(self, repository=None, tag=None):
-        """
+        """ Push image from Docker daemon to Docker using skopeo
+
         :param repository: repository to be pushed to
         :param tag: tag
         :return: pushed image
@@ -271,9 +283,8 @@ class DockerImage(Image):
              source_transport=None,
              target_transport=Transport.DOCKER,
              source_path=None, target_path=None):
-        """
-        WIP
-        Copy image to repository:tag
+        """ Copy this image
+
         :param repository to be copied to
         :param tag
         :param source_transport Transport
@@ -281,7 +292,6 @@ class DockerImage(Image):
         :param source_path needed to specify for dir, docker-archive or oci transport
         :param target_path needed to specify for dir, docker-archive or oci transport
         :return: the new DockerImage
-
         """
         if not repository:
             repository = self.name
@@ -410,7 +420,7 @@ class DockerImage(Image):
             additional_opts = additional_opts or []
 
             if (isinstance(command, list) or isinstance(command, tuple) and
-                isinstance(additional_opts, list) or isinstance(additional_opts, tuple)):
+                    isinstance(additional_opts, list) or isinstance(additional_opts, tuple)):
                 run_command_instance = DockerRunBuilder(
                     command=command, additional_opts=additional_opts)
             else:
@@ -486,7 +496,7 @@ class DockerImage(Image):
             additional_opts = additional_opts or []
 
             if (isinstance(command, list) or isinstance(command, tuple) and
-                isinstance(additional_opts, list) or isinstance(additional_opts, tuple)):
+                    isinstance(additional_opts, list) or isinstance(additional_opts, tuple)):
                 run_command_instance = DockerRunBuilder(
                     command=command, additional_opts=additional_opts)
             else:
