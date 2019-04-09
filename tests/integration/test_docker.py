@@ -53,6 +53,21 @@ def test_parse_reference(reference, result):
     assert parse_reference(reference) == result
 
 
+def test_skopeo_pull_push():
+    with DockerBackend() as backend:
+        image = backend.ImageClass("docker.io/alpine",
+                                   tag="latest",
+                                   pull_policy=DockerImagePullPolicy.NEVER)
+        pulled = image.skopeo_pull()
+
+        with pytest.raises(ConuException):
+            pulled.skopeo_push()
+
+        (flexmock(pulled, skopeo_push=lambda: "pushed_image")
+         .should_receive("skopeo_push").with_args("your_repo/alpine")
+         .and_return("pushed_image"))
+
+
 def test_copy(tmpdir):
     with DockerBackend() as backend:
         image = backend.ImageClass("docker.io/alpine",
@@ -61,17 +76,15 @@ def test_copy(tmpdir):
         image2 = image.skopeo_pull()
         image3 = image2.copy(target_transport=Transport.DIRECTORY, target_path=str(tmpdir))
         image4 = image3.copy(source_path=str(tmpdir), target_transport=Transport.DOCKER_DAEMON, tag="weed")
-        (flexmock(image4, skopeo_push=lambda: "pushed_image")
-         .should_receive("skopeo_push").with_args("your_repo/alpine")
-         .and_return("pushed_image"))
-        (flexmock(image4).should_receive("push")
+        # does next line even work? :D
+        (flexmock(image4).should_receive("skopeo_push")
          .and_raise(ConuException, "There was and error while copying repository", image4.name))
-        image5 = image4.copy(target_transport=Transport.OCI, tag="oko", target_path=str(tmpdir))
+        image5 = image4.copy(target_transport=Transport.OCI, tag="3.7", target_path=str(tmpdir))
         with pytest.raises(ValueError):
             image5.copy(target_transport=Transport.DIRECTORY)
         with pytest.raises(ValueError):
-            image5.copy("potato", target_transport=Transport.DOCKER_DAEMON)
-        image6 = image5.copy("potato", target_transport=Transport.DOCKER_DAEMON, source_path=str(tmpdir))
+            image5.copy("", target_transport=Transport.DOCKER_DAEMON)
+        image6 = image5.copy("himalaya", target_transport=Transport.DOCKER_DAEMON, source_path=str(tmpdir))
         with pytest.raises(ValueError):
             image6.copy(target_transport=Transport.OCI)
 
