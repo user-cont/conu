@@ -271,13 +271,16 @@ class DockerImage(Image):
         if not tag:
             tag = self.tag if self.tag else "latest"  # keep "latest" ?
 
-        run_cmd(["skopeo",
-                 "copy",
-                 transport_param(source_transport, self.name, self.tag, source_path),
-                 transport_param(target_transport, repository, tag, target_path)])
+        return_code = run_cmd(["skopeo", "copy",
+                               transport_param(source_transport, self.name, self.tag, source_path),
+                               transport_param(target_transport, repository, tag, target_path)],
+                              ignore_status=True)
 
-        return DockerImage(repository, tag, pull_policy=DockerImagePullPolicy.NEVER)\
-            .mark_transport(target_transport)
+        if return_code:
+            raise ConuException("There was an error while copying repository", self.name)
+
+        return (DockerImage(repository, tag, pull_policy=DockerImagePullPolicy.NEVER)
+                .mark_transport(target_transport))
 
     def tag_image(self, repository=None, tag=None):
         """

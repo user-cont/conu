@@ -64,8 +64,8 @@ def test_copy(tmpdir):
         (flexmock(image4, skopeo_push=lambda: "pushed_image")
          .should_receive("skopeo_push").with_args("your_repo/alpine")
          .and_return("pushed_image"))
-        # (flexmock(image4).should_receive("push")
-        # .and_raise(ConuException, "Requested access to the resource is denied"))
+        (flexmock(image4).should_receive("push")
+         .and_raise(ConuException, "There was and error while copying repository", image4.name))
         image5 = image4.copy(target_transport=Transport.OCI, tag="oko", target_path=str(tmpdir))
         with pytest.raises(ValueError):
             image5.copy(target_transport=Transport.DIRECTORY)
