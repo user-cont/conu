@@ -133,6 +133,7 @@ class DockerImage(Image):
         self.metadata = ImageMetadata()
 
         self.transport = None
+        self.path = None
 
         if self.pull_policy == DockerImagePullPolicy.ALWAYS:
             logger.debug("pull policy set to 'always', pulling the image")
@@ -224,20 +225,32 @@ class DockerImage(Image):
                                         self.name, error)
         return image
 
-    def mark_transport(self, transport):
+    def set_transport(self, transport=None, path=None):
         """
         :param transport: from where will be this image copied
+        :param path in filesystem
         :return: self
         """
+        if not transport:
+            return self
+        path_required = [Transport.DIRECTORY, Transport.DOCKER_ARCHIVE, Transport.OCI]
+        if transport in path_required:
+            self.path = self.mount(path).mount_point
         self.transport = transport
         return self
+
+    def save_to(self, image):
+        pass
+
+    def load_from(self, image):
+        pass
 
     def skopeo_pull(self):
         """
         :return: pulled image
         """
         return self.copy(self.name, self.tag, Transport.DOCKER, Transport.DOCKER_DAEMON)\
-            .mark_transport(Transport.DOCKER_DAEMON)
+            .set_transport(Transport.DOCKER_DAEMON)
 
     def skopeo_push(self, repository=None, tag=None):
         """
@@ -246,7 +259,7 @@ class DockerImage(Image):
         :return: pushed image
         """
         return self.copy(repository, tag, Transport.DOCKER_DAEMON, Transport.DOCKER)\
-            .mark_transport(Transport.DOCKER)
+            .set_transport(Transport.DOCKER)
 
     def copy(self, repository=None, tag=None,
              source_transport=None,
@@ -266,21 +279,28 @@ class DockerImage(Image):
         """
         if not repository:
             repository = self.name
+        if not tag:
+            tag = self.tag if self.tag else "latest"
+        target = (DockerImage(repository, tag, pull_policy=DockerImagePullPolicy.NEVER)
+                  .set_transport(target_transport, target_path))
+        self.set_transport(source_transport, source_path)
+
+        '''if not repository:
+            repository = self.name
         if not source_transport:
             source_transport = self.transport if self.transport else Transport.DOCKER
         if not tag:
-            tag = self.tag if self.tag else "latest"  # keep "latest" ?
+            tag = self.tag if self.tag else "latest"  # keep "latest" ?'''
 
         return_code = run_cmd(["skopeo", "copy",
-                               transport_param(source_transport, self.name, self.tag, source_path),
-                               transport_param(target_transport, repository, tag, target_path)],
+                               transport_param(self),
+                               transport_param(target)],
                               ignore_status=True)
 
         if return_code:
             raise ConuException("There was an error while copying repository", self.name)
 
-        return (DockerImage(repository, tag, pull_policy=DockerImagePullPolicy.NEVER)
-                .mark_transport(target_transport))
+        return target
 
     def tag_image(self, repository=None, tag=None):
         """

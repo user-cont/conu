@@ -80,13 +80,7 @@ def test_copy(tmpdir):
         (flexmock(image4).should_receive("skopeo_push")
          .and_raise(ConuException, "There was and error while copying repository", image4.name))
         image5 = image4.copy(target_transport=Transport.OCI, tag="3.7", target_path=str(tmpdir))
-        with pytest.raises(ValueError):
-            image5.copy(target_transport=Transport.DIRECTORY)
-        with pytest.raises(ValueError):
-            image5.copy("", target_transport=Transport.DOCKER_DAEMON)
-        image6 = image5.copy("himalaya", target_transport=Transport.DOCKER_DAEMON, source_path=str(tmpdir))
-        with pytest.raises(ValueError):
-            image6.copy(target_transport=Transport.OCI)
+        image5.copy("himalaya", target_transport=Transport.DOCKER_DAEMON, source_path=str(tmpdir))
 
 
 def test_image():

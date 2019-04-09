@@ -16,7 +16,7 @@ class Transport(Enum):
     OSTREE = 6
 
 
-def transport_param(transport, repository, tag, path=None):
+def transport_param(image):
     """
     Parses info into skopeo parameter
     :param transport: Transport value
@@ -32,7 +32,13 @@ def transport_param(transport, repository, tag, path=None):
                   Transport.DOCKER_DAEMON: "docker-daemon:",
                   Transport.OCI: "oci:",
                   Transport.OSTREE: "ostree:"}
+    transport = image.transport
+    tag = image.tag
+    repository = image.name
+    path = image.path
 
+    if not transport:
+        transport = Transport.DOCKER
     command = transports[transport]
     path_required = [Transport.DIRECTORY, Transport.DOCKER_ARCHIVE, Transport.OCI]
     if transport in path_required and path is None:
