@@ -18,11 +18,8 @@ class Transport(Enum):
 
 def transport_param(image):
     """
-    Parses info into skopeo parameter
-    :param transport: Transport value
-    :param repository: docker repository
-    :param tag: docker repo tag
-    :param path: required for dir and docker-archive transports
+    Parses DockerImage info into skopeo parameter
+    :param image: DockerImage
     :return: string. skopeo parameter specifying image
     """
     transports = {Transport.CONTAINERS_STORAGE: "containers-storage:",
@@ -32,6 +29,7 @@ def transport_param(image):
                   Transport.DOCKER_DAEMON: "docker-daemon:",
                   Transport.OCI: "oci:",
                   Transport.OSTREE: "ostree:"}
+
     transport = image.transport
     tag = image.tag
     repository = image.name
@@ -40,6 +38,7 @@ def transport_param(image):
     if not transport:
         transport = Transport.DOCKER
     command = transports[transport]
+
     path_required = [Transport.DIRECTORY, Transport.DOCKER_ARCHIVE, Transport.OCI]
     if transport in path_required and path is None:
         raise ValueError(transports[transport] + " path is required to be specified")

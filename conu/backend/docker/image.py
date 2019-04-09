@@ -233,6 +233,8 @@ class DockerImage(Image):
         """
         if not transport:
             return self
+        if self.transport == transport and self.path == path:
+            return self
         path_required = [Transport.DIRECTORY, Transport.DOCKER_ARCHIVE, Transport.OCI]
         if transport in path_required:
             self.path = self.mount(path).mount_point
@@ -240,10 +242,14 @@ class DockerImage(Image):
         return self
 
     def save_to(self, image):
-        pass
+        if not isinstance(image, self.__class__):
+            raise ConuException("Invalid target image type", type(image))
+        self.copy(image.name, image.tag, target_transport=image.transport, target_path=image.path)
 
     def load_from(self, image):
-        pass
+        if not isinstance(image, self.__class__):
+            raise ConuException("Invalid source image type", type(image))
+        image.save_to(self)
 
     def skopeo_pull(self):
         """
@@ -284,13 +290,6 @@ class DockerImage(Image):
         target = (DockerImage(repository, tag, pull_policy=DockerImagePullPolicy.NEVER)
                   .set_transport(target_transport, target_path))
         self.set_transport(source_transport, source_path)
-
-        '''if not repository:
-            repository = self.name
-        if not source_transport:
-            source_transport = self.transport if self.transport else Transport.DOCKER
-        if not tag:
-            tag = self.tag if self.tag else "latest"  # keep "latest" ?'''
 
         return_code = run_cmd(["skopeo", "copy",
                                transport_param(self),
