@@ -23,6 +23,8 @@ import time
 import docker.errors
 import pytest
 
+from conu.utils import run_cmd
+
 from flexmock import flexmock
 
 from conu.backend.docker.backend import parse_reference
@@ -59,6 +61,7 @@ def test_skopeo_pull_push():
                                    tag="latest",
                                    pull_policy=DockerImagePullPolicy.NEVER)
         pulled = image.skopeo_pull()
+        assert pulled.is_present()
 
         with pytest.raises(ConuException):
             pulled.skopeo_push()
@@ -84,9 +87,23 @@ def test_copy(tmpdir):
         image5 = image4.copy(target_transport=Transport.OCI, tag="3.7", target_path=str(tmpdir))
         assert image5.path == str(tmpdir), "copied image did not remember it's path"
         assert "alpine" in image.get_full_name()
-        # TODO remove image2 from DOCKER-DAEMON
+        assert image2.is_present()
+        image2.rmi(True, True)
+        assert not image2.is_present()
         image5.save_to(image2)
-        image5.copy("himalaya", target_transport=Transport.DOCKER_DAEMON, source_path=str(tmpdir))
+        assert image2.is_present()
+        image6 = image5.copy(target_transport=Transport.DOCKER_DAEMON)
+
+        assert image6.is_present()
+        assert image2.is_present()
+        yay = image5.copy("himalaya", target_transport=Transport.DOCKER_DAEMON, source_path=str(tmpdir))
+        assert yay.is_present()
+
+        '''osrepo = str(tmpdir.realpath())+"/ostree"
+        os.mkdir(osrepo)
+        run_cmd("ostree", "init", "--mode=bare-user", "--repo="+osrepo)
+        image7 = image5.copy(target_transport=Transport.OSTREE, target_path=osrepo)
+        assert image7.is_present()'''
 
 
 def test_image():

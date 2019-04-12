@@ -238,6 +238,13 @@ class DockerImage(Image):
         path_required = [Transport.DIRECTORY, Transport.DOCKER_ARCHIVE, Transport.OCI]
         if transport in path_required:
             self.path = self.mount(path).mount_point
+        elif transport == Transport.OSTREE:
+            if path and not os.path.isabs(path):
+                raise ConuException("Path '", path, "' for OSTree transport is not absolute")
+            self.path = path
+        else:
+            self.path = None
+
         self.transport = transport
         return self
 

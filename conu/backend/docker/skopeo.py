@@ -59,9 +59,7 @@ def transport_param(image):
         return command + repository + ":" + tag
     if transport == Transport.OCI:
         return command + path + ":" + tag
-
-    if transport in transports:
-        # Temporary until I implement OSTREE, it should be supported
-        raise NotImplementedError(transports[transport] + "transport is not implemented yet")
+    if transport == Transport.OSTREE:
+        return command + repository + ("@" + path if path else "")
 
     raise ConuException("This transport is not supported")
