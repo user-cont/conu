@@ -132,7 +132,8 @@ class DockerImage(Image):
         self._inspect_data = None
         self.metadata = ImageMetadata()
 
-        self.transport = None
+        self.transport = Transport.DOCKER if pull_policy == DockerImagePullPolicy.NEVER \
+            else Transport.DOCKER_DAEMON
         self.path = None
 
         if self.pull_policy == DockerImagePullPolicy.ALWAYS:

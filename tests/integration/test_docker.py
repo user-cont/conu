@@ -23,8 +23,6 @@ import time
 import docker.errors
 import pytest
 
-from conu.utils import run_cmd
-
 from flexmock import flexmock
 
 from conu.backend.docker.backend import parse_reference
@@ -72,6 +70,10 @@ def test_skopeo_pull_push():
 
 
 def test_copy(tmpdir):
+    """
+    Tests of image copy trough various Transports
+    :param tmpdir:
+    """
     with DockerBackend() as backend:
         image = backend.ImageClass("docker.io/alpine",
                                    tag="latest",
@@ -98,12 +100,6 @@ def test_copy(tmpdir):
         assert image2.is_present()
         yay = image5.copy("himalaya", target_transport=Transport.DOCKER_DAEMON, source_path=str(tmpdir))
         assert yay.is_present()
-
-        '''osrepo = str(tmpdir.realpath())+"/ostree"
-        os.mkdir(osrepo)
-        run_cmd("ostree", "init", "--mode=bare-user", "--repo="+osrepo)
-        image7 = image5.copy(target_transport=Transport.OSTREE, target_path=osrepo)
-        assert image7.is_present()'''
 
 
 def test_image():
