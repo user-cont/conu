@@ -309,13 +309,12 @@ class DockerImage(Image):
                   .set_transport(target_transport, target_path))
         self.set_transport(source_transport, source_path)
 
-        return_code = run_cmd(["skopeo", "copy",
-                               transport_param(self),
-                               transport_param(target)],
-                              ignore_status=True)
-
-        if return_code:
-            raise ConuException("There was an error while copying repository", self.name)
+        try:
+            run_cmd(["skopeo", "copy",
+                     transport_param(self),
+                     transport_param(target)])
+        except subprocess.CalledProcessError as SubError:
+            raise ConuException("There was an error while copying repository", self.name) from SubError
 
         return target
 
