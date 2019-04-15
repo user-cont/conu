@@ -38,7 +38,7 @@ from conu.backend.docker.client import get_client
 from conu.backend.docker.container import DockerContainer, DockerRunBuilder
 from conu.backend.docker.container_parameters import DockerContainerParameters
 from conu.backend.docker.utils import inspect_to_metadata
-from conu.backend.docker.skopeo import transport_param, Transport
+from conu.backend.docker.skopeo import transport_param, SkopeoTransport
 from conu.exceptions import ConuException
 from conu.utils import run_cmd, random_tmp_filename, s2i_command_exists, \
     graceful_get, export_docker_container_to_directory
@@ -132,8 +132,8 @@ class DockerImage(Image):
         self._inspect_data = None
         self.metadata = ImageMetadata()
 
-        self.transport = Transport.DOCKER if pull_policy == DockerImagePullPolicy.NEVER \
-            else Transport.DOCKER_DAEMON
+        self.transport = SkopeoTransport.DOCKER if pull_policy == DockerImagePullPolicy.NEVER \
+            else SkopeoTransport.DOCKER_DAEMON
         self.path = None
 
         if self.pull_policy == DockerImagePullPolicy.ALWAYS:
@@ -236,10 +236,10 @@ class DockerImage(Image):
             return self
         if self.transport == transport and self.path == path:
             return self
-        path_required = [Transport.DIRECTORY, Transport.DOCKER_ARCHIVE, Transport.OCI]
+        path_required = [SkopeoTransport.DIRECTORY, SkopeoTransport.DOCKER_ARCHIVE, SkopeoTransport.OCI]
         if transport in path_required:
             self.path = self.mount(path).mount_point
-        elif transport == Transport.OSTREE:
+        elif transport == SkopeoTransport.OSTREE:
             if path and not os.path.isabs(path):
                 raise ConuException("Path '", path, "' for OSTree transport is not absolute")
             self.path = path
@@ -274,8 +274,8 @@ class DockerImage(Image):
 
         :return: pulled image
         """
-        return self.copy(self.name, self.tag, Transport.DOCKER, Transport.DOCKER_DAEMON)\
-            .set_transport(Transport.DOCKER_DAEMON)
+        return self.copy(self.name, self.tag, SkopeoTransport.DOCKER, SkopeoTransport.DOCKER_DAEMON)\
+            .set_transport(SkopeoTransport.DOCKER_DAEMON)
 
     def skopeo_push(self, repository=None, tag=None):
         """ Push image from Docker daemon to Docker using skopeo
@@ -284,12 +284,12 @@ class DockerImage(Image):
         :param tag: tag
         :return: pushed image
         """
-        return self.copy(repository, tag, Transport.DOCKER_DAEMON, Transport.DOCKER)\
-            .set_transport(Transport.DOCKER)
+        return self.copy(repository, tag, SkopeoTransport.DOCKER_DAEMON, SkopeoTransport.DOCKER)\
+            .set_transport(SkopeoTransport.DOCKER)
 
     def copy(self, repository=None, tag=None,
              source_transport=None,
-             target_transport=Transport.DOCKER,
+             target_transport=SkopeoTransport.DOCKER,
              source_path=None, target_path=None):
         """ Copy this image
 
