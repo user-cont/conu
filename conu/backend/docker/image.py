@@ -111,7 +111,8 @@ class DockerImage(Image):
     """
 
     def __init__(self, repository, tag="latest", identifier=None,
-                 pull_policy=DockerImagePullPolicy.IF_NOT_PRESENT):
+                 pull_policy=DockerImagePullPolicy.IF_NOT_PRESENT,
+                 transport=None, path=None):
         """
         :param repository: str, image name, examples: "fedora", "registry.fedoraproject.org/fedora",
                             "tomastomecek/sen", "docker.io/tomastomecek/sen"
@@ -226,7 +227,7 @@ class DockerImage(Image):
                                         self.name, error)
         return image
 
-    def set_transport(self, transport=None, path=None):
+    def using_transport(self, transport=None, path=None):
         """
         :param transport: from where will be this image copied
         :param path in filesystem
@@ -275,7 +276,7 @@ class DockerImage(Image):
         :return: pulled image
         """
         return self.copy(self.name, self.tag, SkopeoTransport.DOCKER, SkopeoTransport.DOCKER_DAEMON)\
-            .set_transport(SkopeoTransport.DOCKER_DAEMON)
+            .using_transport(SkopeoTransport.DOCKER_DAEMON)
 
     def skopeo_push(self, repository=None, tag=None):
         """ Push image from Docker daemon to Docker using skopeo
@@ -285,7 +286,7 @@ class DockerImage(Image):
         :return: pushed image
         """
         return self.copy(repository, tag, SkopeoTransport.DOCKER_DAEMON, SkopeoTransport.DOCKER)\
-            .set_transport(SkopeoTransport.DOCKER)
+            .using_transport(SkopeoTransport.DOCKER)
 
     def copy(self, repository=None, tag=None,
              source_transport=None,
@@ -306,15 +307,15 @@ class DockerImage(Image):
         if not tag:
             tag = self.tag if self.tag else "latest"
         target = (DockerImage(repository, tag, pull_policy=DockerImagePullPolicy.NEVER)
-                  .set_transport(target_transport, target_path))
-        self.set_transport(source_transport, source_path)
+                  .using_transport(target_transport, target_path))
+        self.using_transport(source_transport, source_path)
 
         try:
             run_cmd(["skopeo", "copy",
                      transport_param(self),
                      transport_param(target)])
-        except subprocess.CalledProcessError as SubError:
-            raise ConuException("There was an error while copying repository", self.name) from SubError
+        except subprocess.CalledProcessError:
+            raise ConuException("There was an error while copying repository", self.name)
 
         return target
 
