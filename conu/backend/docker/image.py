@@ -229,9 +229,11 @@ class DockerImage(Image):
         return image
 
     def using_transport(self, transport=None, path=None, logs=True):
-        """
+        """ change used transport
+
         :param transport: from where will be this image copied
         :param path in filesystem
+        :param logs enable/disable
         :return: self
         """
         if not transport:
@@ -270,7 +272,9 @@ class DockerImage(Image):
         """
         if not isinstance(image, self.__class__):
             raise ConuException("Invalid target image type", type(image))
-        self.copy(image.name, image.tag, target_transport=image.transport, target_path=image.path)
+        self.copy(image.name, image.tag,
+                  target_transport=image.transport, target_path=image.path,
+                  logs=False)
 
     def load_from(self, image):
         """ Load from another DockerImage to this one
@@ -287,7 +291,8 @@ class DockerImage(Image):
 
         :return: pulled image
         """
-        return self.copy(self.name, self.tag, SkopeoTransport.DOCKER, SkopeoTransport.DOCKER_DAEMON)\
+        return self.copy(self.name, self.tag,
+                         SkopeoTransport.DOCKER, SkopeoTransport.DOCKER_DAEMON)\
             .using_transport(SkopeoTransport.DOCKER_DAEMON)
 
     def skopeo_push(self, repository=None, tag=None):
@@ -303,7 +308,8 @@ class DockerImage(Image):
     def copy(self, repository=None, tag=None,
              source_transport=None,
              target_transport=SkopeoTransport.DOCKER,
-             source_path=None, target_path=None):
+             source_path=None, target_path=None,
+             logs=True):
         """ Copy this image
 
         :param repository to be copied to
@@ -318,6 +324,8 @@ class DockerImage(Image):
             repository = self.name
         if not tag:
             tag = self.tag if self.tag else "latest"
+        if target_transport == SkopeoTransport.OSTREE and tag and logs:
+            logging.warning("tag was ignored")
         target = (DockerImage(repository, tag, pull_policy=DockerImagePullPolicy.NEVER)
                   .using_transport(target_transport, target_path))
         self.using_transport(source_transport, source_path)
