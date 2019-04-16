@@ -200,6 +200,7 @@ class DockerImage(Image):
                 logger.error(status)
                 raise ConuException("There was an error while pulling the image %s: %s",
                                     self.name, error)
+        self.using_transport(SkopeoTransport.DOCKER_DAEMON)
 
     def push(self, repository=None, tag=None):
         """
@@ -227,7 +228,7 @@ class DockerImage(Image):
                                         self.name, error)
         return image
 
-    def using_transport(self, transport=None, path=None):
+    def using_transport(self, transport=None, path=None, logs=True):
         """
         :param transport: from where will be this image copied
         :param path in filesystem
@@ -235,16 +236,27 @@ class DockerImage(Image):
         """
         if not transport:
             return self
+
         if self.transport == transport and self.path == path:
             return self
-        path_required = [SkopeoTransport.DIRECTORY, SkopeoTransport.DOCKER_ARCHIVE, SkopeoTransport.OCI]
+
+        path_required = [SkopeoTransport.DIRECTORY,
+                         SkopeoTransport.DOCKER_ARCHIVE,
+                         SkopeoTransport.OCI]
+
         if transport in path_required:
+            if not path and logs:
+                logging.debug("path not provided, temporary path was used")
             self.path = self.mount(path).mount_point
         elif transport == SkopeoTransport.OSTREE:
             if path and not os.path.isabs(path):
                 raise ConuException("Path '", path, "' for OSTree transport is not absolute")
+            if not path and logs:
+                logging.debug("path not provided, default /ostree/repo path was used")
             self.path = path
         else:
+            if path and logs:
+                logging.warning("path '", path, "' was ignored!")
             self.path = None
 
         self.transport = transport
