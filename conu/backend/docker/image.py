@@ -111,8 +111,7 @@ class DockerImage(Image):
     """
 
     def __init__(self, repository, tag="latest", identifier=None,
-                 pull_policy=DockerImagePullPolicy.IF_NOT_PRESENT,
-                 transport=None, path=None):
+                 pull_policy=DockerImagePullPolicy.IF_NOT_PRESENT):
         """
         :param repository: str, image name, examples: "fedora", "registry.fedoraproject.org/fedora",
                             "tomastomecek/sen", "docker.io/tomastomecek/sen"
@@ -258,7 +257,7 @@ class DockerImage(Image):
             self.path = path
         else:
             if path and logs:
-                logging.warning("path '", path, "' was ignored!")
+                logging.warning("path '" + path + "' was ignored!")
             self.path = None
 
         self.transport = transport
