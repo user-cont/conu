@@ -257,7 +257,7 @@ class DockerImage(Image):
             self.path = path
         else:
             if path and logs:
-                logging.warning("path '" + path + "' was ignored!")
+                logging.warning("path %s was ignored!", path)
             self.path = None
 
         self.transport = transport
