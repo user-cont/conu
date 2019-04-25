@@ -318,6 +318,7 @@ class DockerImage(Image):
         :param target_transport Transport
         :param source_path needed to specify for dir, docker-archive or oci transport
         :param target_path needed to specify for dir, docker-archive or oci transport
+        :param logs enable/disable logs
         :return: the new DockerImage
         """
         if not repository:

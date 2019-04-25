@@ -21,7 +21,7 @@ class SkopeoTransport(Enum):
 
 
 def transport_param(image):
-    """ WIP: Parse DockerImage info into skopeo parameter
+    """ Parse DockerImage info into skopeo parameter
 
     :param image: DockerImage
     :return: string. skopeo parameter specifying image
