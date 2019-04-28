@@ -23,6 +23,8 @@ import time
 import docker.errors
 import pytest
 
+from flexmock import flexmock
+
 from conu.backend.docker.backend import parse_reference
 from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, \
     FEDORA_REPOSITORY
@@ -37,6 +39,7 @@ from conu import \
     DockerImagePullPolicy, \
     Directory
 
+from conu.backend.docker.skopeo import SkopeoTransport
 from six import string_types
 
 
@@ -48,6 +51,80 @@ from six import string_types
 ])
 def test_parse_reference(reference, result):
     assert parse_reference(reference) == result
+
+
+def test_copy_basic(tmpdir):
+    """
+    Tests if copy does something
+    :param tmpdir:
+    """
+    with DockerBackend() as backend:
+        image = backend.ImageClass("docker.io/alpine",
+                                   tag="latest",
+                                   pull_policy=DockerImagePullPolicy.NEVER)
+        assert "alpine" in image.get_full_name()
+        image2 = image.skopeo_pull()
+        assert image2.is_present()
+        assert image2.transport == SkopeoTransport.DOCKER_DAEMON
+        assert "Config" in image2.inspect()
+
+
+def test_skopeo_pull_push():
+    """
+    test pulling with skope and if push call is not invalid
+    """
+    with DockerBackend() as backend:
+        image = backend.ImageClass("docker.io/alpine",
+                                   tag="latest",
+                                   pull_policy=DockerImagePullPolicy.NEVER)
+        pulled = image.skopeo_pull()
+        assert pulled.is_present()
+
+        with pytest.raises(ConuException):
+            pulled.skopeo_push()
+
+        (flexmock(pulled, skopeo_push=lambda: "pushed_image")
+         .should_receive("skopeo_push").with_args("your_repo/alpine")
+         .and_return("pushed_image"))
+
+
+def test_copy_transports(tmpdir):
+    """
+    Tests copying trough different transports
+    :param tmpdir:
+    """
+    with DockerBackend() as backend:
+        image = backend.ImageClass("docker.io/alpine",
+                                   tag="latest",
+                                   pull_policy=DockerImagePullPolicy.NEVER)
+
+        image2 = image.copy(target_transport=SkopeoTransport.DIRECTORY, target_path=str(tmpdir))
+        image3 = image2.copy(source_path=str(tmpdir), target_transport=SkopeoTransport.DOCKER_DAEMON, tag="oldest")
+        (flexmock(image3).should_receive("skopeo_push")
+         .and_raise(ConuException, "There was and error while copying repository", image3.name))
+        image4 = image3.copy(target_transport=SkopeoTransport.DOCKER_DAEMON)
+        assert image4.is_present()
+        yay = image3.copy("himalaya", target_transport=SkopeoTransport.DOCKER_DAEMON, source_path=str(tmpdir))
+        assert yay.is_present()
+
+
+def test_copy_save(tmpdir):
+    """
+    Tries to pull image, then remove it, and the pull it again, but with save_to
+    check if save_to actually saves the object
+    """
+    with DockerBackend() as backend:
+        image = backend.ImageClass("docker.io/alpine",
+                                   tag="latest",
+                                   pull_policy=DockerImagePullPolicy.IF_NOT_PRESENT)
+        assert image.is_present()
+        image_oci = image.copy(target_transport=SkopeoTransport.OCI, tag="3.7", target_path=str(tmpdir))
+        assert image_oci.path == str(tmpdir), "copied image did not remember it's path"
+        image.rmi(True, True)
+        assert not image.is_present()
+
+        image_oci.save_to(image)
+        assert image.is_present()
 
 
 def test_image():

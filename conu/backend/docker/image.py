@@ -38,6 +38,7 @@ from conu.backend.docker.client import get_client
 from conu.backend.docker.container import DockerContainer, DockerRunBuilder
 from conu.backend.docker.container_parameters import DockerContainerParameters
 from conu.backend.docker.utils import inspect_to_metadata
+from conu.backend.docker.skopeo import transport_param, SkopeoTransport
 from conu.exceptions import ConuException
 from conu.utils import run_cmd, random_tmp_filename, s2i_command_exists, \
     graceful_get, export_docker_container_to_directory
@@ -131,6 +132,10 @@ class DockerImage(Image):
         self._inspect_data = None
         self.metadata = ImageMetadata()
 
+        self.transport = SkopeoTransport.DOCKER if pull_policy == DockerImagePullPolicy.NEVER \
+            else SkopeoTransport.DOCKER_DAEMON
+        self.path = None
+
         if self.pull_policy == DockerImagePullPolicy.ALWAYS:
             logger.debug("pull policy set to 'always', pulling the image")
             self.pull()
@@ -194,6 +199,7 @@ class DockerImage(Image):
                 logger.error(status)
                 raise ConuException("There was an error while pulling the image %s: %s",
                                     self.name, error)
+        self.using_transport(SkopeoTransport.DOCKER_DAEMON)
 
     def push(self, repository=None, tag=None):
         """
@@ -220,6 +226,118 @@ class DockerImage(Image):
                     raise ConuException("There was an error while pushing the image %s: %s",
                                         self.name, error)
         return image
+
+    def using_transport(self, transport=None, path=None, logs=True):
+        """ change used transport
+
+        :param transport: from where will be this image copied
+        :param path in filesystem
+        :param logs enable/disable
+        :return: self
+        """
+        if not transport:
+            return self
+
+        if self.transport == transport and self.path == path:
+            return self
+
+        path_required = [SkopeoTransport.DIRECTORY,
+                         SkopeoTransport.DOCKER_ARCHIVE,
+                         SkopeoTransport.OCI]
+
+        if transport in path_required:
+            if not path and logs:
+                logging.debug("path not provided, temporary path was used")
+            self.path = self.mount(path).mount_point
+        elif transport == SkopeoTransport.OSTREE:
+            if path and not os.path.isabs(path):
+                raise ConuException("Path '", path, "' for OSTree transport is not absolute")
+            if not path and logs:
+                logging.debug("path not provided, default /ostree/repo path was used")
+            self.path = path
+        else:
+            if path and logs:
+                logging.warning("path %s was ignored!", path)
+            self.path = None
+
+        self.transport = transport
+        return self
+
+    def save_to(self, image):
+        """ Save this image to another DockerImage
+
+        :param image: DockerImage
+        :return:
+        """
+        if not isinstance(image, self.__class__):
+            raise ConuException("Invalid target image type", type(image))
+        self.copy(image.name, image.tag,
+                  target_transport=image.transport, target_path=image.path,
+                  logs=False)
+
+    def load_from(self, image):
+        """ Load from another DockerImage to this one
+
+        :param image:
+        :return:
+        """
+        if not isinstance(image, self.__class__):
+            raise ConuException("Invalid source image type", type(image))
+        image.save_to(self)
+
+    def skopeo_pull(self):
+        """ Pull image from Docker to local Docker daemon using skopeo
+
+        :return: pulled image
+        """
+        return self.copy(self.name, self.tag,
+                         SkopeoTransport.DOCKER, SkopeoTransport.DOCKER_DAEMON)\
+            .using_transport(SkopeoTransport.DOCKER_DAEMON)
+
+    def skopeo_push(self, repository=None, tag=None):
+        """ Push image from Docker daemon to Docker using skopeo
+
+        :param repository: repository to be pushed to
+        :param tag: tag
+        :return: pushed image
+        """
+        return self.copy(repository, tag, SkopeoTransport.DOCKER_DAEMON, SkopeoTransport.DOCKER)\
+            .using_transport(SkopeoTransport.DOCKER)
+
+    def copy(self, repository=None, tag=None,
+             source_transport=None,
+             target_transport=SkopeoTransport.DOCKER,
+             source_path=None, target_path=None,
+             logs=True):
+        """ Copy this image
+
+        :param repository to be copied to
+        :param tag
+        :param source_transport Transport
+        :param target_transport Transport
+        :param source_path needed to specify for dir, docker-archive or oci transport
+        :param target_path needed to specify for dir, docker-archive or oci transport
+        :param logs enable/disable logs
+        :return: the new DockerImage
+        """
+        if not repository:
+            repository = self.name
+        if not tag:
+            tag = self.tag if self.tag else "latest"
+        if target_transport == SkopeoTransport.OSTREE and tag and logs:
+            logging.warning("tag was ignored")
+        target = (DockerImage(repository, tag, pull_policy=DockerImagePullPolicy.NEVER)
+                  .using_transport(target_transport, target_path))
+        self.using_transport(source_transport, source_path)
+
+        try:
+            run_cmd(["skopeo", "copy",
+                     transport_param(self),
+                     transport_param(target)])
+        except subprocess.CalledProcessError:
+            raise ConuException("There was an error while copying repository", self.name)
+
+        return target
 
     def tag_image(self, repository=None, tag=None):
         """
@@ -330,7 +448,7 @@ class DockerImage(Image):
             additional_opts = additional_opts or []
 
             if (isinstance(command, list) or isinstance(command, tuple) and
-                isinstance(additional_opts, list) or isinstance(additional_opts, tuple)):
+                    isinstance(additional_opts, list) or isinstance(additional_opts, tuple)):
                 run_command_instance = DockerRunBuilder(
                     command=command, additional_opts=additional_opts)
             else:
@@ -406,7 +524,7 @@ class DockerImage(Image):
             additional_opts = additional_opts or []
 
             if (isinstance(command, list) or isinstance(command, tuple) and
-                isinstance(additional_opts, list) or isinstance(additional_opts, tuple)):
+                    isinstance(additional_opts, list) or isinstance(additional_opts, tuple)):
                 run_command_instance = DockerRunBuilder(
                     command=command, additional_opts=additional_opts)
             else:
