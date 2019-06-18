@@ -26,6 +26,8 @@ import string
 import subprocess
 import tempfile
 
+from contextlib import contextmanager
+from pathlib import Path
 from conu.exceptions import ConuException
 
 
@@ -109,13 +111,14 @@ def random_str(size=10):
     return ''.join(random.choice(string.ascii_lowercase) for _ in range(size))
 
 
-def run_cmd(cmd, return_output=False, ignore_status=False, log_output=True, **kwargs):
+def run_cmd(cmd, return_output=False, cwd=None, ignore_status=False, log_output=True, **kwargs):
     """
     run provided command on host system using the same user as you invoked this code, raises
     subprocess.CalledProcessError if it fails
 
     :param cmd: list of str
     :param return_output: bool, return output of the command
+    :param cwd: str, path to current working directory
     :param ignore_status: bool, do not fail in case nonzero return code
     :param log_output: bool, if True, log output to debug log
     :param kwargs: pass keyword arguments to subprocess.check_* functions; for more info,
@@ -123,7 +126,9 @@ def run_cmd(cmd, return_output=False, ignore_status=False, log_output=True, **kw
     :return: None or str
     """
     logger.debug('command: "%s"' % ' '.join(cmd))
+    cwd = cwd or str(Path.cwd())
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                               cwd=cwd,
                                universal_newlines=True, **kwargs)
     output = process.communicate()[0]
     if log_output:
@@ -139,6 +144,24 @@ def run_cmd(cmd, return_output=False, ignore_status=False, log_output=True, **kw
             raise subprocess.CalledProcessError(cmd=cmd, returncode=process.returncode)
     if return_output:
         return output
+
+
+@contextmanager
+def cwd(target):
+    """
+    Manage cwd in a pushd/popd fashion.
+
+    Usage:
+
+        with cwd(tmpdir):
+          do something in tmpdir
+    """
+    curdir = os.getcwd()
+    os.chdir(target)
+    try:
+        yield
+    finally:
+        os.chdir(curdir)
 
 
 def mkstemp(dir=None):
