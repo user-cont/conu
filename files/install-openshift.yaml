@@ -42,8 +42,8 @@
       DOCKER_CONFIG: "/etc/docker/daemon.json"
 
   - name: Add permissions for developer account
-    - command: "{{ item }}"
-      with_items:
+    command: "{{ item }}"
+    with_items:
       - oc login -u system:admin
       - oc adm policy add-cluster-role-to-user admin developer
       - oc adm policy add-cluster-role-to-user cluster-admin developer
