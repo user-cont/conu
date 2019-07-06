@@ -16,6 +16,7 @@
       - python3-devel
       - podman
       - skopeo
+      - origin-clients
       state: present
     tags:
     - conu-deps
