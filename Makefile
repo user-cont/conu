@@ -54,7 +54,7 @@ test-in-container:
 	$(eval kubedir := $(shell mktemp -d /tmp/tmp.conu-kube-XXXXX))
 	sed -e s@"${HOME}"@/root@g ${HOME}/.kube/config > $(kubedir)/config ; \
 	docker run \
-		--rm -ti \
+		--rm \
 		--net=host \
 		--privileged \
 		-e STORAGE_DRIVER=vfs \
