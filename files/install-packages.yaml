@@ -1,0 +1,28 @@
+---
+- name: Install dependencies for conu.
+  hosts: all
+  tasks:
+  - name: Install all RPM packages needed to hack on conu.
+    dnf:
+      name:
+      - make
+      - nmap-ncat
+      - docker
+      - libselinux-utils
+      - source-to-image
+      - python3-pip
+      - python3-pyxattr
+      - gcc
+      - python3-devel
+      - podman
+      - skopeo
+      state: present
+    tags:
+    - conu-deps
+
+  - name: Install test requirements
+    pip:
+      executable: /usr/bin/pip3
+      requirements: "{{ lookup('env','PWD') }}/tests/requirements.txt"
+    tags:
+    - conu-test-deps
