@@ -18,7 +18,7 @@ setup-oc-cluster-ci:
 exec-test:
 	cat pytest.ini
 	@# use it like this: `make exec-test TEST_TARGET="tests/unit/"`
-	PYTHONPATH=$(CURDIR) pytest-3 $(TEST_TARGET) --verbose --showlocals
+	PYTHONPATH=$(CURDIR) pytest $(TEST_TARGET) --verbose --showlocals
 
 check: container-image build-test-container test-in-container docs-in-container
 

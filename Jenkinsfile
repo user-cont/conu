@@ -30,7 +30,7 @@ node('userspace-containerization'){
             }
 
             stage ("Setup"){
-                onmyduffynode "yum -y install epel-release docker make podman rpm-build"
+                onmyduffynode "yum -y install epel-release docker make podman rpm-build python36-pip python36-devel"
                 onmyduffynode "pip3 install --upgrade pip"
                 onmyduffynode "pip3 install pre-commit"
                 synctoduffynode "./." // copy all source files (hidden too, we need .git/)
