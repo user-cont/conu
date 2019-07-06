@@ -1,5 +1,5 @@
 requests
 six
 docker
-kubernetes
+kubernetes==8.0.0
 pytest
