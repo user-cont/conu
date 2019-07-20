@@ -8,12 +8,18 @@
       - git
       - docker
       state: present
-  - name: Disable SELinux
-    command: setenforce 0
-  - name: Disable firewall
-    command: systemctl stop firewalld # firewall on CentOS does not allow docker login into OpenShift registry
-  - name: Start docker deamon
-    command: systemctl start docker
+  - name: Put SELinux in permissive mode, logging actions that would be blocked.
+    selinux:
+      policy: targeted
+      state: permissive
+  - name: Stop service firewall, if running
+    systemd:
+      name: firewalld
+      state: stopped # firewall on CentOS does not allow docker login into OpenShift registry
+  - name: Make sure docker is running
+    systemd:
+      name: docker
+      state: started
   - name: Create docker deamon config
     file:
       path: /etc/docker/daemon.json
@@ -24,7 +30,10 @@
         {"insecure-registries" : [ "172.30.0.0/16" ]}
       dest: /etc/docker/daemon.json
   - name: Restart docker because config has changed
-    command: systemctl restart docker
+    systemd:
+      state: restarted
+      daemon_reload: yes
+      name: docker
   - name: Install OpenShift server
     yum:
       name:
