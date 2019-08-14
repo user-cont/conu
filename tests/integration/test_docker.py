@@ -25,7 +25,7 @@ import pytest
 
 from flexmock import flexmock
 
-from conu.backend.docker.backend import parse_reference
+from conu.utils import parse_reference
 from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, \
     FEDORA_REPOSITORY
 

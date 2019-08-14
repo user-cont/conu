@@ -28,28 +28,9 @@ from conu.backend.podman.constants import CONU_ARTIFACT_TAG
 
 from conu.exceptions import ConuException
 
-from conu.utils import run_cmd
+from conu.utils import run_cmd, parse_reference
 
 logger = logging.getLogger(__name__)
-
-
-def parse_reference(reference):
-    """
-    parse provided image reference into <image_repository>:<tag>
-
-    :param reference: str, e.g. (registry.fedoraproject.org/fedora:27)
-    :return: collection (tuple or list), ("registry.fedoraproject.org/fedora", "27")
-    """
-    if ":" in reference:
-        im, tag = reference.rsplit(":", 1)
-        if "/" in tag:
-            # this is case when there is port in the registry URI
-            return (reference, "latest")
-        else:
-            return (im, tag)
-
-    else:
-        return (reference, "latest")
 
 
 class PodmanBackend(Backend):

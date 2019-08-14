@@ -20,32 +20,14 @@ This is backend for docker engine
 import logging
 
 from conu.apidefs.backend import Backend
-from conu.backend.docker.container import DockerContainer
-from conu.backend.docker.image import DockerImage, DockerImagePullPolicy
 from conu.backend.docker.client import get_client
 from conu.backend.docker.constants import CONU_ARTIFACT_TAG
+from conu.backend.docker.container import DockerContainer
+from conu.backend.docker.image import DockerImage, DockerImagePullPolicy
 from conu.backend.docker.utils import inspect_to_metadata, inspect_to_container_metadata
+from conu.utils import parse_reference
 
 logger = logging.getLogger(__name__)
-
-
-def parse_reference(reference):
-    """
-    parse provided image reference into <image_repository>:<tag>
-
-    :param reference: str, e.g. (registry.fedoraproject.org/fedora:27)
-    :return: collection (tuple or list), ("registry.fedoraproject.org/fedora", "27")
-    """
-    if ":" in reference:
-        im, tag = reference.rsplit(":", 1)
-        if "/" in tag:
-            # this is case when there is port in the registry URI
-            return (reference, "latest")
-        else:
-            return (im, tag)
-
-    else:
-        return (reference, "latest")
 
 
 # let this class inherit docstring from its parent

@@ -15,6 +15,7 @@
       - gcc
       - python3-devel
       - podman
+      - buildah
       - skopeo
       - origin-clients
       state: present

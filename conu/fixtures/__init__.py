@@ -22,6 +22,7 @@ and pytest.
 import logging
 
 from conu import DockerBackend, PodmanBackend
+from conu.backend.buildah.backend import BuildahBackend
 from conu.utils import run_cmd
 
 import pytest
@@ -54,5 +55,18 @@ def podman_backend():
         :return: instance of PodmanBackend
         """
     with PodmanBackend(logging_level=logging.DEBUG) as backend:
+        yield backend
+        backend._clean()
+
+
+@pytest.fixture()
+def buildah_backend():
+    """
+        pytest fixture which mimics context manager: it provides new instance of BuildahBackend and
+        cleans after it once it's used; behaves the same as docker_backend fixture
+
+        :return: instance of BuildahBackend
+        """
+    with BuildahBackend(logging_level=logging.DEBUG) as backend:
         yield backend
         backend._clean()
