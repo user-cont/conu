@@ -185,7 +185,11 @@ class PodmanImage(Image):
         :return: None
         """
         identifier = self.get_full_name() if via_name else (self._id or self.get_id())
-        cmdline = ["podman", "rmi", identifier, "--force" if force else ""]
+        # podman doesn't like the ""
+        if force:
+            cmdline = ["podman", "rmi", "--force", identifier]
+        else:
+            cmdline = ["podman", "rmi", identifier]
         run_cmd(cmdline)
 
     def _run_container(self, run_command_instance, callback):

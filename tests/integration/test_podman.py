@@ -273,8 +273,11 @@ def test_run_with_volumes_metadata_check(tmpdir, podman_backend):
     container = image.run_via_binary(volumes=(Directory(t), mountpoint_path, "Z"))
     try:
         for mount in container.inspect()["Mounts"]:
-            if mount["source"] == t and mount["destination"] == mountpoint_path:
-                assert "Z" in mount["options"]
+            source = mount.get("source", mount["Source"])
+            dest = mount.get("destination", mount["Destination"])
+            options = mount.get("options", mount["Options"])
+            if source == t and dest == mountpoint_path:
+                # :Z is no longer present in the options
                 break
         # break was not reached: the mountpoint was not found
         else:
@@ -313,7 +316,7 @@ def test_list_images(podman_backend):
     # id of registry.fedoraproject.org/fedora-minimal:26
     the_id = subprocess.check_output(["podman", "inspect", "-f", "{{.Id}}",
                                       FEDORA_MINIMAL_REPOSITORY + ":" +
-                                      FEDORA_MINIMAL_REPOSITORY_TAG]).decode("utf-8")
+                                      FEDORA_MINIMAL_REPOSITORY_TAG]).decode("utf-8").strip()
     image_under_test = [x for x in image_list if x.metadata.identifier == the_id][0]
     assert image_under_test.metadata.digest
     assert image_under_test.metadata.repo_digests
