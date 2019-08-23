@@ -1,0 +1,59 @@
+---
+- name: Inastall dependencies needed for OpenShift
+  hosts: all
+  tasks:
+  - name: Install rpms.
+    yum:
+      name:
+      - git
+      - docker
+      state: present
+  - name: Put SELinux in permissive mode, logging actions that would be blocked.
+    selinux:
+      policy: targeted
+      state: permissive
+  - name: Stop service firewall, if running
+    systemd:
+      name: firewalld
+      state: stopped # firewall on CentOS does not allow docker login into OpenShift registry
+  - name: Make sure docker is running
+    systemd:
+      name: docker
+      state: started
+  - name: Create docker deamon config
+    file:
+      path: /etc/docker/daemon.json
+      state: touch
+  - name: Add OpenShift insecure registry into docker deamon config
+    copy:
+      content: |
+        {"insecure-registries" : [ "172.30.0.0/16" ]}
+      dest: /etc/docker/daemon.json
+  - name: Restart docker because config has changed
+    systemd:
+      state: restarted
+      daemon_reload: yes
+      name: docker
+  - name: Install OpenShift server
+    yum:
+      name:
+      - centos-release-openshift-origin310
+      state: present
+  - name: Install OpenShift client
+    yum:
+      name:
+      - origin-clients
+      state: present
+  - name: Start Openshift cluster
+    command: oc cluster up --base-dir=/tmp
+    environment:
+      PATH: "{{ ansible_env.PATH}}:/usr/local/bin"
+      DOCKER_CONFIG: "/etc/docker/daemon.json"
+
+  - name: Add permissions for developer account
+    command: "{{ item }}"
+    with_items:
+      - oc login -u system:admin
+      - oc adm policy add-cluster-role-to-user admin developer
+      - oc adm policy add-cluster-role-to-user cluster-admin developer
+      - oc login -u developer -p developer

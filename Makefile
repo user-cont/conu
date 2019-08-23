@@ -7,18 +7,20 @@ DOC_EXAMPLE_PATH := "docs/source/examples"
 VERSION := 0.4.0
 
 install-requirements:
-	./requirements.sh
+	dnf install -y ansible && \
+	ansible-playbook -vv -c local -i localhost, files/install-packages.yaml
 
-install-test-requirements:
-	./test-requirements.sh
+setup-oc-cluster-ci:
+	yum install -y ansible && \
+	ansible-playbook -vv -c local -i localhost, files/install-openshift.yaml
 
 # FIXME: run both, fail if any failed -- I am not good makefile hacker
 exec-test:
 	cat pytest.ini
 	@# use it like this: `make exec-test TEST_TARGET="tests/unit/"`
-	PYTHONPATH=$(CURDIR) pytest-3 $(TEST_TARGET) --verbose --showlocals
+	PYTHONPATH=$(CURDIR) pytest $(TEST_TARGET) --verbose --showlocals
 
-check: test
+check: container-image build-test-container test-in-container docs-in-container
 
 build-docs-container:
 	docker build --network host --tag=$(DOCS_IMAGE_NAME) -f ./Dockerfile.docs .
@@ -45,17 +47,14 @@ container:
 build-test-container:
 	docker build --network host --tag=$(TEST_IMAGE_NAME) -f ./Dockerfile.tests .
 
-# You have to run 'sudo make install-test-requirements' prior to this.
-test: build-test-container test-in-container test-doc-examples
-
-centos-ci-test: install-test-requirements container-image build-test-container test-in-container
+centos-ci-test: setup-oc-cluster-ci container-image build-test-container test-in-container
 
 test-in-container:
 	@# use it like this: `make test-in-container TEST_TARGET=tests/integration/test_utils.py`
 	$(eval kubedir := $(shell mktemp -d /tmp/tmp.conu-kube-XXXXX))
 	sed -e s@"${HOME}"@/root@g ${HOME}/.kube/config > $(kubedir)/config ; \
 	docker run \
-		--rm -ti \
+		--rm -i \
 		--net=host \
 		--privileged \
 		-e STORAGE_DRIVER=vfs \
