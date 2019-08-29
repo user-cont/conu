@@ -330,11 +330,9 @@ class PodmanContainer(Container):
         :param command: list of str, command to execute in the container
         :return: str
         """
-
         logger.info("running command %s", command)
         cmd = ["podman", "exec", self.get_id()] + command
         output = run_cmd(cmd, return_output=True)
-
         return output
 
     @property
@@ -352,3 +350,9 @@ class PodmanContainer(Container):
             self._metadata = ContainerMetadata()
         inspect_to_container_metadata(self._metadata, self.inspect(refresh=True), self.image)
         return self._metadata
+
+    def start(self):
+        """
+        Start this podman container
+        """
+        run_cmd(["podman", "start", self.get_id()])

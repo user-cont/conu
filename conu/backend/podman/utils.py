@@ -61,14 +61,18 @@ def inspect_to_metadata(metadata_object, inspect_data):
         metadata_object.exposed_ports = list(set([d["containerPort"] for d in raw_exposed_ports]))
 
     # specific to images
-    raw_repo_tags = graceful_get(inspect_data, 'RepoTags')
-    if raw_repo_tags:
-        metadata_object.name = raw_repo_tags[0]
+    if "RepoTags" in inspect_data:
+        repo_tags = graceful_get(inspect_data, 'RepoTags')
+        # podman sets it to None if the image is not tagged
+        if not repo_tags:
+            repo_tags = [None]
+        metadata_object.name = repo_tags[0]
+        metadata_object.image_names = repo_tags
+    else:
+        metadata_object.name = graceful_get(inspect_data, 'ImageName')
     metadata_object.labels = graceful_get(inspect_data, 'Config', 'Labels')
     metadata_object.command = graceful_get(inspect_data, 'Config', 'Cmd')
     metadata_object.creation_timestamp = inspect_data.get('Created', None)
-    # specific to images
-    metadata_object.image_names = inspect_data.get('RepoTags', None)
     # specific to images
     digests = inspect_data.get("RepoDigests", None)
     if digests:

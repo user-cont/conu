@@ -23,3 +23,11 @@ class ConuException(Exception):
 
 class PackageSignatureException(ConuException):
     """ Exception raised when package signature validation goes wrong"""
+
+
+class ProbeTimeout(ConuException):
+    pass
+
+
+class CountExceeded(ConuException):
+    pass
