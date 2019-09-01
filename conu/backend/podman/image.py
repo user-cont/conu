@@ -199,7 +199,7 @@ class PodmanImage(Image):
         # and we need to wait now; inotify would be better but is way more complicated and
         # adds dependency
         try:
-            Probe(timeout=10, count=10, pause=0.1, fnc=lambda: self._file_not_empty(tmpfile)).run()
+            Probe(timeout=10, count=25, pause=0.2, fnc=lambda: self._file_not_empty(tmpfile)).run()
         except (CountExceeded, ProbeTimeout) as ex:
             logger.info("exception while running a container: %s", ex)
             raise ConuException("Container was not created, please see the logs.")
