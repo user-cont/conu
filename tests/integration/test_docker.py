@@ -259,7 +259,7 @@ def test_http_client():
     with DockerBackend() as backend:
         image = backend.ImageClass(FEDORA_REPOSITORY)
         c = image.run_via_binary(
-            command=["python3", "-m", "http.server", "--bind", "0.0.0.0 8000"]
+            command=["python3", "-m", "http.server", "--bind", "0.0.0.0", "8000"]
         )
         try:
             c.wait_for_port(8000)
@@ -279,7 +279,7 @@ def test_http_client_context():
     with DockerBackend() as backend:
         image = backend.ImageClass(FEDORA_REPOSITORY)
         c = image.run_via_binary(
-            command=["python3", "-m", "http.server", "--bind", "0.0.0.0 8000"]
+            command=["python3", "-m", "http.server", "--bind", "0.0.0.0", "8000"]
         )
         try:
             c.wait_for_port(8000)
