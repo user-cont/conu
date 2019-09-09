@@ -19,26 +19,23 @@ Utilities related to manipulate podman images.
 """
 from __future__ import print_function, unicode_literals
 
+import enum
+import json
 import logging
 import os
 import subprocess
-import enum
-import json
+
 import six
 
-from conu.apidefs.metadata import ImageMetadata
 from conu.apidefs.backend import get_backend_tmpdir
 from conu.apidefs.image import Image
-
+from conu.apidefs.metadata import ImageMetadata
 from conu.backend.podman.container import PodmanContainer, PodmanRunBuilder
 from conu.backend.podman.utils import inspect_to_metadata
-
-from conu.exceptions import ConuException
-
+from conu.exceptions import ConuException, CountExceeded, ProbeTimeout
 from conu.utils import run_cmd, random_tmp_filename, graceful_get
 from conu.utils.filesystem import Volume
 from conu.utils.probes import Probe
-
 
 logger = logging.getLogger(__name__)
 
@@ -185,7 +182,11 @@ class PodmanImage(Image):
         :return: None
         """
         identifier = self.get_full_name() if via_name else (self._id or self.get_id())
-        cmdline = ["podman", "rmi", identifier, "--force" if force else ""]
+        # podman doesn't like the ""
+        if force:
+            cmdline = ["podman", "rmi", "--force", identifier]
+        else:
+            cmdline = ["podman", "rmi", identifier]
         run_cmd(cmdline)
 
     def _run_container(self, run_command_instance, callback):
@@ -197,7 +198,11 @@ class PodmanImage(Image):
         response = callback()
         # and we need to wait now; inotify would be better but is way more complicated and
         # adds dependency
-        Probe(timeout=10, count=10, pause=0.1, fnc=lambda: self._file_not_empty(tmpfile)).run()
+        try:
+            Probe(timeout=10, count=25, pause=0.2, fnc=lambda: self._file_not_empty(tmpfile)).run()
+        except (CountExceeded, ProbeTimeout) as ex:
+            logger.info("exception while running a container: %s", ex)
+            raise ConuException("Container was not created, please see the logs.")
         with open(tmpfile, 'r') as fd:
             container_id = fd.read()
         return container_id, response

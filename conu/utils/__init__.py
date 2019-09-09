@@ -279,8 +279,7 @@ def check_docker_command_works():
 
 def check_podman_command_works():
     """
-    Verify that podman binary works fine. This is performed by calling `podman
-    version`, which also checks server API version.
+    Verify that podman binary works fine by calling `podman version`
 
     :return: bool, True if all is good, otherwise ConuException or CommandDoesNotExistException
               is thrown
@@ -290,7 +289,7 @@ def check_podman_command_works():
                                       stderr=subprocess.STDOUT,
                                       universal_newlines=True)
     except OSError:
-        logger.info("podman binary is not available")
+        logger.error("podman binary is not available")
         raise CommandDoesNotExistException(
             "podman command doesn't seem to be available on your system. "
             "Please install and configure podman."
@@ -299,15 +298,42 @@ def check_podman_command_works():
         logger.error("exception: %s", ex)
         logger.error("rc: %s, output: %r", ex.returncode, ex.output)
         raise ConuException(
-            "`podman version` call failed, it seems that your podman is misconfigured or "
-            "this user can't communicate with podman."
+            "`podman version` call failed, it seems that your installation of podman is misconfigured"
         )
     else:
         logger.info("podman environment info: %r", out)
     return True
 
 
-def graceful_get(d, *args):
+def check_buildah_command_works():
+    """
+    Verify that buildah binary works fine by calling `buildah version`
+
+    :return: bool, True if all is good, otherwise ConuException or CommandDoesNotExistException
+              is thrown
+    """
+    try:
+        out = subprocess.check_output(["buildah", "version"],
+                                      stderr=subprocess.STDOUT,
+                                      universal_newlines=True)
+    except OSError:
+        logger.error("buildah binary is not available")
+        raise CommandDoesNotExistException(
+            "buildah command doesn't seem to be available on your system. "
+            "Please install and configure buildah."
+        )
+    except subprocess.CalledProcessError as ex:
+        logger.error("exception: %s", ex)
+        logger.error("rc: %s, output: %r", ex.returncode, ex.output)
+        raise ConuException(
+            "`buildah version` call failed, it seems that your installation of buildah is misconfigured"
+        )
+    else:
+        logger.info("buildah environment info: %r", out)
+    return True
+
+
+def graceful_get(d, *args, default=None):
     """
     Obtain values from dicts and lists gracefully. Example:
 
@@ -318,17 +344,18 @@ def graceful_get(d, *args):
 
     :param d: collection (usually a dict or list)
     :param args: list of keys which are used as a lookup
+    :param default: default value to return in case of an axc
     :return: the value from your collection
     """
     if not d:
-        return d
+        return default
     value = d
     for arg in args:
         try:
             value = value[arg]
         except (IndexError, KeyError, AttributeError, TypeError) as ex:
             logger.debug("exception while getting a value %r from %s", ex, str(value)[:32])
-            return None
+            return default
     return value
 
 
@@ -418,3 +445,22 @@ def are_we_root():
     :return: True if root, else otherwise
     """
     return os.geteuid() == 0
+
+
+def parse_reference(reference):
+    """
+    parse provided image reference into <image_repository>:<tag>
+
+    :param reference: str, e.g. (registry.fedoraproject.org/fedora:27)
+    :return: collection (tuple or list), ("registry.fedoraproject.org/fedora", "27")
+    """
+    if ":" in reference:
+        im, tag = reference.rsplit(":", 1)
+        if "/" in tag:
+            # this is case when there is port in the registry URI
+            return reference, "latest"
+        else:
+            return im, tag
+
+    else:
+        return reference, "latest"

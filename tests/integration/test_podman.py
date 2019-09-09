@@ -11,14 +11,25 @@ from conu.backend.podman.image import PodmanImagePullPolicy
 from conu.utils import check_podman_command_works, are_we_root
 from conu.utils.probes import Probe
 from conu.fixtures import podman_backend
-
 from conu.apidefs.metadata import ContainerStatus
-
-from conu import ConuException, Directory
+from conu.exceptions import ConuException
+from conu import Directory
 
 from six import string_types
 
 import pytest
+
+
+@pytest.fixture()
+def podman_run_builder():
+    prb = PodmanRunBuilder()
+    # there is no journal in a container:
+    #   ERRO[0001] unable to write pod event:
+    #   "write unixgram @00120->/run/systemd/journal/socket:
+    #     sendmsg: no such file or directory"
+    # prb.global_options = ["--events-backend=none"]
+    # alternatively, do this in /etc/containers/libpod.conf
+    return prb
 
 
 def test_podman_cli():
@@ -57,14 +68,14 @@ def test_image_wrong_types(podman_backend):
         assert "tag" in exc.value.message
 
 
-def test_container(podman_backend):
+def test_container(podman_backend, podman_run_builder):
     """
     Basic tests of interacting with a podman container
     """
     image = podman_backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
-    c = image.run_via_binary(
-        PodmanRunBuilder(command=["cat"], additional_opts=["-i", "-t"])
-    )
+    podman_run_builder.arguments += ["cat"]
+    podman_run_builder.options += ["-i", "-t"]
+    c = image.run_via_binary(run_command_instance=podman_run_builder)
     try:
         assert c.is_running()
         assert "Config" in c.inspect()
@@ -76,33 +87,30 @@ def test_container(podman_backend):
         c.delete(force=True)
 
 
-def test_container_create_failed(podman_backend):
+def test_container_create_failed(podman_backend, podman_run_builder):
     """
     Test podman run with execution non-existing command
     """
-    # FIXME: Cleanup containers after run
     image = podman_backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
+    podman_run_builder.arguments += ["waldo"]
     # should raise an exc, there is no such command: waldo; we need to find waldo first
     with pytest.raises(ConuException):
-        image.run_via_binary(
-            command=["waldo"]
-        )
-    c = image.run_via_binary_in_foreground(
-        PodmanRunBuilder(command=["waldo"])
-    )
-    c.popen_instance.communicate()
-    try:
-        assert c.popen_instance.returncode > 0
-    finally:
-        c.delete(force=True)
+        image.run_via_binary(run_command_instance=podman_run_builder)
+    # podman is not deterministic here: sometimes it fails to create the container saying
+    # waldo is not inside, and sometimes the container gets created
+    # and then start produces a very wierd error message:
+    #   "error reading container (probably exited) json message: EOF"
+    # container = image.run_via_binary_in_foreground(run_command_instance=podman_run_builder)
+    # assert not container.is_running()
+    # container.start()
 
 
-def test_interactive_container(podman_backend):
+def test_interactive_container(podman_backend, podman_run_builder):
     image = podman_backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
-    command = ["bash"]
-    additional_opts = ["-i"]
+    podman_run_builder.arguments = ["bash"]
+    podman_run_builder.options += ["-i"]
     cont = image.run_via_binary_in_foreground(
-        command=command, additional_opts=additional_opts,
+        run_command_instance=podman_run_builder,
         popen_params={"stdin": subprocess.PIPE, "stdout": subprocess.PIPE}
     )
     try:
@@ -118,10 +126,10 @@ def test_interactive_container(podman_backend):
         cont.delete(force=True)
 
 
-def test_container_logs(podman_backend):
+def test_container_logs(podman_backend, podman_run_builder):
     image = podman_backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
-    command = ["bash", "-c", "for x in `seq 1 5`; do echo $x; done"]
-    cont = image.run_via_binary(command=command)
+    podman_run_builder.arguments = ["bash", "-c", "for x in `seq 1 5`; do echo $x; done"]
+    cont = image.run_via_binary(run_command_instance=podman_run_builder)
     try:
         Probe(timeout=5, fnc=cont.is_running, expected_retval=False).run()
         assert not cont.is_running()
@@ -130,12 +138,12 @@ def test_container_logs(podman_backend):
         cont.delete(force=True)
 
 
-@pytest.mark.skipif(not are_we_root(), reason="rootless containers don't provide networking metadata, yet")
-def test_http_client(podman_backend):
+@pytest.mark.skipif(not are_we_root(),
+                    reason="rootless containers don't provide networking metadata, yet")
+def test_http_client(podman_backend, podman_run_builder):
     image = podman_backend.ImageClass(FEDORA_REPOSITORY)
-    c = image.run_via_binary(
-        command=["python3", "-m", "http.server", "--bind", "0.0.0.0 8000"]
-    )
+    podman_run_builder.arguments = ["python3", "-m", "http.server", "--bind", "0.0.0.0", "8000"]
+    c = image.run_via_binary(run_command_instance=podman_run_builder)
     try:
         c.wait_for_port(8000)
         assert c.is_running()
@@ -150,12 +158,12 @@ def test_http_client(podman_backend):
         c.delete(force=True)
 
 
-@pytest.mark.skipif(not are_we_root(), reason="rootless containers don't provide networking metadata, yet")
-def test_http_client_context(podman_backend):
+@pytest.mark.skipif(not are_we_root(),
+                    reason="rootless containers don't provide networking metadata, yet")
+def test_http_client_context(podman_backend, podman_run_builder):
     image = podman_backend.ImageClass(FEDORA_REPOSITORY)
-    c = image.run_via_binary(
-        command=["python3", "-m", "http.server", "--bind", "0.0.0.0 8000"]
-    )
+    podman_run_builder.arguments = ["python3", "-m", "http.server", "--bind", "0.0.0.0", "8000"]
+    c = image.run_via_binary(run_command_instance=podman_run_builder)
     try:
         c.wait_for_port(8000)
         with c.http_client(port=8000) as session:
@@ -204,10 +212,10 @@ def test_exit_code(podman_backend):
         cont.delete(force=True)
 
 
-def test_execute(podman_backend):
+def test_execute(podman_backend, podman_run_builder):
     image = podman_backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
-    cmd = ['sleep', 'infinity']
-    cont = image.run_via_binary(command=cmd)
+    podman_run_builder.arguments = ['sleep', 'infinity']
+    cont = image.run_via_binary(run_command_instance=podman_run_builder)
     cont.execute(["bash", "-c", "exit 0"])
     assert "asd\nasd" == cont.execute(["printf", "asd\nasd"])
     assert "asd" == cont.execute(["printf", "asd"])
@@ -245,7 +253,7 @@ def test_pull_never(podman_backend):
 def test_set_name(podman_backend):
     test_name = 'jondoe'
     image = podman_backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG,
-                               pull_policy=PodmanImagePullPolicy.NEVER)
+                                      pull_policy=PodmanImagePullPolicy.NEVER)
     cont = image.run_via_binary()
     assert cont.name
     cont.delete(force=True)
@@ -273,8 +281,11 @@ def test_run_with_volumes_metadata_check(tmpdir, podman_backend):
     container = image.run_via_binary(volumes=(Directory(t), mountpoint_path, "Z"))
     try:
         for mount in container.inspect()["Mounts"]:
-            if mount["source"] == t and mount["destination"] == mountpoint_path:
-                assert "Z" in mount["options"]
+            source = mount.get("source", mount["Source"])
+            dest = mount.get("destination", mount["Destination"])
+            options = mount.get("options", mount["Options"])
+            if source == t and dest == mountpoint_path:
+                # :Z is no longer present in the options
                 break
         # break was not reached: the mountpoint was not found
         else:
@@ -313,15 +324,12 @@ def test_list_images(podman_backend):
     # id of registry.fedoraproject.org/fedora-minimal:26
     the_id = subprocess.check_output(["podman", "inspect", "-f", "{{.Id}}",
                                       FEDORA_MINIMAL_REPOSITORY + ":" +
-                                      FEDORA_MINIMAL_REPOSITORY_TAG]).decode("utf-8")
-    image_under_test = [x for x in image_list if x.metadata.identifier == the_id][0]
-    assert image_under_test.metadata.digest
-    assert image_under_test.metadata.repo_digests
-
-
-def test_layers():
-    # TODO: Implement this test
-    pass
+                                      FEDORA_MINIMAL_REPOSITORY_TAG]).decode("utf-8").strip()
+    images = {image.get_id(): image for image in image_list}
+    assert the_id in images
+    image = images[the_id]
+    assert image.metadata.digest
+    assert image.metadata.repo_digests
 
 
 def test_container_metadata(podman_backend):

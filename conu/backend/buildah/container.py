@@ -19,67 +19,74 @@ Implementation of a podman container
 """
 from __future__ import print_function, unicode_literals
 
-import functools
-import logging
 import json
-import subprocess
+import logging
 
+from conu import DockerRunBuilder
 from conu.apidefs.container import Container
 from conu.apidefs.metadata import ContainerMetadata
+from conu.backend.buildah.utils import buildah_common_inspect_to_metadata
 from conu.exceptions import ConuException
-
-from conu.backend.docker.container import DockerRunBuilder
-from conu.backend.podman.utils import inspect_to_container_metadata
-
-from conu.utils import check_port, run_cmd, graceful_get
-from conu.utils.probes import Probe
-
-from conu.backend.podman.constants import CONU_ARTIFACT_TAG
-
+from conu.utils import run_cmd, graceful_get, parse_reference
 
 logger = logging.getLogger(__name__)
 
 
-class PodmanRunBuilder(DockerRunBuilder):
+class BuildahRunBuilder(DockerRunBuilder):
     """
-    helper to execute `podman run` -- users can easily change or override anything
+    helper to execute `buildah from` -- users can easily change or override anything
     """
 
     def __init__(self, command=None, additional_opts=None):
         """
-        Build `podman run` command
+        Build `buildah from` command
 
-        :param command: list of str, command to run in the container, examples:
-            - ["ls", "/"]
-            - ["bash", "-c", "ls / | grep bin"]
-        :param additional_opts: list of str, additional options for `podman run`
+        :param command: ignored, please use the exec() method
+        :param additional_opts: list of str, additional options for `buildah from`
         """
-        super(PodmanRunBuilder, self).__init__(command=command, additional_opts=additional_opts)
-        self.binary = ["podman"]
+        if command:
+            logger.warning("command argument is ignored for buildah, please use exec()")
+        super(BuildahRunBuilder, self).__init__(additional_opts=additional_opts)
+        self.binary = ["buildah"]
+        self.command = ["from"]
 
     def build(self):
-        return self.binary + self.global_options + self.command + self.options + \
-               ["--label", "%s=1" % CONU_ARTIFACT_TAG] + [self.image_name] + self.arguments
+        return self.binary + self.global_options + self.command + self.options + [self.image_name]
 
     def get_parameters(self):
         raise NotImplementedError("method is not implemented")
 
 
-class PodmanContainer(Container):
-    def __init__(self, image, container_id, name=None, popen_instance=None):
+def buildah_container_inspect_to_metadata(inspect_data):
+    """
+    process data from `buildah inspect -t container` and return ContainerMetadata
+
+    :param inspect_data: dict, metadata from `buildah inspect -t container`
+    :return: instance of ContainerMetadata
+    """
+    cm = ContainerMetadata()
+    cm.name = graceful_get(inspect_data, 'Container')
+    cm.identifier = graceful_get(inspect_data, 'ContainerID')
+    buildah_common_inspect_to_metadata(cm, inspect_data)
+    return cm
+
+
+class BuildahContainer(Container):
+    def __init__(self, image, container_id, name=None, popen_instance=None, image_class=None):
         """
-        :param image: PodmanImage instance (if None, it will be found from the container itself)
+        :param image: BuildahImage instance (if None, it will be found from the container itself)
         :param container_id: str, unique identifier of this container
         :param name: str, pretty container name
         :param popen_instance: instance of Popen
         """
-        super(PodmanContainer, self).__init__(image, container_id, name)
+        super(BuildahContainer, self).__init__(image, container_id, name)
         self.popen_instance = popen_instance
         self._inspect_data = None
         self._metadata = None
+        self.ImageClass = image.__class__ if image else image_class
 
     def __repr__(self):
-        return "PodmanContainer(image=%s, id=%s)" % (self.image, self.get_id())
+        return "BuildahContainer(image=%s, id=%s)" % (self.image, self.get_id())
 
     def __str__(self):
         return self.get_id()
@@ -91,20 +98,21 @@ class PodmanContainer(Container):
         :return: str
         """
         if self._id is None:
-            self._id = graceful_get(self.inspect(refresh=True), "ID")
+            self._id = graceful_get(self.inspect(refresh=False), "ContainerID")
         return self._id
 
     def get_name(self):
         """
         Returns name of the container
+
         :return: str
         """
-        self.name = self.name or graceful_get(self.inspect(refresh=False), "Name")
+        self.name = self.name or graceful_get(self.inspect(refresh=False), "Container")
         return self.name
 
     def inspect(self, refresh=True):
         """
-        return cached metadata by default
+        provide metadata about the buildah container
 
         :param refresh: bool, returns up to date metadata if set to True
         :return: dict
@@ -118,94 +126,47 @@ class PodmanContainer(Container):
 
     @staticmethod
     def _inspect(identifier):
-        cmdline = ["podman", "container", "inspect", identifier]
+        cmdline = ["buildah", "inspect", "--type", "container", identifier]
         output = run_cmd(cmdline, return_output=True, log_output=False)
-        return json.loads(output)[0]
+        return json.loads(output)
 
     def is_running(self):
         """
-        returns True if the container is running
+        buildah containers are always running if they exist
 
-        :return: bool
+        :return: True
         """
-        try:
-            return graceful_get(self.inspect(refresh=True), "State", "Running")
-        except subprocess.CalledProcessError:
-            return False
+        return True
 
     def get_IPv4s(self):
         """
-        Return all known IPv4 addresses of this container. It may be possible
-        that the container has disabled networking: in that case, the list is
-        empty
-
-        :return: list of str
+        buildah containers don't have this concept of a running service
         """
-        self.get_metadata()  # force update of metadata, we should probably do this better
-        return self.metadata.ipv4_addresses
+        raise ConuException("This method is intentionally not implemented for Buildah containers.")
 
     def get_IPv6s(self):
         """
-        Return all known IPv6 addresses of this container. It may be possible
-        that the container has disabled networking: in that case, the list is
-        empty
-
-        :return: list of str
+        buildah containers don't have this concept of a running service
         """
-        self.get_metadata()  # force update of metadata, we should probably do this better
-        return self.metadata.ipv6_addresses
+        raise ConuException("This method is intentionally not implemented for Buildah containers.")
 
     def get_ports(self):
         """
-        get ports specified in container metadata
-
-        :return: list of str
+        buildah containers don't have this concept of a running service
         """
-        ports = []
-        container_ports = graceful_get(self.inspect(refresh=True), "NetworkSettings", "Ports")
-        if not container_ports:
-            return ports
-        for p in container_ports:
-            # TODO: gracefullness, error handling
-            ports.append(p.split("/")[0])
-        return ports
+        raise ConuException("This method is intentionally not implemented for Buildah containers.")
 
     def is_port_open(self, port, timeout=2):
         """
-        check if given port is open and receiving connections on container ip_address
-
-        :param port: int, container port
-        :param timeout: int, how many seconds to wait for connection; defaults to 2
-        :return: True if the connection has been established inside timeout, False otherwise
+        buildah containers don't have this concept of a running service
         """
-        addresses = self.get_IPv4s()
-        if not addresses:
-            return False
-        return check_port(port, host=addresses[0], timeout=timeout)
+        raise ConuException("This method is intentionally not implemented for Buildah containers.")
 
     def get_port_mappings(self, port=None):
         """
-        Get list of port mappings between container and host. The format of dicts is:
-
-            {"HostIp": XX, "HostPort": YY};
-
-        When port is None - return all port mappings. The container needs
-        to be running, otherwise this returns an empty list.
-
-        :param port: int or None, container port
-        :return: list of dict or None; dict when port=None
+        buildah containers don't have this concept of a running service
         """
-        port_mappings = graceful_get(self.inspect(refresh=True), "NetworkSettings", "Ports")
-
-        if not port:
-            return port_mappings
-
-        if str(port) not in self.get_ports():
-            return []
-
-        for p in port_mappings:
-            if p.split("/")[0] == str(port):
-                return port_mappings[p]
+        raise ConuException("This method is intentionally not implemented for Buildah containers.")
 
     def get_image_name(self):
         """
@@ -213,32 +174,20 @@ class PodmanContainer(Container):
 
         :return: str
         """
-        metadata = self.inspect()
-        if "Config" in metadata:
-            return metadata["Config"].get("Image", None)
-        return None
+        return graceful_get(self.inspect(refresh=False), "FromImage")
 
     def wait_for_port(self, port, timeout=10, **probe_kwargs):
         """
-        block until specified port starts accepting connections, raises an exc ProbeTimeout
-        if timeout is reached
-
-        :param port: int, port number
-        :param timeout: int or float (seconds), time to wait for establishing the connection
-        :param probe_kwargs: arguments passed to Probe constructor
-        :return: None
+        buildah containers don't have this concept of a running service
         """
-        Probe(timeout=timeout, fnc=functools.partial(self.is_port_open, port), **probe_kwargs).run()
+        raise ConuException("This method is intentionally not implemented for Buildah containers.")
 
-    def delete(self, force=False, **kwargs):
+    def delete(self, **kwargs):
         """
         remove this container; kwargs indicate that some container runtimes
         might accept more parameters
-
-        :param force: bool, if container engine supports this, force the functionality
-        :return: None
         """
-        cmdline = ["podman", "rm", "--force" if force else "", self.get_name()]
+        cmdline = ["buildah", "rm", self.get_name()]
         run_cmd(cmdline)
 
     def mount(self, mount_point=None):
@@ -247,24 +196,24 @@ class PodmanContainer(Container):
 
         :return: str, the location of the mounted file system
         """
-        cmd = ["podman", "mount", self._id or self.get_id()]
+        # TODO: In rootless mode you must use buildah unshare first.
+        cmd = ["buildah", "mount", self._id or self.get_id()]
         output = run_cmd(cmd, return_output=True).rstrip("\n\r")
         return output
 
-    def umount(self, all=False, force=True):
+    def umount(self, all=False):
         """
         unmount container filesystem
+
         :param all: bool, option to unmount all mounted containers
-        :param force: bool, force the unmounting of specified containers' root file system
         :return: str, the output from cmd
         """
-        # FIXME: handle error if unmount didn't work
         options = []
-        if force:
-            options.append('--force')
         if all:
             options.append('--all')
-        cmd = ["podman", "umount"] + options + [self.get_id() if not all else ""]
+        cmd = ["buildah", "umount"] + options
+        if not all:
+            cmd += [self.get_id()]
         return run_cmd(cmd, return_output=True)
 
     def logs(self, follow=False):
@@ -274,7 +223,7 @@ class PodmanContainer(Container):
 
         Let's look at an example::
 
-            image = conu.PodmanImage("fedora", tag="27")
+            image = conu.BuildahImage("fedora", tag="27")
             command = ["bash", "-c", "for x in `seq 1 5`; do echo $x; sleep 1; done"]
             container = image.run_via_binary(command=command)
             for line in container.logs(follow=True):
@@ -323,15 +272,17 @@ class PodmanContainer(Container):
         """
         return graceful_get(self.inspect(refresh=True), "State", "ExitCode")
 
-    def execute(self, command):
+    def execute(self, command, options=None, **kwargs):
         """
-        Execute a command in this container -- the container needs to be running.
+        Execute a command in this container
 
         :param command: list of str, command to execute in the container
+        :param options: list of str, additional options to run command
         :return: str
         """
+        options = options or []
         logger.info("running command %s", command)
-        cmd = ["podman", "exec", self.get_id()] + command
+        cmd = ["buildah", "run"] + options + [self.get_id()] + command
         output = run_cmd(cmd, return_output=True)
         return output
 
@@ -347,12 +298,16 @@ class PodmanContainer(Container):
         :return: ContainerMetadata, container metadata instance
         """
         if self._metadata is None:
-            self._metadata = ContainerMetadata()
-        inspect_to_container_metadata(self._metadata, self.inspect(refresh=True), self.image)
-        return self._metadata
+            inspect_data = self.inspect(refresh=True)
+            self._metadata = buildah_container_inspect_to_metadata(inspect_data)
 
-    def start(self):
-        """
-        Start this podman container
-        """
-        run_cmd(["podman", "start", self.get_id()])
+            # this is a hack to avoid circular imports: feel free to fix it
+            if self.ImageClass:
+                image_id = graceful_get(inspect_data, "FromImageID")
+                image_name = graceful_get(inspect_data, "FromImage")
+                if image_name:
+                    image_repo, tag = parse_reference(image_name)
+                else:
+                    image_repo, tag = None, None
+                self._metadata.image = self.ImageClass(image_repo, tag=tag, identifier=image_id)
+        return self._metadata

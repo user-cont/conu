@@ -19,7 +19,7 @@ import logging
 
 from multiprocessing import Process, Queue
 
-from conu.exceptions import ConuException
+from conu.exceptions import ConuException, CountExceeded, ProbeTimeout
 
 logger = logging.getLogger(__name__)
 
@@ -164,11 +164,3 @@ class Probe(object):
             self.queue.put(e)
         else:
             raise e
-
-
-class ProbeTimeout(ConuException):
-    pass
-
-
-class CountExceeded(ConuException):
-    pass
