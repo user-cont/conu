@@ -121,6 +121,8 @@ class BuildahBackend(Backend):
         cmdline = ["buildah", "images", "--json"]
         output = run_cmd(cmdline, return_output=True)
         images = json.loads(output)
+        if not images:
+            return []
         return images
 
     @staticmethod
@@ -142,4 +144,6 @@ class BuildahBackend(Backend):
         cmdline = ["buildah", "ps"] + option + ["--json"]
         output = run_cmd(cmdline, return_output=True)
         containers = json.loads(output)
+        if not containers:
+            return []
         return containers
