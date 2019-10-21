@@ -158,8 +158,8 @@ class OpenshiftBackend(K8sBackend):
 
     def create_app_from_template(self, image_name, name, template, name_in_template,
                                  other_images=None, oc_new_app_args=None, project=None):
-        """
-        Helper function to create app from template
+        """Helper function to create app from template
+
         :param image_name: image to be used as builder image
         :param name: name of app from template
         :param template: str, url or local path to a template to use
@@ -222,8 +222,8 @@ class OpenshiftBackend(K8sBackend):
             raise ConuException("Cannot start build of application: %s" % e)
 
     def get_image_registry_url(self, image_name):
-        """
-        Helper function for obtain registry url of image from it's name
+        """Helper function for obtain registry url of image from it's name
+
         :param image_name: str, short name of an image, example:
             - conu:0.5.0
         :return: str, image registry url, example:
@@ -241,8 +241,8 @@ class OpenshiftBackend(K8sBackend):
         return internal_registry_name.replace("'", "").replace('"', '')
 
     def import_image(self, imported_image_name, image_name):
-        """
-        Import image using `oc import-image` command.
+        """Import image using `oc import-image` command.
+
         :param imported_image_name: str, short name of an image in internal registry, example:
             - hello-openshift:latest
         :param image_name: full repository name, example:
@@ -264,8 +264,8 @@ class OpenshiftBackend(K8sBackend):
         return imported_image_name
 
     def request_service(self, app_name, port, expected_output=None):
-        """
-        Make request on service of app. If there is connection error function return False.
+        """Make request on service of app. If there is connection error function return False.
+
         :param app_name: str, name of the app
         :param expected_output: str, If not None method will check output returned from request
                and try to find matching string.
@@ -296,9 +296,9 @@ class OpenshiftBackend(K8sBackend):
         return False
 
     def wait_for_service(self, app_name, port, expected_output=None, timeout=100):
-        """
-        Block until service is not ready to accept requests,
+        """Block until service is not ready to accept requests,
         raises an exc ProbeTimeout if timeout is reached
+
         :param app_name: str, name of the app
         :param port: str or int, port of the service
         :param expected_output: If not None method will check output returned from request

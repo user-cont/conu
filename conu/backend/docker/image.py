@@ -231,8 +231,8 @@ class DockerImage(Image):
         """ change used transport
 
         :param transport: from where will be this image copied
-        :param path in filesystem
-        :param logs enable/disable
+        :param path: in filesystem
+        :param logs: enable/disable
         :return: self
         """
         if not transport:

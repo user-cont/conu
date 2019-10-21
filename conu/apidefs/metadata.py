@@ -49,9 +49,11 @@ class ContainerMetadata(Metadata):
         :param image: Image, reference to Image instance
         :param exposed_ports: list, list of exposed ports
         :param port_mappings: dict, dictionary of port mappings {"container_port": [host_port1]},
-               example:
-                    - {"1111/tcp":[1234, 4567]} bind host ports 1234 and 4567
-                     to a single container port 1111/tcp
+            
+            Example:
+
+            * {"1111/tcp":[1234, 4567]} bind host ports 1234 and 4567
+                to a single container port 1111/tcp
         :param hostname: str, hostname
         :param ipv4_addresses: dict, {address: port}
         :param ipv6_addresses: dict, {address: port}
