@@ -1,7 +1,15 @@
----
+dist_git_url: https://src.fedoraproject.org/rpms/conu.git
+downstream_package_name: conu
+jobs:
+- job: copr_build
+  metadata:
+    targets:
+    - fedora-29-x86_64
+    - fedora-30-x86_64
+    - fedora-31-x86_64
+    - fedora-rawhide-x86_64
+  trigger: pull_request
 specfile_path: conu.spec
 synced_files:
-  - conu.spec
+- conu.spec
 upstream_project_name: conu
-downstream_package_name: conu
-dist_git_url: https://src.fedoraproject.org/rpms/conu.git
