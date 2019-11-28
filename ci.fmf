@@ -1,0 +1,6 @@
+/test/build:
+    /smoke:
+      execute:
+        how: shell
+        script:
+        - python3 -c "import conu"
