@@ -34,3 +34,6 @@ CENTOS_POSTGRES_9_6 = "centos/postgresql-96-centos7"
 CENTOS_POSTGRES_9_6_TAG = "9.6"
 DJANGO_POSTGRES_TEMPLATE = "django-psql-example"
 INTERNAL_REGISTRY_URL = "172.30.1.1:5000"
+
+FEDORA_MINIMAL_IMAGE_REGEX = "registry\.fedoraproject\.org\/fedora-minimal\:+([0-9])+"
+FEDORA_MINIMAL_NAME_REGEX = "fedora-minimal:([0-9])+"
