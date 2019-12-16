@@ -11,7 +11,8 @@ from conu.backend.buildah.container import BuildahRunBuilder
 from conu.backend.buildah.image import BuildahImage, BuildahImagePullPolicy
 from conu.utils import check_buildah_command_works
 from tests.constants import FEDORA_MINIMAL_IMAGE
-from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
+from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, \
+    FEDORA_MINIMAL_IMAGE_REGEX
 
 
 def test_buildah_command():
@@ -28,7 +29,7 @@ def test_buildah_image(buildah_backend):
     insp = image.inspect()
     assert "Config" in insp
     assert isinstance(insp["Config"], str)
-    assert "registry.fedoraproject.org/fedora-minimal:26" == str(image)
+    assert re.match(FEDORA_MINIMAL_IMAGE_REGEX, str(image))
     assert "BuildahImage(repository=%s, tag=%s)" % (FEDORA_MINIMAL_REPOSITORY,
                                                     FEDORA_MINIMAL_REPOSITORY_TAG) == repr(image)
     assert isinstance(image.get_id(), string_types)

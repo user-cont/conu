@@ -27,7 +27,7 @@ from flexmock import flexmock
 
 from conu.utils import parse_reference
 from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, \
-    FEDORA_REPOSITORY
+    FEDORA_REPOSITORY, FEDORA_MINIMAL_IMAGE_REGEX, FEDORA_MINIMAL_NAME_REGEX
 
 from conu.apidefs.metadata import ContainerStatus
 from conu.backend.docker.client import get_client
@@ -42,6 +42,7 @@ from conu import \
 from conu.backend.docker.skopeo import SkopeoTransport
 from six import string_types
 
+import re
 
 @pytest.mark.parametrize("reference,result", [
     ("registry.fedoraproject.org/fedora:27", ("registry.fedoraproject.org/fedora", "27")),
@@ -135,8 +136,8 @@ def test_image():
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
         assert "Config" in image.inspect()
         assert "Config" in image.inspect()
-        assert "fedora-minimal:26" in image.get_full_name()
-        assert "registry.fedoraproject.org/fedora-minimal:26" == str(image)
+        assert re.match(FEDORA_MINIMAL_NAME_REGEX, image.get_full_name())
+        assert re.match(FEDORA_MINIMAL_IMAGE_REGEX, str(image))
         assert "DockerImage(repository=%s, tag=%s)" % (FEDORA_MINIMAL_REPOSITORY,
                                                        FEDORA_MINIMAL_REPOSITORY_TAG) == repr(image)
         assert isinstance(image.get_id(), string_types)

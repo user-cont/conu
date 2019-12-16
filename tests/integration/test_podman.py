@@ -1,7 +1,7 @@
 from __future__ import print_function, unicode_literals
 
 from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, \
-    FEDORA_REPOSITORY
+    FEDORA_REPOSITORY, FEDORA_MINIMAL_IMAGE_REGEX, FEDORA_MINIMAL_NAME_REGEX
 
 import subprocess
 import time
@@ -18,6 +18,7 @@ from conu import Directory
 from six import string_types
 
 import pytest
+import re
 
 
 @pytest.fixture()
@@ -51,8 +52,8 @@ def test_podman_image(podman_backend):
     assert "%s:%s" % (FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG) == image.get_full_name()
     assert "%s:%s" % (FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG) in image.inspect()['RepoTags']
     assert "Config" in image.inspect()
-    assert "fedora-minimal:26" in image.get_full_name()
-    assert "registry.fedoraproject.org/fedora-minimal:26" == str(image)
+    assert re.match(FEDORA_MINIMAL_NAME_REGEX, image.get_full_name())
+    assert re.match(FEDORA_MINIMAL_IMAGE_REGEX, str(image))
     assert "PodmanImage(repository=%s, tag=%s)" % (FEDORA_MINIMAL_REPOSITORY,
                                                    FEDORA_MINIMAL_REPOSITORY_TAG) == repr(image)
     assert isinstance(image.get_id(), string_types)
