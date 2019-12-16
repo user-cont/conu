@@ -20,7 +20,7 @@ exec-test:
 	@# use it like this: `make exec-test TEST_TARGET="tests/unit/"`
 	PYTHONPATH=$(CURDIR) pytest $(TEST_TARGET) --verbose --showlocals
 
-check: container-image build-test-container test-in-container docs-in-container
+check: container-image test-in-container docs-in-container
 
 build-docs-container:
 	docker build --network host --tag=$(DOCS_IMAGE_NAME) -f ./Dockerfile.docs .
@@ -47,9 +47,9 @@ container:
 build-test-container:
 	docker build --network host --tag=$(TEST_IMAGE_NAME) -f ./Dockerfile.tests .
 
-centos-ci-test: setup-oc-cluster-ci container-image build-test-container test-in-container
+centos-ci-test: setup-oc-cluster-ci container-image test-in-container
 
-test-in-container:
+test-in-container: build-test-container
 	@# use it like this: `make test-in-container TEST_TARGET=tests/integration/test_utils.py`
 	$(eval kubedir := $(shell mktemp -d /tmp/tmp.conu-kube-XXXXX))
 	sed -e s@"${HOME}"@/root@g ${HOME}/.kube/config > $(kubedir)/config ; \
