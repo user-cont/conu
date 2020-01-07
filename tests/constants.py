@@ -17,7 +17,7 @@ from __future__ import print_function, unicode_literals
 
 FEDORA_REPOSITORY = "registry.fedoraproject.org/fedora"
 FEDORA_MINIMAL_REPOSITORY = "registry.fedoraproject.org/fedora-minimal"
-FEDORA_MINIMAL_REPOSITORY_TAG = "26"
+FEDORA_MINIMAL_REPOSITORY_TAG = "31"
 FEDORA_MINIMAL_REPOSITORY_DIGEST = "registry.fedoraproject.org/fedora-minimal@" \
     "sha256:3b5147b65bf7d124b9ded3959b5e44bf392b405be219853dbcc346f8b9c06e88"
 FEDORA_MINIMAL_IMAGE = "{}:{}".format(FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG)

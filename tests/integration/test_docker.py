@@ -197,7 +197,7 @@ def test_copy_from(tmpdir):
         try:
             c.copy_from("/etc/fedora-release", str(tmpdir))
             with open(os.path.join(str(tmpdir), "fedora-release")) as fd:
-                assert fd.read() == "Fedora release 26 (Twenty Six)\n"
+                assert fd.read() == "Fedora release 31 (Thirty One)\n"
 
             c.copy_from("/etc", str(tmpdir))
             os.path.exists(os.path.join(str(tmpdir), "passwd"))

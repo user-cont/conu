@@ -109,7 +109,7 @@ def test_pypi(c):
         },
         {
             "container_image": "registry.fedoraproject.org/fedora",
-            "container_image_tag": "26",
+            "container_image_tag": "31",
             "script": [
                 ["dnf", "install", "-y", "dnf-plugins-core"],
                 ["dnf", "copr", "enable", "-y", "ttomecek/conu"],

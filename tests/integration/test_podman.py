@@ -322,7 +322,7 @@ def test_list_containers(podman_backend):
 def test_list_images(podman_backend):
     image_list = podman_backend.list_images()
     assert len(image_list) > 0
-    # id of registry.fedoraproject.org/fedora-minimal:26
+    # id of registry.fedoraproject.org/fedora-minimal:31
     the_id = subprocess.check_output(["podman", "inspect", "-f", "{{.Id}}",
                                       FEDORA_MINIMAL_REPOSITORY + ":" +
                                       FEDORA_MINIMAL_REPOSITORY_TAG]).decode("utf-8").strip()
