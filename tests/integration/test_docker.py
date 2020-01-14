@@ -45,7 +45,7 @@ from six import string_types
 import re
 
 @pytest.mark.parametrize("reference,result", [
-    ("registry.fedoraproject.org/fedora:27", ("registry.fedoraproject.org/fedora", "27")),
+    ("registry.fedoraproject.org/fedora:31", ("registry.fedoraproject.org/fedora", "31")),
     ("registry.fedoraproject.org/fedora", ("registry.fedoraproject.org/fedora", "latest")),
     ("registry.fedoraproject.org:7890/fedora",
      ("registry.fedoraproject.org:7890/fedora", "latest")),
@@ -136,7 +136,7 @@ def test_image():
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
         assert "Config" in image.inspect()
         assert "Config" in image.inspect()
-        assert re.match(FEDORA_MINIMAL_NAME_REGEX, image.get_full_name())
+        assert re.match(FEDORA_MINIMAL_IMAGE_REGEX, image.get_full_name())
         assert re.match(FEDORA_MINIMAL_IMAGE_REGEX, str(image))
         assert "DockerImage(repository=%s, tag=%s)" % (FEDORA_MINIMAL_REPOSITORY,
                                                        FEDORA_MINIMAL_REPOSITORY_TAG) == repr(image)

@@ -52,7 +52,7 @@ def test_podman_image(podman_backend):
     assert "%s:%s" % (FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG) == image.get_full_name()
     assert "%s:%s" % (FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG) in image.inspect()['RepoTags']
     assert "Config" in image.inspect()
-    assert re.match(FEDORA_MINIMAL_NAME_REGEX, image.get_full_name())
+    assert re.match(FEDORA_MINIMAL_IMAGE_REGEX, image.get_full_name())
     assert re.match(FEDORA_MINIMAL_IMAGE_REGEX, str(image))
     assert "PodmanImage(repository=%s, tag=%s)" % (FEDORA_MINIMAL_REPOSITORY,
                                                    FEDORA_MINIMAL_REPOSITORY_TAG) == repr(image)

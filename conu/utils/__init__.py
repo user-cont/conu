@@ -451,8 +451,8 @@ def parse_reference(reference):
     """
     parse provided image reference into <image_repository>:<tag>
 
-    :param reference: str, e.g. (registry.fedoraproject.org/fedora:27)
-    :return: collection (tuple or list), ("registry.fedoraproject.org/fedora", "27")
+    :param reference: str, e.g. (registry.fedoraproject.org/fedora:31)
+    :return: collection (tuple or list), ("registry.fedoraproject.org/fedora", "31")
     """
     if ":" in reference:
         im, tag = reference.rsplit(":", 1)

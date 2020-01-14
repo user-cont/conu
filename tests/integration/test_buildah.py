@@ -14,6 +14,7 @@ from tests.constants import FEDORA_MINIMAL_IMAGE
 from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, \
     FEDORA_MINIMAL_IMAGE_REGEX
 
+import re
 
 def test_buildah_command():
     assert check_buildah_command_works()
