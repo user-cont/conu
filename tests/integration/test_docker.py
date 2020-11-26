@@ -17,7 +17,7 @@ from flexmock import flexmock
 
 from conu.utils import parse_reference
 from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, \
-    FEDORA_REPOSITORY
+    FEDORA_REPOSITORY, FEDORA_MINIMAL_IMAGE_REGEX, FEDORA_MINIMAL_NAME_REGEX
 
 from conu.apidefs.metadata import ContainerStatus
 from conu.backend.docker.client import get_client
@@ -32,9 +32,10 @@ from conu import \
 from conu.backend.docker.skopeo import SkopeoTransport
 from six import string_types
 
+import re
 
 @pytest.mark.parametrize("reference,result", [
-    ("registry.fedoraproject.org/fedora:27", ("registry.fedoraproject.org/fedora", "27")),
+    ("registry.fedoraproject.org/fedora:31", ("registry.fedoraproject.org/fedora", "31")),
     ("registry.fedoraproject.org/fedora", ("registry.fedoraproject.org/fedora", "latest")),
     ("registry.fedoraproject.org:7890/fedora",
      ("registry.fedoraproject.org:7890/fedora", "latest")),
@@ -125,8 +126,8 @@ def test_image():
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
         assert "Config" in image.inspect()
         assert "Config" in image.inspect()
-        assert "fedora-minimal:26" in image.get_full_name()
-        assert "registry.fedoraproject.org/fedora-minimal:26" == str(image)
+        assert re.match(FEDORA_MINIMAL_IMAGE_REGEX, image.get_full_name())
+        assert re.match(FEDORA_MINIMAL_IMAGE_REGEX, str(image))
         assert "DockerImage(repository=%s, tag=%s)" % (FEDORA_MINIMAL_REPOSITORY,
                                                        FEDORA_MINIMAL_REPOSITORY_TAG) == repr(image)
         assert isinstance(image.get_id(), string_types)
@@ -186,7 +187,7 @@ def test_copy_from(tmpdir):
         try:
             c.copy_from("/etc/fedora-release", str(tmpdir))
             with open(os.path.join(str(tmpdir), "fedora-release")) as fd:
-                assert fd.read() == "Fedora release 26 (Twenty Six)\n"
+                assert fd.read() == "Fedora release 31 (Thirty One)\n"
 
             c.copy_from("/etc", str(tmpdir))
             os.path.exists(os.path.join(str(tmpdir), "passwd"))

@@ -43,14 +43,14 @@ def test_container_read_file(docker_container):
         with pytest.raises(ConuException):
             fs.read_file("/i/lost/my/banana")
         content = fs.read_file("/etc/system-release")
-    assert content == "Fedora release 26 (Twenty Six)\n"
+    assert content == "Fedora release 31 (Thirty One)\n"
 
 
 def test_container_copy_from(docker_container, tmpdir):
     with docker_container.mount() as fs:
         fs.copy_from("/etc/system-release", str(tmpdir))
         with open(os.path.join(str(tmpdir), "system-release")) as fd:
-            assert fd.read() == "Fedora release 26 (Twenty Six)\n"
+            assert fd.read() == "Fedora release 31 (Thirty One)\n"
 
         tmpdir.mkdir("etc")
         if six.PY2:
@@ -66,7 +66,7 @@ def test_container_get_file(docker_container):
         f = fs.get_file("/etc/system-release")
         assert f.fileno()
         assert "/etc/system-release" in f.name
-        assert f.read() == "Fedora release 26 (Twenty Six)\n"
+        assert f.read() == "Fedora release 31 (Thirty One)\n"
         f.close()
 
 
@@ -109,14 +109,14 @@ def test_image_read_file(docker_image):
         with pytest.raises(ConuException):
             fs.read_file("/i/lost/my/banana")
         content = fs.read_file("/etc/system-release")
-    assert content == "Fedora release 26 (Twenty Six)\n"
+    assert content == "Fedora release 31 (Thirty One)\n"
 
 
 def test_image_copy_from(docker_image, tmpdir):
     with docker_image.mount() as fs:
         fs.copy_from("/etc/system-release", str(tmpdir))
         with open(os.path.join(str(tmpdir), "system-release")) as fd:
-            assert fd.read() == "Fedora release 26 (Twenty Six)\n"
+            assert fd.read() == "Fedora release 31 (Thirty One)\n"
 
         tmpdir.mkdir("etc")
         if six.PY2:
@@ -132,7 +132,7 @@ def test_image_get_file(docker_image):
         f = fs.get_file("/etc/system-release")
         assert f.fileno()
         assert "/etc/system-release" in f.name
-        assert f.read() == "Fedora release 26 (Twenty Six)\n"
+        assert f.read() == "Fedora release 31 (Thirty One)\n"
         f.close()
 
 

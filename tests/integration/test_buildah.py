@@ -11,8 +11,10 @@ from conu.backend.buildah.container import BuildahRunBuilder
 from conu.backend.buildah.image import BuildahImage, BuildahImagePullPolicy
 from conu.utils import check_buildah_command_works
 from tests.constants import FEDORA_MINIMAL_IMAGE
-from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG
+from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, \
+    FEDORA_MINIMAL_IMAGE_REGEX
 
+import re
 
 def test_buildah_command():
     assert check_buildah_command_works()
@@ -28,7 +30,7 @@ def test_buildah_image(buildah_backend):
     insp = image.inspect()
     assert "Config" in insp
     assert isinstance(insp["Config"], str)
-    assert "registry.fedoraproject.org/fedora-minimal:26" == str(image)
+    assert re.match(FEDORA_MINIMAL_IMAGE_REGEX, str(image))
     assert "BuildahImage(repository=%s, tag=%s)" % (FEDORA_MINIMAL_REPOSITORY,
                                                     FEDORA_MINIMAL_REPOSITORY_TAG) == repr(image)
     assert isinstance(image.get_id(), string_types)
@@ -137,7 +139,7 @@ def test_list_containers(buildah_backend):
 def test_list_images(buildah_backend):
     image_list = buildah_backend.list_images()
     assert len(image_list) > 0
-    # id of registry.fedoraproject.org/fedora-minimal:26
+    # id of registry.fedoraproject.org/fedora-minimal:31
     assert isinstance(image_list[0], BuildahImage)
     assert image_list[0].get_id()
     assert image_list[0].get_full_name()
@@ -150,8 +152,8 @@ def test_image_metadata(buildah_backend):
 
     assert im_metadata.command == ["/bin/bash"]
     assert im_metadata.name == FEDORA_MINIMAL_IMAGE
-    assert im_metadata.env_variables["FGC"] == "f26"
-    assert im_metadata.env_variables["DISTTAG"] == "f26container"
+    assert im_metadata.env_variables["FGC"] == "f31"
+    assert im_metadata.env_variables["DISTTAG"] == "f31container"
     assert im_metadata.labels == {}
 
 
@@ -169,8 +171,8 @@ def test_container_metadata(buildah_backend):
 
         assert container_metadata.command == ["/bin/bash"]
         assert container_metadata.name == "mycontainer"
-        assert container_metadata.env_variables["FGC"] == "f26"
-        assert container_metadata.env_variables["DISTTAG"] == "f26container"
+        assert container_metadata.env_variables["FGC"] == "f31"
+        assert container_metadata.env_variables["DISTTAG"] == "f31container"
         assert container_metadata.labels == {}
     finally:
         c.delete(force=True)
