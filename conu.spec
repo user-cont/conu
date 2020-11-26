@@ -2,10 +2,10 @@
 
 Name:           %{pypi_name}
 Version:        0.7.1
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        library which makes it easy to write tests for your containers
 
-License:        GPLv3+
+License:        MIT
 URL:            https://github.com/fedora-modularity/conu
 Source0:        https://files.pythonhosted.org/packages/source/c/%{pypi_name}/%{pypi_name}-%{version}.tar.gz
 BuildArch:      noarch
@@ -98,6 +98,9 @@ rm -rf html/.{doctrees,buildinfo}
 %license LICENSE
 
 %changelog
+* Thu Nov 26 2020 Jiri Popelka <jpopelka@redhat.com> - 0.7.1-3
+- Change license from GPLv3+ to MIT
+
 * Thu Feb 28 2019 Jiri Popelka <jpopelka@redhat.com> - 0.7.1-2
 - remove Python 2 support
 
@@ -123,7 +126,7 @@ rm -rf html/.{doctrees,buildinfo}
 - 0.6.0 release
 
 * Thu Sep 13 2018 Radoslav Pitonak <rado.pitonak@gmail.com> - 0.5.0-2
-- add dependency kubernetes 
+- add dependency kubernetes
 
 * Thu Sep 13 2018 Radoslav Pitonak <rado.pitonak@gmail.com> - 0.5.0-1
 - New upstream release 0.5.0

@@ -1,35 +1,19 @@
-dist_git_url: https://src.fedoraproject.org/rpms/conu.git
-specfile_path: conu.spec
-synced_files:
-- conu.spec
-upstream_package_name: conu
-downstream_package_name: conu
+upstream_project_url: https://github.com/user-cont/conu
+
 jobs:
-- job: sync_from_downstream
-  trigger: commit
-- job: propose_downstream
-  trigger: release
-  metadata:
-    dist-git-branch: master
-- job: propose_downstream
-  trigger: release
-  metadata:
-    dist-git-branch: f31
-- job: propose_downstream
-  trigger: release
-  metadata:
-    dist-git-branch: f30
-- job: copr_build
-  trigger: pull_request
-  metadata:
-    targets:
-    - fedora-30-x86_64
-    - fedora-31-x86_64
-    - fedora-rawhide-x86_64
-# - job: tests
-#   trigger: pull_request
-#   metadata:
-#     targets:
-#     - fedora-30-x86_64
-#     - fedora-31-x86_64
-#     - fedora-rawhide-x86_64
+  - job: sync_from_downstream
+    trigger: commit
+  - job: propose_downstream
+    trigger: release
+    metadata:
+      dist_git_branches: fedora-all
+  - job: copr_build
+    trigger: pull_request
+    metadata:
+      targets:
+        - fedora-all
+  - job: tests
+    trigger: pull_request
+    metadata:
+      targets:
+        - fedora-all
