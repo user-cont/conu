@@ -17,7 +17,7 @@ from flexmock import flexmock
 
 from conu.utils import parse_reference
 from ..constants import FEDORA_MINIMAL_REPOSITORY, FEDORA_MINIMAL_REPOSITORY_TAG, \
-    FEDORA_REPOSITORY
+    FEDORA_REPOSITORY, FEDORA_RELEASE
 
 from conu.apidefs.metadata import ContainerStatus
 from conu.backend.docker.client import get_client
@@ -125,8 +125,8 @@ def test_image():
         image = backend.ImageClass(FEDORA_MINIMAL_REPOSITORY, tag=FEDORA_MINIMAL_REPOSITORY_TAG)
         assert "Config" in image.inspect()
         assert "Config" in image.inspect()
-        assert "fedora-minimal:26" in image.get_full_name()
-        assert "registry.fedoraproject.org/fedora-minimal:26" == str(image)
+        assert "fedora-minimal:33" in image.get_full_name()
+        assert "registry.fedoraproject.org/fedora-minimal:33" == str(image)
         assert "DockerImage(repository=%s, tag=%s)" % (FEDORA_MINIMAL_REPOSITORY,
                                                        FEDORA_MINIMAL_REPOSITORY_TAG) == repr(image)
         assert isinstance(image.get_id(), string_types)
@@ -184,9 +184,9 @@ def test_copy_from(tmpdir):
             command=["cat"], additional_opts=["-i", "-t"]
         )
         try:
-            c.copy_from("/etc/fedora-release", str(tmpdir))
+            c.copy_from("/usr/lib/fedora-release", str(tmpdir))
             with open(os.path.join(str(tmpdir), "fedora-release")) as fd:
-                assert fd.read() == "Fedora release 26 (Twenty Six)\n"
+                assert fd.read() == FEDORA_RELEASE
 
             c.copy_from("/etc", str(tmpdir))
             os.path.exists(os.path.join(str(tmpdir), "passwd"))
@@ -456,7 +456,8 @@ def test_list_images():
     with DockerBackend() as backend:
         image_list = backend.list_images()
         assert len(image_list) > 0
-        the_id = "756d8881fb18271a1d55f6ee7e355aaf38fb2973f5fbb0416cf5de628624318b"
+        # buildah inspect --type image registry.fedoraproject.org/fedora-minimal:33 | grep FromImageID
+        the_id = "4963469931459d30a6645fcde7df97cd1778e073269304bc9002a56f24a6eb74"
         image_under_test = [x for x in image_list if x.metadata.identifier == the_id][0]
         assert image_under_test.metadata.digest
         assert image_under_test.metadata.repo_digests

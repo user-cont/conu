@@ -29,7 +29,7 @@ def inspect_to_metadata(metadata_object, inspect_data):
             metadata_object.identifier = identifier
 
     # format of Environment Variables from docker inspect:
-    # ['DISTTAG=f26container', 'FGC=f26']
+    # ['DISTTAG=f33container', 'FGC=f33']
     raw_env_vars = graceful_get(inspect_data, "Config", "Env") or []
     if raw_env_vars:
         metadata_object.env_variables = {}
