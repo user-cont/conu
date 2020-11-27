@@ -1,3 +1,10 @@
+# 1.0.0
+
+* Conu is now under MIT license
+* New buildah backend
+* Docker backend supports Skopeo for copying
+
+
 # 0.7.1
 
 ## Breaking changes

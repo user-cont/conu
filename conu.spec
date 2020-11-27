@@ -1,15 +1,15 @@
 %global pypi_name conu
 
 Name:           %{pypi_name}
-Version:        0.7.1
-Release:        3%{?dist}
+Version:        1.0.0
+Release:        1%{?dist}
 Summary:        library which makes it easy to write tests for your containers
 
 License:        MIT
 URL:            https://github.com/fedora-modularity/conu
 Source0:        https://files.pythonhosted.org/packages/source/c/%{pypi_name}/%{pypi_name}-%{version}.tar.gz
 BuildArch:      noarch
-# exclude ppc64 because there is no docker package
+# exclude ppc64 because there is no moby-engine package
 # https://bugzilla.redhat.com/show_bug.cgi?id=1547049
 ExcludeArch:    ppc64
 
@@ -31,14 +31,7 @@ BuildRequires:  python3-docker
 BuildRequires:  python3-requests
 BuildRequires:  python3-pyxattr
 BuildRequires:  python3-six
-Requires:       python3-kubernetes
-Requires:       python3-docker
-Requires:       python3-requests
-Requires:       python3-pyxattr
-Requires:       python3-six
-# this is the only way to create containers right now
-Requires:       docker
-# these are optional but still recommended
+Recommends:     moby-engine
 Recommends:     source-to-image
 Recommends:     acl
 Recommends:     libselinux-utils
@@ -52,7 +45,6 @@ images and provides more, very helpful functions.
 %package -n     python3-%{pypi_name}-pytest
 Summary:        fixtures which can be utilized via pytest
 %{?python_provide:%python_provide python3-%{pypi_name}-pytest}
-Requires:       python3-pytest
 Requires:       python3-%{pypi_name}
 
 %description -n python3-%{pypi_name}-pytest
@@ -98,6 +90,10 @@ rm -rf html/.{doctrees,buildinfo}
 %license LICENSE
 
 %changelog
+* Thu Nov 26 2020 Jiri Popelka <jpopelka@redhat.com> - 1.0.0-1
+- 1.0.0 release
+- removed explicit Requires
+
 * Thu Nov 26 2020 Jiri Popelka <jpopelka@redhat.com> - 0.7.1-3
 - Change license from GPLv3+ to MIT
 
