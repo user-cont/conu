@@ -45,7 +45,7 @@
       - origin-clients
       state: present
   - name: Start Openshift cluster
-    command: oc cluster up --base-dir=/tmp
+    command: oc cluster up --base-dir=/var/tmp/openshift.local.clusterup --image='quay.io/openshift/origin-${component}:${version}'
     environment:
       PATH: "{{ ansible_env.PATH}}:/usr/local/bin"
       DOCKER_CONFIG: "/etc/docker/daemon.json"
