@@ -11,6 +11,7 @@ install-requirements:
 	ansible-playbook -vv -c local -i localhost, files/install-packages.yaml
 
 setup-oc-cluster-ci:
+	yum install -y epel-release && \
 	yum install -y ansible && \
 	ansible-playbook -vv -c local -i localhost, files/install-openshift.yaml
 
