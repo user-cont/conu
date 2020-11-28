@@ -37,7 +37,7 @@
   - name: Install OpenShift server
     yum:
       name:
-      - centos-release-openshift-origin310
+      - centos-release-openshift-origin311
       state: present
   - name: Install OpenShift client
     yum:
