@@ -20,6 +20,25 @@
     systemd:
       name: docker
       state: started
+  - name: Create directory for registry configuration
+    file:
+      path: /etc/docker/registry/
+      state: directory
+  - name: Create configuration for registry proxy
+    copy:
+      src: registry_config.yml
+      dest: /etc/docker/registry/config.yml
+      mode: 0644
+  - name: Remove older container for registry mirror
+    command: docker rm -f registry
+    ignore_errors: yes
+  - name: Run registry proxy
+    command: >
+      docker run -d -p 5000:5000 --restart=always
+          --name registry
+          -v /etc/docker/registry/config.yml:/etc/docker/registry/config.yml
+          -v /var/lib/registry:/var/lib/registry:z
+          docker.io/registry:2
   - name: Create docker deamon config
     file:
       path: /etc/docker/daemon.json
@@ -27,7 +46,8 @@
   - name: Add OpenShift insecure registry into docker deamon config
     copy:
       content: |
-        {"insecure-registries" : [ "172.30.0.0/16" ]}
+        {"insecure-registries" : [ "172.30.0.0/16" ],
+         "registry-mirrors": ["http://localhost:5000"]}
       dest: /etc/docker/daemon.json
   - name: Restart docker because config has changed
     systemd:
