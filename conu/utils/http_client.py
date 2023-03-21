@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 #
 from requests import Session
-from six.moves.urllib.parse import urlunsplit
+from urllib.parse import urlunsplit
 
 
 def get_url(path, host, port, method="http"):

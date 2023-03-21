@@ -14,9 +14,6 @@ import pwd
 from conu.exceptions import ConuException
 from conu.utils import run_cmd, is_selinux_disabled, setfacl_command_exists, chcon_command_exists
 
-import six
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -85,14 +82,14 @@ class Directory(object):
         self.facl_rules = facl_rules
 
         # os.chown wants int
-        if isinstance(user_owner, six.string_types):
+        if isinstance(user_owner, str):
             try:
                 self.owner = pwd.getpwnam(user_owner)[2]
             except KeyError as ex:
                 raise ConuException("User %r not found, error message: %r" % (user_owner, ex))
         else:
             self.owner = user_owner
-        if isinstance(group_owner, six.string_types):
+        if isinstance(group_owner, str):
             try:
                 self.group = pwd.getpwnam(group_owner)[3]
             except KeyError as ex:
@@ -246,7 +243,7 @@ class Volume(object):
         :param volume: tuple in one one of the following forms: target | source,target | source,target,mode
         :return: instance of Volume
         """
-        if isinstance(volume, six.string_types):
+        if isinstance(volume, str):
             return Volume(target=volume)
         elif len(volume) == 2:
             return Volume(source=volume[0],
