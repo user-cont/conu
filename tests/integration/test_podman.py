@@ -15,8 +15,6 @@ from conu.apidefs.metadata import ContainerStatus
 from conu.exceptions import ConuException
 from conu import Directory
 
-from six import string_types
-
 import pytest
 
 
@@ -55,7 +53,7 @@ def test_podman_image(podman_backend):
     assert "registry.fedoraproject.org/fedora-minimal:33" == str(image)
     assert "PodmanImage(repository=%s, tag=%s)" % (FEDORA_MINIMAL_REPOSITORY,
                                                    FEDORA_MINIMAL_REPOSITORY_TAG) == repr(image)
-    assert isinstance(image.get_id(), string_types)
+    assert isinstance(image.get_id(), str)
     new_image = image.tag_image(tag="test")
     assert new_image.is_present()
     new_image.rmi(via_name=True)
@@ -82,7 +80,7 @@ def test_container(podman_backend, podman_run_builder):
         assert "Config" in c.inspect()
         assert c.get_id() == str(c)
         assert repr(c)
-        assert isinstance(c.get_id(), string_types)
+        assert isinstance(c.get_id(), str)
     finally:
         c.delete(force=True)
 

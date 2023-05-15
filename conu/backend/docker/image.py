@@ -16,8 +16,6 @@ import subprocess
 import enum
 from tempfile import mkdtemp
 
-import six
-
 from kubernetes.client.rest import ApiException
 
 from conu.apidefs.metadata import ImageMetadata
@@ -110,7 +108,7 @@ class DockerImage(Image):
         :param pull_policy: enum, strategy to apply for pulling the image
         """
         super(DockerImage, self).__init__(repository, tag=tag)
-        if not isinstance(tag, (six.string_types, None.__class__)):
+        if not isinstance(tag, (str, None.__class__)):
             raise ConuException("'tag' is not a string type")
         if not isinstance(pull_policy, DockerImagePullPolicy):
             raise ConuException("'pull_policy' is not an instance of DockerImagePullPolicy")

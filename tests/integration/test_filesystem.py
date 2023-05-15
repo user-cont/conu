@@ -6,7 +6,6 @@
 import os
 
 import pytest
-import six
 
 from conu.backend.docker.backend import DockerBackend
 from conu.backend.docker.container import ConuException
@@ -53,12 +52,8 @@ def test_container_copy_from(docker_container, tmpdir):
             assert fd.read() == FEDORA_RELEASE
 
         tmpdir.mkdir("etc")
-        if six.PY2:
-            with pytest.raises(OSError):
-                fs.copy_from("/etc", str(tmpdir))
-        else:
-            with pytest.raises(FileExistsError):
-                fs.copy_from("/etc", str(tmpdir))
+        with pytest.raises(FileExistsError):
+            fs.copy_from("/etc", str(tmpdir))
 
 
 def test_container_get_file(docker_container):
@@ -119,12 +114,8 @@ def test_image_copy_from(docker_image, tmpdir):
             assert fd.read() == FEDORA_RELEASE
 
         tmpdir.mkdir("etc")
-        if six.PY2:
-            with pytest.raises(OSError):
-                fs.copy_from("/etc", str(tmpdir))
-        else:
-            with pytest.raises(FileExistsError):
-                fs.copy_from("/etc", str(tmpdir))
+        with pytest.raises(FileExistsError):
+            fs.copy_from("/etc", str(tmpdir))
 
 
 def test_image_get_file(docker_image):

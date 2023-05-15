@@ -15,8 +15,6 @@ import logging
 import os
 import subprocess
 
-import six
-
 from conu.apidefs.backend import get_backend_tmpdir
 from conu.apidefs.image import Image
 from conu.apidefs.metadata import ImageMetadata
@@ -75,7 +73,7 @@ class BuildahImage(Image):
         :param pull_policy: enum, strategy to apply for pulling the image
         """
         super(BuildahImage, self).__init__(repository, tag=tag)
-        if not isinstance(tag, (six.string_types, None.__class__)):
+        if not isinstance(tag, (str, None.__class__)):
             raise ConuException("'tag' is not a string type")
         if not isinstance(pull_policy, BuildahImagePullPolicy):
             raise ConuException("'pull_policy' is not an instance of BuildahImagePullPolicy")

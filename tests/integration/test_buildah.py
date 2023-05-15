@@ -3,7 +3,6 @@ from __future__ import print_function, unicode_literals
 import subprocess
 
 import pytest
-from six import string_types
 
 from conu import ConuException, random_str
 from conu.fixtures import buildah_backend
@@ -31,7 +30,7 @@ def test_buildah_image(buildah_backend):
     assert "registry.fedoraproject.org/fedora-minimal:33" == str(image)
     assert "BuildahImage(repository=%s, tag=%s)" % (FEDORA_MINIMAL_REPOSITORY,
                                                     FEDORA_MINIMAL_REPOSITORY_TAG) == repr(image)
-    assert isinstance(image.get_id(), string_types)
+    assert isinstance(image.get_id(), str)
     new_image = image.tag_image(tag="test")
     assert new_image.is_present()
     new_image.rmi(via_name=True)
@@ -55,7 +54,7 @@ def test_buildah_container(buildah_backend):
         assert "Config" in c.inspect()
         assert c.get_id() == str(c)
         assert repr(c)
-        assert isinstance(c.get_id(), string_types)
+        assert isinstance(c.get_id(), str)
     finally:
         c.delete(force=True)
 

@@ -13,7 +13,7 @@ from conu.apidefs.image import Image
 from conu.utils.http_client import HttpClient, get_url
 
 import requests
-from six.moves.urllib.parse import urlunsplit
+from urllib.parse import urlunsplit
 from contextlib import contextmanager
 
 

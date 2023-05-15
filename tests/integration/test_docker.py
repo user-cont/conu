@@ -30,7 +30,6 @@ from conu import \
     Directory
 
 from conu.backend.docker.skopeo import SkopeoTransport
-from six import string_types
 
 
 @pytest.mark.parametrize("reference,result", [
@@ -129,7 +128,7 @@ def test_image():
         assert "registry.fedoraproject.org/fedora-minimal:33" == str(image)
         assert "DockerImage(repository=%s, tag=%s)" % (FEDORA_MINIMAL_REPOSITORY,
                                                        FEDORA_MINIMAL_REPOSITORY_TAG) == repr(image)
-        assert isinstance(image.get_id(), string_types)
+        assert isinstance(image.get_id(), str)
         new_image = image.tag_image(tag="test")
         new_image.rmi(via_name=True)
 
@@ -155,7 +154,7 @@ def test_container():
             assert "Config" in c.inspect()
             assert c.get_id() == str(c)
             assert repr(c)
-            assert isinstance(c.get_id(), string_types)
+            assert isinstance(c.get_id(), str)
         finally:
             c.delete(force=True)
 
@@ -618,6 +617,6 @@ def test_run_via_api():
             assert "Config" in c.inspect()
             assert c.get_id() == str(c)
             assert repr(c)
-            assert isinstance(c.get_id(), string_types)
+            assert isinstance(c.get_id(), str)
         finally:
             c.delete(force=True)
